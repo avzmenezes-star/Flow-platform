@@ -1,0 +1,2351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flow — Operational Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Platform chrome */
+      --chrome:       #0f1117;
+      --chrome-2:     #13151f;
+      --chrome-3:     #1c1f2e;
+      --chrome-border:#2a2d3e;
+      --chrome-text:  rgba(255,255,255,0.85);
+      --chrome-muted: rgba(255,255,255,0.4);
+      --chrome-hover: rgba(255,255,255,0.06);
+
+      /* Content */
+      --bg:           #f5f4f1;
+      --surface:      #ffffff;
+      --surface-2:    #f8f7f5;
+      --border:       #e5e3de;
+      --border-2:     #d1cec8;
+
+      /* Text */
+      --ink:          #0f1117;
+      --ink-2:        #374151;
+      --ink-3:        #6b7280;
+      --ink-4:        #9ca3af;
+
+      /* Platform action */
+      --indigo:       #4f46e5;
+      --indigo-light: #eef2ff;
+      --indigo-mid:   #4338ca;
+
+      /* Hub accents */
+      --hub-deals:    #1a5c3a;
+      --hub-hr:       #1d4ed8;
+      --hub-legal:    #6d28d9;
+      --hub-finance:  #b45309;
+      --hub-marketing:#c2410c;
+      --hub-custom:   #374151;
+
+      /* Status */
+      --status-progress-bg:   #eff6ff;
+      --status-progress-text: #1d4ed8;
+      --status-docs-bg:       #fef9c3;
+      --status-docs-text:     #854d0e;
+      --status-sig-bg:        #f3e8ff;
+      --status-sig-text:      #6d28d9;
+      --status-hold-bg:       #f1f5f9;
+      --status-hold-text:     #475569;
+      --status-done-bg:       #f0fdf4;
+      --status-done-text:     #166534;
+      --status-planning-bg:   #fff7ed;
+      --status-planning-text: #9a3412;
+
+      --danger:       #dc2626;
+      --danger-light: #fef2f2;
+      --success:      #16a34a;
+
+      --radius:       10px;
+      --radius-lg:    14px;
+      --shadow:       0 1px 4px rgba(0,0,0,0.07), 0 2px 12px rgba(0,0,0,0.04);
+      --shadow-md:    0 4px 16px rgba(0,0,0,0.10);
+      --shadow-lg:    0 12px 40px rgba(0,0,0,0.16);
+
+      --sidebar-w:    228px;
+      --header-h:     56px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Instrument Sans', sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* ── AUTH ──────────────────────────────────────────────── */
+    #auth-screen {
+      position: fixed; inset: 0;
+      background: var(--chrome);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000;
+      padding: 24px;
+    }
+
+    .auth-bg {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse at 15% 50%, rgba(79,70,229,0.18) 0%, transparent 55%),
+        radial-gradient(ellipse at 85% 20%, rgba(26,92,58,0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 60% 80%, rgba(109,40,217,0.08) 0%, transparent 45%);
+    }
+
+    .auth-card {
+      background: var(--surface);
+      border-radius: 18px;
+      padding: 48px 44px;
+      max-width: 420px; width: 100%;
+      box-shadow: var(--shadow-lg);
+      position: relative; z-index: 1;
+      animation: auth-in 0.4s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    @keyframes auth-in {
+      from { opacity: 0; transform: translateY(20px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .auth-wordmark {
+      font-family: 'Instrument Serif', serif;
+      font-size: 32px;
+      color: var(--ink);
+      margin-bottom: 4px;
+      letter-spacing: -0.5px;
+    }
+
+    .auth-wordmark span { color: var(--indigo); }
+
+    .auth-tagline {
+      font-size: 13px; color: var(--ink-3);
+      margin-bottom: 40px; line-height: 1.5;
+    }
+
+    .auth-step { display: none; }
+    .auth-step.active { display: block; }
+
+    .auth-heading {
+      font-family: 'Instrument Serif', serif;
+      font-size: 22px; color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    .auth-sub {
+      font-size: 13px; color: var(--ink-3);
+      margin-bottom: 28px; line-height: 1.5;
+    }
+
+    .field-wrap { margin-bottom: 16px; }
+
+    .field-label {
+      display: block;
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--ink-3); margin-bottom: 7px;
+    }
+
+    .field-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      font-size: 14px;
+      font-family: 'Instrument Sans', sans-serif;
+      color: var(--ink);
+      background: var(--surface-2);
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .field-input:focus {
+      outline: none;
+      border-color: var(--indigo);
+      background: white;
+    }
+
+    .field-input.otp {
+      font-size: 26px; letter-spacing: 0.4em;
+      text-align: center; font-weight: 600;
+    }
+
+    .auth-btn {
+      width: 100%; padding: 13px;
+      border-radius: 9px; border: none;
+      background: var(--indigo); color: white;
+      font-size: 14px; font-weight: 600;
+      cursor: pointer;
+      font-family: 'Instrument Sans', sans-serif;
+      transition: background 0.15s, transform 0.1s;
+      margin-top: 4px;
+    }
+
+    .auth-btn:hover { background: var(--indigo-mid); }
+    .auth-btn:active { transform: scale(0.99); }
+    .auth-btn:disabled { background: var(--ink-4); cursor: not-allowed; }
+
+    .auth-divider {
+      display: flex; align-items: center; gap: 12px;
+      margin: 20px 0; color: var(--ink-4); font-size: 12px;
+    }
+
+    .auth-divider::before, .auth-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    .auth-bypass {
+      width: 100%; padding: 12px;
+      border-radius: 9px;
+      border: 1.5px solid var(--border);
+      background: transparent; color: var(--ink-3);
+      font-size: 13px; font-weight: 500;
+      cursor: pointer;
+      font-family: 'Instrument Sans', sans-serif;
+      transition: all 0.15s;
+    }
+
+    .auth-bypass:hover { border-color: var(--indigo); color: var(--indigo); background: var(--indigo-light); }
+
+    .auth-msg {
+      font-size: 12px; padding: 10px 14px;
+      border-radius: 8px; margin-top: 12px; display: none;
+    }
+
+    .auth-msg.error { background: var(--danger-light); color: var(--danger); }
+    .auth-msg.success { background: #f0fdf4; color: var(--success); }
+
+    .auth-back {
+      background: none; border: none;
+      color: var(--ink-3); font-size: 12px;
+      cursor: pointer; margin-top: 14px;
+      font-family: 'Instrument Sans', sans-serif;
+      padding: 0; display: flex; align-items: center; gap: 5px;
+    }
+
+    .auth-back:hover { color: var(--ink); }
+
+    /* ── APP SHELL ─────────────────────────────────────────── */
+    #app { display: none; width: 100%; }
+    #app.visible { display: flex; }
+
+    /* ── SIDEBAR ───────────────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w);
+      min-width: var(--sidebar-w);
+      background: var(--chrome);
+      display: flex; flex-direction: column;
+      height: 100vh;
+      position: sticky; top: 0;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+
+    .sidebar::-webkit-scrollbar { display: none; }
+
+    .sidebar-header {
+      padding: 20px 18px 16px;
+      border-bottom: 1px solid var(--chrome-border);
+    }
+
+    .wordmark {
+      font-family: 'Instrument Serif', serif;
+      font-size: 24px; color: white;
+      letter-spacing: -0.3px;
+      margin-bottom: 12px;
+    }
+
+    .wordmark span { color: #818cf8; }
+
+    .org-pill {
+      display: flex; align-items: center; gap: 9px;
+      padding: 8px 10px;
+      background: var(--chrome-3);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .org-pill:hover { background: rgba(255,255,255,0.08); }
+
+    .org-avatar {
+      width: 28px; height: 28px;
+      border-radius: 7px;
+      background: var(--indigo);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: white;
+      flex-shrink: 0;
+    }
+
+    .org-info { flex: 1; min-width: 0; }
+    .org-name { font-size: 12px; font-weight: 600; color: var(--chrome-text); truncate; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .org-plan { font-size: 10px; color: var(--chrome-muted); }
+    .org-caret { color: var(--chrome-muted); font-size: 10px; }
+
+    .sidebar-nav { padding: 12px 10px; flex: 1; }
+
+    .nav-section { margin-bottom: 20px; }
+
+    .nav-section-label {
+      font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--chrome-muted);
+      padding: 0 8px; margin-bottom: 4px;
+    }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 13px; font-weight: 500;
+      color: var(--chrome-muted);
+      transition: all 0.15s;
+      position: relative;
+      text-decoration: none;
+      user-select: none;
+    }
+
+    .nav-item:hover { background: var(--chrome-hover); color: var(--chrome-text); }
+
+    .nav-item.active {
+      background: rgba(79,70,229,0.18);
+      color: #a5b4fc;
+    }
+
+    .nav-item.active .nav-icon { color: #818cf8; }
+
+    .nav-icon {
+      width: 16px; height: 16px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; opacity: 0.7;
+    }
+
+    .nav-item.active .nav-icon { opacity: 1; }
+
+    .nav-badge {
+      margin-left: auto;
+      background: var(--indigo);
+      color: white;
+      font-size: 10px; font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 10px;
+      min-width: 18px; text-align: center;
+    }
+
+    .nav-badge.urgent { background: var(--danger); }
+
+    .sidebar-footer {
+      padding: 12px 10px;
+      border-top: 1px solid var(--chrome-border);
+    }
+
+    .user-tile {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .user-tile:hover { background: var(--chrome-hover); }
+
+    .user-avatar {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--indigo), #7c3aed);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: white;
+      flex-shrink: 0; position: relative;
+    }
+
+    .user-avatar::after {
+      content: '';
+      position: absolute; bottom: 0; right: 0;
+      width: 8px; height: 8px;
+      background: #22c55e;
+      border-radius: 50%;
+      border: 1.5px solid var(--chrome);
+    }
+
+    .user-name { font-size: 12px; font-weight: 600; color: var(--chrome-text); }
+    .user-role { font-size: 10px; color: var(--chrome-muted); }
+
+    /* ── MAIN CONTENT ──────────────────────────────────────── */
+    .main-wrap {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── TOP BAR ───────────────────────────────────────────── */
+    .topbar {
+      height: var(--header-h);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 28px; gap: 16px;
+      flex-shrink: 0;
+    }
+
+    .topbar-title {
+      font-family: 'Instrument Serif', serif;
+      font-size: 18px; color: var(--ink);
+      flex: 1;
+    }
+
+    .search-wrap {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface-2);
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      padding: 7px 14px;
+      width: 260px;
+      transition: all 0.15s;
+    }
+
+    .search-wrap:focus-within {
+      border-color: var(--indigo);
+      background: white;
+      width: 300px;
+    }
+
+    .search-icon { color: var(--ink-4); font-size: 13px; }
+
+    .search-input {
+      border: none; background: transparent;
+      font-size: 13px; font-family: 'Instrument Sans', sans-serif;
+      color: var(--ink); width: 100%;
+    }
+
+    .search-input::placeholder { color: var(--ink-4); }
+    .search-input:focus { outline: none; }
+
+    .topbar-actions { display: flex; align-items: center; gap: 10px; }
+
+    .icon-btn {
+      width: 34px; height: 34px;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--ink-3);
+      font-size: 15px;
+      transition: all 0.15s; position: relative;
+    }
+
+    .icon-btn:hover { background: var(--surface-2); border-color: var(--border-2); color: var(--ink); }
+
+    .notif-dot {
+      position: absolute; top: 5px; right: 5px;
+      width: 7px; height: 7px;
+      background: var(--danger); border-radius: 50%;
+      border: 1.5px solid white;
+    }
+
+    .btn-new {
+      display: flex; align-items: center; gap: 7px;
+      padding: 8px 16px;
+      background: var(--indigo); color: white;
+      border: none; border-radius: 9px;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer;
+      font-family: 'Instrument Sans', sans-serif;
+      transition: background 0.15s;
+    }
+
+    .btn-new:hover { background: var(--indigo-mid); }
+
+    /* ── PAGE CONTENT ──────────────────────────────────────── */
+    .page-scroll {
+      flex: 1; overflow-y: auto;
+      padding: 28px 28px 40px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+
+    /* View switching */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ── DASHBOARD VIEW ────────────────────────────────────── */
+    .greeting-row {
+      display: flex; justify-content: space-between;
+      align-items: flex-start; margin-bottom: 28px;
+    }
+
+    .greeting-text h1 {
+      font-family: 'Instrument Serif', serif;
+      font-size: 28px; color: var(--ink);
+      margin-bottom: 4px; letter-spacing: -0.3px;
+    }
+
+    .greeting-text p { font-size: 13px; color: var(--ink-3); }
+
+    .greeting-date {
+      font-size: 12px; color: var(--ink-4);
+      text-align: right; margin-top: 4px;
+    }
+
+    /* Stats row */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px; margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      box-shadow: var(--shadow);
+      transition: box-shadow 0.2s;
+    }
+
+    .stat-card:hover { box-shadow: var(--shadow-md); }
+
+    .stat-label {
+      font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--ink-4); margin-bottom: 10px;
+    }
+
+    .stat-value {
+      font-family: 'Instrument Serif', serif;
+      font-size: 32px; line-height: 1;
+      color: var(--ink); margin-bottom: 4px;
+    }
+
+    .stat-sub { font-size: 11px; color: var(--ink-4); }
+    .stat-delta { font-size: 11px; font-weight: 600; }
+    .stat-delta.up { color: var(--success); }
+    .stat-delta.down { color: var(--danger); }
+
+    /* Content grid */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    /* Hubs */
+    .section-header {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 14px;
+    }
+
+    .section-title {
+      font-size: 13px; font-weight: 600;
+      color: var(--ink);
+    }
+
+    .section-link {
+      font-size: 12px; color: var(--indigo);
+      cursor: pointer; font-weight: 500;
+      background: none; border: none;
+      font-family: 'Instrument Sans', sans-serif;
+      padding: 0;
+    }
+
+    .section-link:hover { text-decoration: underline; }
+
+    .hubs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+      gap: 12px; margin-bottom: 24px;
+    }
+
+    .hub-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: var(--shadow);
+      position: relative; overflow: hidden;
+    }
+
+    .hub-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 3px;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+
+    .hub-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .hub-icon {
+      width: 36px; height: 36px;
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; margin-bottom: 12px;
+    }
+
+    .hub-name {
+      font-size: 13px; font-weight: 600;
+      color: var(--ink); margin-bottom: 3px;
+    }
+
+    .hub-count {
+      font-size: 11px; color: var(--ink-4);
+      margin-bottom: 12px;
+    }
+
+    .hub-open {
+      font-size: 11px; font-weight: 600;
+      color: inherit; display: flex; align-items: center; gap: 4px;
+    }
+
+    .hub-add {
+      background: var(--surface-2);
+      border: 1.5px dashed var(--border-2);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 8px; color: var(--ink-4);
+      font-size: 12px; text-align: center;
+      min-height: 120px;
+    }
+
+    .hub-add:hover { border-color: var(--indigo); color: var(--indigo); background: var(--indigo-light); }
+    .hub-add-icon { font-size: 20px; }
+
+    /* Workspace list */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .panel-title {
+      font-size: 13px; font-weight: 600; color: var(--ink);
+    }
+
+    .workspace-list { }
+
+    .workspace-row {
+      display: flex; align-items: center; gap: 14px;
+      padding: 13px 20px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .workspace-row:last-child { border-bottom: none; }
+    .workspace-row:hover { background: var(--surface-2); }
+
+    .ws-icon {
+      width: 34px; height: 34px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; flex-shrink: 0;
+    }
+
+    .ws-info { flex: 1; min-width: 0; }
+
+    .ws-name {
+      font-size: 13px; font-weight: 600;
+      color: var(--ink); margin-bottom: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .ws-meta {
+      font-size: 11px; color: var(--ink-4);
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    .ws-meta-dot {
+      width: 3px; height: 3px;
+      background: var(--ink-4); border-radius: 50%;
+    }
+
+    .status-badge {
+      font-size: 10px; font-weight: 600;
+      padding: 3px 8px; border-radius: 20px;
+      white-space: nowrap; flex-shrink: 0;
+    }
+
+    .status-progress  { background: var(--status-progress-bg);  color: var(--status-progress-text); }
+    .status-docs      { background: var(--status-docs-bg);       color: var(--status-docs-text); }
+    .status-signature { background: var(--status-sig-bg);        color: var(--status-sig-text); }
+    .status-hold      { background: var(--status-hold-bg);       color: var(--status-hold-text); }
+    .status-completed { background: var(--status-done-bg);       color: var(--status-done-text); }
+    .status-planning  { background: var(--status-planning-bg);   color: var(--status-planning-text); }
+
+    .ws-updated {
+      font-size: 10px; color: var(--ink-4);
+      white-space: nowrap; flex-shrink: 0;
+    }
+
+    .ws-menu {
+      width: 24px; height: 24px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 5px; color: var(--ink-4); font-size: 14px;
+      transition: all 0.15s; flex-shrink: 0;
+    }
+
+    .workspace-row:hover .ws-menu { background: var(--border); color: var(--ink-2); }
+
+    /* Right panels */
+    .right-col { display: flex; flex-direction: column; gap: 16px; }
+
+    /* Tasks panel */
+    .task-list { }
+
+    .task-row {
+      display: flex; align-items: flex-start; gap: 11px;
+      padding: 11px 20px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer; transition: background 0.15s;
+    }
+
+    .task-row:last-child { border-bottom: none; }
+    .task-row:hover { background: var(--surface-2); }
+
+    .task-check {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border-2);
+      flex-shrink: 0; margin-top: 1px;
+      transition: all 0.15s; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .task-check:hover { border-color: var(--indigo); }
+    .task-check.done { background: var(--success); border-color: var(--success); color: white; font-size: 9px; }
+
+    .task-body { flex: 1; min-width: 0; }
+
+    .task-title {
+      font-size: 12px; font-weight: 500;
+      color: var(--ink); margin-bottom: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .task-due {
+      font-size: 10px; font-weight: 600;
+    }
+
+    .task-due.overdue { color: var(--danger); }
+    .task-due.today   { color: var(--hub-finance); }
+    .task-due.soon    { color: var(--ink-3); }
+
+    .more-tasks {
+      padding: 10px 20px;
+      font-size: 12px; color: var(--indigo);
+      font-weight: 600; cursor: pointer;
+      border-top: 1px solid var(--border);
+    }
+
+    .more-tasks:hover { background: var(--indigo-light); }
+
+    /* Activity feed */
+    .activity-list { }
+
+    .activity-row {
+      display: flex; align-items: flex-start; gap: 11px;
+      padding: 11px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .activity-row:last-child { border-bottom: none; }
+
+    .activity-icon {
+      width: 30px; height: 30px;
+      border-radius: 8px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; flex-shrink: 0;
+    }
+
+    .activity-body { flex: 1; min-width: 0; }
+
+    .activity-title {
+      font-size: 12px; font-weight: 600;
+      color: var(--ink); margin-bottom: 2px;
+    }
+
+    .activity-sub { font-size: 11px; color: var(--ink-4); }
+
+    .activity-time {
+      font-size: 10px; color: var(--ink-4);
+      white-space: nowrap; flex-shrink: 0;
+    }
+
+    /* Workflow overview donut */
+    .donut-wrap {
+      display: flex; align-items: center; gap: 20px;
+      padding: 20px;
+    }
+
+    .donut-svg { flex-shrink: 0; }
+
+    .donut-legend { flex: 1; }
+
+    .legend-row {
+      display: flex; justify-content: space-between;
+      align-items: center; padding: 5px 0;
+      font-size: 12px;
+    }
+
+    .legend-dot-label { display: flex; align-items: center; gap: 7px; }
+
+    .legend-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%; flex-shrink: 0;
+    }
+
+    .legend-label { color: var(--ink-2); }
+    .legend-count { font-weight: 600; color: var(--ink); }
+
+    /* Quick actions */
+    .quick-actions {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      margin-top: 4px;
+    }
+
+    .qa-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+    }
+
+    .qa-btn {
+      display: flex; flex-direction: column;
+      align-items: flex-start; gap: 8px;
+      padding: 14px 16px;
+      background: var(--surface-2);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: left;
+      font-family: 'Instrument Sans', sans-serif;
+    }
+
+    .qa-btn:hover {
+      border-color: var(--indigo);
+      background: var(--indigo-light);
+      transform: translateY(-1px);
+    }
+
+    .qa-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+    }
+
+    .qa-label {
+      font-size: 12px; font-weight: 600;
+      color: var(--ink); line-height: 1.3;
+    }
+
+    .qa-sub {
+      font-size: 10px; color: var(--ink-4);
+      line-height: 1.3;
+    }
+
+    /* ── TOAST ─────────────────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--chrome); color: white;
+      padding: 10px 20px; border-radius: 10px;
+      font-size: 13px; font-weight: 500;
+      opacity: 0; transition: all 0.3s;
+      pointer-events: none; z-index: 9999;
+      box-shadow: var(--shadow-lg);
+      white-space: nowrap;
+    }
+
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── NEW WORKSPACE MODAL ───────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 500;
+      display: none; align-items: center; justify-content: center;
+      padding: 24px;
+      backdrop-filter: blur(2px);
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border-radius: 16px;
+      width: 100%; max-width: 520px;
+      box-shadow: var(--shadow-lg);
+      animation: modal-in 0.25s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    @keyframes modal-in {
+      from { opacity: 0; transform: scale(0.96) translateY(8px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-header {
+      padding: 24px 28px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .modal-title {
+      font-family: 'Instrument Serif', serif;
+      font-size: 20px; color: var(--ink);
+    }
+
+    .modal-close {
+      width: 30px; height: 30px;
+      border-radius: 7px; border: 1px solid var(--border);
+      background: var(--surface-2); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--ink-3); font-size: 16px;
+      transition: all 0.15s;
+    }
+
+    .modal-close:hover { background: var(--border); color: var(--ink); }
+
+    .modal-body { padding: 24px 28px; }
+
+    .modal-footer {
+      padding: 16px 28px;
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: flex-end; gap: 10px;
+    }
+
+    .btn-ghost {
+      padding: 9px 18px; border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: transparent; color: var(--ink-2);
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      font-family: 'Instrument Sans', sans-serif;
+      transition: all 0.15s;
+    }
+
+    .btn-ghost:hover { background: var(--surface-2); }
+
+    .btn-primary {
+      padding: 9px 20px; border-radius: 8px;
+      border: none; background: var(--indigo); color: white;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      font-family: 'Instrument Sans', sans-serif;
+      transition: background 0.15s;
+    }
+
+    .btn-primary:hover { background: var(--indigo-mid); }
+
+    /* Form fields in modal */
+    .form-row { margin-bottom: 16px; }
+
+    .form-label {
+      display: block; font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--ink-3); margin-bottom: 7px;
+    }
+
+    .form-input {
+      width: 100%; padding: 10px 14px;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 13px; font-family: 'Instrument Sans', sans-serif;
+      color: var(--ink); background: var(--surface-2);
+      transition: border-color 0.15s;
+    }
+
+    .form-input:focus { outline: none; border-color: var(--indigo); background: white; }
+
+    .hub-type-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    }
+
+    .hub-type-btn {
+      padding: 10px 8px; border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: var(--surface-2); cursor: pointer;
+      font-family: 'Instrument Sans', sans-serif;
+      font-size: 11px; font-weight: 600; color: var(--ink-3);
+      text-align: center; transition: all 0.15s;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+    }
+
+    .hub-type-btn:hover { border-color: var(--indigo); color: var(--indigo); background: var(--indigo-light); }
+    .hub-type-btn.selected { border-color: var(--indigo); background: var(--indigo-light); color: var(--indigo); }
+
+    /* ── HUBS VIEW ─────────────────────────────────────────── */
+    .hubs-full-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .hub-full-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 22px 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: var(--shadow);
+      position: relative; overflow: hidden;
+    }
+
+    .hub-full-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 4px;
+    }
+
+    .hub-full-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+
+    .hub-full-icon {
+      width: 44px; height: 44px;
+      border-radius: 11px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; margin-bottom: 14px;
+    }
+
+    .hub-full-name {
+      font-size: 15px; font-weight: 600; color: var(--ink);
+      margin-bottom: 4px;
+    }
+
+    .hub-full-desc { font-size: 12px; color: var(--ink-4); margin-bottom: 14px; line-height: 1.5; }
+
+    .hub-full-stats {
+      display: flex; gap: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    .hub-stat { }
+    .hub-stat-val { font-size: 18px; font-weight: 700; color: var(--ink); font-family: 'Instrument Serif', serif; }
+    .hub-stat-lbl { font-size: 10px; color: var(--ink-4); text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* ── WORKSPACES VIEW ───────────────────────────────────── */
+    .ws-filters {
+      display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 6px 14px; border-radius: 7px;
+      border: 1.5px solid var(--border);
+      background: var(--surface); color: var(--ink-3);
+      font-size: 12px; font-weight: 500; cursor: pointer;
+      font-family: 'Instrument Sans', sans-serif;
+      transition: all 0.15s;
+    }
+
+    .filter-btn:hover { border-color: var(--indigo); color: var(--indigo); }
+    .filter-btn.active { background: var(--indigo); border-color: var(--indigo); color: white; }
+
+    .ws-full-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 14px;
+    }
+
+    .ws-full-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      cursor: pointer; transition: all 0.2s;
+      box-shadow: var(--shadow);
+    }
+
+    .ws-full-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+
+    .ws-card-top {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .ws-card-icon {
+      width: 38px; height: 38px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; flex-shrink: 0;
+    }
+
+    .ws-card-name {
+      font-size: 14px; font-weight: 600;
+      color: var(--ink); margin-bottom: 3px;
+      line-height: 1.3;
+    }
+
+    .ws-card-meta { font-size: 11px; color: var(--ink-4); }
+
+    .ws-card-footer {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* progress bar */
+    .progress-wrap { margin: 12px 0 8px; }
+    .progress-label { display: flex; justify-content: space-between; font-size: 10px; color: var(--ink-4); margin-bottom: 5px; }
+    .progress-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+
+    /* ── SETTINGS VIEW ─────────────────────────────────────── */
+    .settings-grid {
+      display: grid; grid-template-columns: 220px 1fr; gap: 24px;
+    }
+
+    .settings-nav { }
+
+    .settings-nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-radius: 8px;
+      font-size: 13px; font-weight: 500; color: var(--ink-3);
+      cursor: pointer; transition: all 0.15s; margin-bottom: 2px;
+    }
+
+    .settings-nav-item:hover { background: var(--surface-2); color: var(--ink); }
+    .settings-nav-item.active { background: var(--indigo-light); color: var(--indigo); }
+
+    .settings-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+    }
+
+    .settings-section {
+      padding: 24px 28px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .settings-section:last-child { border-bottom: none; }
+
+    .settings-section-title {
+      font-size: 13px; font-weight: 700;
+      color: var(--ink); margin-bottom: 4px;
+    }
+
+    .settings-section-desc {
+      font-size: 12px; color: var(--ink-4);
+      margin-bottom: 20px; line-height: 1.5;
+    }
+
+    .settings-row {
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 20px;
+      margin-bottom: 14px;
+    }
+
+    .settings-row:last-child { margin-bottom: 0; }
+
+    .settings-row-label { font-size: 13px; color: var(--ink-2); font-weight: 500; }
+    .settings-row-sub { font-size: 11px; color: var(--ink-4); margin-top: 2px; }
+
+    /* toggle */
+    .toggle {
+      width: 38px; height: 21px;
+      background: var(--border-2); border-radius: 11px;
+      position: relative; cursor: pointer;
+      transition: background 0.2s; flex-shrink: 0;
+    }
+
+    .toggle.on { background: var(--indigo); }
+
+    .toggle-knob {
+      width: 17px; height: 17px; background: white;
+      border-radius: 50%; position: absolute; top: 2px; left: 2px;
+      transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .toggle.on .toggle-knob { left: 19px; }
+
+    /* Integration cards */
+    .integration-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    }
+
+    .integration-card {
+      border: 1.5px solid var(--border); border-radius: 10px;
+      padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+    }
+
+    .integration-icon {
+      width: 36px; height: 36px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+      background: var(--surface-2);
+    }
+
+    .integration-name { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 2px; }
+    .integration-status { font-size: 11px; color: var(--ink-4); }
+    .integration-status.connected { color: var(--success); }
+
+    .connect-btn {
+      margin-left: auto; padding: 5px 12px;
+      border-radius: 6px; border: 1.5px solid var(--border);
+      background: white; color: var(--ink-2);
+      font-size: 11px; font-weight: 600; cursor: pointer;
+      font-family: 'Instrument Sans', sans-serif;
+      transition: all 0.15s; flex-shrink: 0;
+    }
+
+    .connect-btn:hover { border-color: var(--indigo); color: var(--indigo); }
+    .connect-btn.connected { border-color: var(--success); color: var(--success); background: #f0fdf4; }
+
+    /* ── RESPONSIVE ────────────────────────────────────────── */
+    @media (max-width: 1100px) {
+      .content-grid { grid-template-columns: 1fr; }
+      .right-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .right-col { grid-template-columns: 1fr; }
+      .search-wrap { width: 180px; }
+      .settings-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── PAGE LOAD ANIMATION ───────────────────────────────── */
+    .fade-up {
+      opacity: 0;
+      transform: translateY(12px);
+      animation: fade-up 0.4s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    @keyframes fade-up {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-up:nth-child(1) { animation-delay: 0.05s; }
+    .fade-up:nth-child(2) { animation-delay: 0.10s; }
+    .fade-up:nth-child(3) { animation-delay: 0.15s; }
+    .fade-up:nth-child(4) { animation-delay: 0.20s; }
+    .fade-up:nth-child(5) { animation-delay: 0.25s; }
+    .fade-up:nth-child(6) { animation-delay: 0.30s; }
+  </style>
+</head>
+<body>
+
+<!-- ── AUTH SCREEN ──────────────────────────────────────────── -->
+<div id="auth-screen">
+  <div class="auth-bg"></div>
+  <div class="auth-card">
+    <div class="auth-wordmark">flow<span>.</span></div>
+    <div class="auth-tagline">Operational workspace for modern businesses</div>
+
+    <!-- Step 1: Email -->
+    <div class="auth-step active" id="step-email">
+      <div class="auth-heading">Welcome back</div>
+      <div class="auth-sub">Enter your work email to continue.</div>
+      <div class="field-wrap">
+        <label class="field-label">Email address</label>
+        <input class="field-input" type="email" id="auth-email" placeholder="you@yourbusiness.com">
+      </div>
+      <button class="auth-btn" onclick="sendOTP()">Continue →</button>
+      <div class="auth-msg error" id="email-error"></div>
+      <div class="auth-divider">or</div>
+      <button class="auth-bypass" onclick="devBypass()">Continue in demo mode</button>
+    </div>
+
+    <!-- Step 2: OTP -->
+    <div class="auth-step" id="step-otp">
+      <div class="auth-heading">Check your email</div>
+      <div class="auth-sub" id="otp-sub">We sent a 6-digit code to your email.</div>
+      <div class="field-wrap">
+        <label class="field-label">Verification code</label>
+        <input class="field-input otp" type="text" id="auth-otp" maxlength="6" placeholder="000000">
+      </div>
+      <button class="auth-btn" onclick="verifyOTP()">Verify & sign in</button>
+      <div class="auth-msg error" id="otp-error"></div>
+      <div class="auth-msg success" id="otp-success"></div>
+      <button class="auth-back" onclick="backToEmail()">← Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── APP SHELL ────────────────────────────────────────────── -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="wordmark">flow<span>.</span></div>
+      <div class="org-pill">
+        <div class="org-avatar" id="org-avatar">EE</div>
+        <div class="org-info">
+          <div class="org-name" id="org-name">Elegante Estates</div>
+          <div class="org-plan">Pro plan</div>
+        </div>
+        <div class="org-caret">▾</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-label">Main</div>
+        <div class="nav-item active" onclick="showView('dashboard')">
+          <div class="nav-icon">⊞</div> Dashboard
+        </div>
+        <div class="nav-item" onclick="showView('hubs')">
+          <div class="nav-icon">◫</div> Hubs
+        </div>
+        <div class="nav-item" onclick="showView('workspaces')">
+          <div class="nav-icon">🗂</div> Workspaces
+          <span class="nav-badge">84</span>
+        </div>
+        <div class="nav-item" onclick="showView('tasks')">
+          <div class="nav-icon">✓</div> Tasks
+          <span class="nav-badge urgent">12</span>
+        </div>
+        <div class="nav-item" onclick="showView('documents')">
+          <div class="nav-icon">📄</div> Documents
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-label">Tools</div>
+        <div class="nav-item" onclick="showView('formflow')">
+          <div class="nav-icon">📋</div> FormFlow
+        </div>
+        <div class="nav-item" onclick="showView('signflow')">
+          <div class="nav-icon">✍️</div> SignFlow
+          <span class="nav-badge">3</span>
+        </div>
+        <div class="nav-item" onclick="showView('contacts')">
+          <div class="nav-icon">👥</div> Contacts
+        </div>
+        <div class="nav-item" onclick="showView('flowmail')">
+          <div class="nav-icon">✉</div> FlowMail
+        </div>
+        <div class="nav-item" onclick="showView('reports')">
+          <div class="nav-icon">↗</div> Reports
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-label">Config</div>
+        <div class="nav-item" onclick="showView('settings')">
+          <div class="nav-icon">⚙</div> Settings
+        </div>
+        <div class="nav-item" onclick="showView('plugins')">
+          <div class="nav-icon">🔌</div> Apps & Plugins
+        </div>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-tile">
+        <div class="user-avatar" id="sidebar-avatar">JS</div>
+        <div>
+          <div class="user-name" id="sidebar-name">John Smith</div>
+          <div class="user-role">Admin</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-wrap">
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <div class="topbar-title" id="topbar-title">Dashboard</div>
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input class="search-input" placeholder="Search workspaces, documents, contacts...">
+      </div>
+      <div class="topbar-actions">
+        <div class="icon-btn" title="Notifications">
+          🔔 <div class="notif-dot"></div>
+        </div>
+        <div class="icon-btn" title="Help">?</div>
+        <button class="btn-new" onclick="openNewWorkspaceModal()">+ New</button>
+      </div>
+    </header>
+
+    <!-- PAGE SCROLL -->
+    <div class="page-scroll">
+
+      <!-- ── DASHBOARD VIEW ──────────────────────────────────── -->
+      <div class="view active" id="view-dashboard">
+
+        <div class="greeting-row fade-up">
+          <div class="greeting-text">
+            <h1 id="greeting-text">Good morning, John 👋</h1>
+            <p>Here's what's happening across your business.</p>
+          </div>
+          <div class="greeting-date" id="greeting-date"></div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-row fade-up">
+          <div class="stat-card">
+            <div class="stat-label">Active workspaces</div>
+            <div class="stat-value">84</div>
+            <div class="stat-sub">across 5 hubs</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Pending signatures</div>
+            <div class="stat-value" style="color:var(--hub-legal)">14</div>
+            <div class="stat-sub"><span class="stat-delta down">↑ 3</span> from last week</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Awaiting documents</div>
+            <div class="stat-value" style="color:var(--hub-finance)">18</div>
+            <div class="stat-sub">from 11 clients</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Completed this month</div>
+            <div class="stat-value" style="color:var(--hub-deals)">10</div>
+            <div class="stat-sub"><span class="stat-delta up">↑ 2</span> vs last month</div>
+          </div>
+        </div>
+
+        <!-- Hubs section -->
+        <div class="fade-up">
+          <div class="section-header">
+            <div class="section-title">Your Hubs</div>
+            <button class="section-link" onclick="showView('hubs')">Manage hubs →</button>
+          </div>
+          <div class="hubs-grid">
+            <div class="hub-card" onclick="showView('hubs')" style="--hub-color:var(--hub-deals)">
+              <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--hub-deals);border-radius:14px 14px 0 0"></div>
+              <div class="hub-icon" style="background:#e8f3ed">🏠</div>
+              <div class="hub-name">Deals</div>
+              <div class="hub-count">32 workspaces</div>
+              <div class="hub-open" style="color:var(--hub-deals)">Open →</div>
+            </div>
+            <div class="hub-card" onclick="showView('hubs')">
+              <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--hub-hr);border-radius:14px 14px 0 0"></div>
+              <div class="hub-icon" style="background:#eff6ff">👤</div>
+              <div class="hub-name">HR</div>
+              <div class="hub-count">24 workspaces</div>
+              <div class="hub-open" style="color:var(--hub-hr)">Open →</div>
+            </div>
+            <div class="hub-card" onclick="showView('hubs')">
+              <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--hub-legal);border-radius:14px 14px 0 0"></div>
+              <div class="hub-icon" style="background:#f5f3ff">⚖️</div>
+              <div class="hub-name">Legal</div>
+              <div class="hub-count">12 workspaces</div>
+              <div class="hub-open" style="color:var(--hub-legal)">Open →</div>
+            </div>
+            <div class="hub-card" onclick="showView('hubs')">
+              <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--hub-finance);border-radius:14px 14px 0 0"></div>
+              <div class="hub-icon" style="background:#fffbeb">💰</div>
+              <div class="hub-name">Finance</div>
+              <div class="hub-count">16 workspaces</div>
+              <div class="hub-open" style="color:var(--hub-finance)">Open →</div>
+            </div>
+            <div class="hub-card" onclick="showView('hubs')">
+              <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--hub-marketing);border-radius:14px 14px 0 0"></div>
+              <div class="hub-icon" style="background:#fff7ed">📣</div>
+              <div class="hub-name">Marketing</div>
+              <div class="hub-count">12 workspaces</div>
+              <div class="hub-open" style="color:var(--hub-marketing)">Open →</div>
+            </div>
+            <div class="hub-card hub-add" onclick="openNewHubModal()">
+              <div class="hub-add-icon">+</div>
+              <div>Add Hub</div>
+              <div style="font-size:10px">Create a new hub</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Content grid -->
+        <div class="content-grid">
+          <!-- Left: Recent workspaces + Workflow chart -->
+          <div>
+            <!-- Recent workspaces -->
+            <div class="fade-up" style="margin-bottom:20px">
+              <div class="section-header">
+                <div class="section-title">Recent workspaces</div>
+                <button class="section-link" onclick="showView('workspaces')">View all →</button>
+              </div>
+              <div class="panel">
+                <div class="workspace-list" id="recent-workspace-list"></div>
+                <div style="padding:10px 20px;border-top:1px solid var(--border)">
+                  <button class="section-link" onclick="showView('workspaces')" style="font-size:13px">View all workspaces →</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Workflow overview -->
+            <div class="fade-up">
+              <div class="section-header">
+                <div class="section-title">Workflow overview</div>
+              </div>
+              <div class="panel">
+                <div class="donut-wrap">
+                  <svg class="donut-svg" width="110" height="110" viewBox="0 0 110 110">
+                    <circle cx="55" cy="55" r="40" fill="none" stroke="#e5e3de" stroke-width="14"/>
+                    <!-- In progress: 34/84 = 40.5% = 101deg -->
+                    <circle cx="55" cy="55" r="40" fill="none" stroke="#1d4ed8" stroke-width="14"
+                      stroke-dasharray="100.5 150.8" stroke-dashoffset="37.7" stroke-linecap="round"/>
+                    <!-- Awaiting docs: 18/84 = 21.4% = 53deg -->
+                    <circle cx="55" cy="55" r="40" fill="none" stroke="#b45309" stroke-width="14"
+                      stroke-dasharray="53.1 198.2" stroke-dashoffset="-62.8" stroke-linecap="round"/>
+                    <!-- Awaiting sig: 14/84 = 16.7% = 42deg -->
+                    <circle cx="55" cy="55" r="40" fill="none" stroke="#6d28d9" stroke-width="14"
+                      stroke-dasharray="41.9 210.0" stroke-dashoffset="-115.9" stroke-linecap="round"/>
+                    <!-- On hold: 8/84 -->
+                    <circle cx="55" cy="55" r="40" fill="none" stroke="#94a3b8" stroke-width="14"
+                      stroke-dasharray="23.9 228.0" stroke-dashoffset="-157.8" stroke-linecap="round"/>
+                    <!-- Completed: 10/84 -->
+                    <circle cx="55" cy="55" r="40" fill="none" stroke="#16a34a" stroke-width="14"
+                      stroke-dasharray="29.9 222.0" stroke-dashoffset="-181.7" stroke-linecap="round"/>
+                    <text x="55" y="51" text-anchor="middle" font-size="18" font-weight="700" fill="#0f1117" font-family="Instrument Serif, serif">84</text>
+                    <text x="55" y="63" text-anchor="middle" font-size="9" fill="#9ca3af" font-family="Instrument Sans, sans-serif">Total</text>
+                  </svg>
+                  <div class="donut-legend">
+                    <div class="legend-row">
+                      <div class="legend-dot-label"><div class="legend-dot" style="background:#1d4ed8"></div><span class="legend-label">In Progress</span></div>
+                      <span class="legend-count">34</span>
+                    </div>
+                    <div class="legend-row">
+                      <div class="legend-dot-label"><div class="legend-dot" style="background:#b45309"></div><span class="legend-label">Awaiting Docs</span></div>
+                      <span class="legend-count">18</span>
+                    </div>
+                    <div class="legend-row">
+                      <div class="legend-dot-label"><div class="legend-dot" style="background:#6d28d9"></div><span class="legend-label">Awaiting Signature</span></div>
+                      <span class="legend-count">14</span>
+                    </div>
+                    <div class="legend-row">
+                      <div class="legend-dot-label"><div class="legend-dot" style="background:#94a3b8"></div><span class="legend-label">On Hold</span></div>
+                      <span class="legend-count">8</span>
+                    </div>
+                    <div class="legend-row">
+                      <div class="legend-dot-label"><div class="legend-dot" style="background:#16a34a"></div><span class="legend-label">Completed</span></div>
+                      <span class="legend-count">10</span>
+                    </div>
+                  </div>
+                </div>
+                <div style="margin:0 20px 16px;padding:12px 16px;background:var(--indigo-light);border-radius:9px;display:flex;align-items:center;justify-content:space-between">
+                  <div style="font-size:13px;color:var(--indigo-mid);font-weight:500">⚠ 12 workflows need your attention</div>
+                  <button class="section-link" style="font-size:12px" onclick="showView('tasks')">View tasks →</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right col: Tasks + Activity -->
+          <div class="right-col">
+            <!-- Tasks -->
+            <div class="fade-up">
+              <div class="section-header">
+                <div class="section-title">Tasks</div>
+                <button class="section-link" onclick="showView('tasks')">View all →</button>
+              </div>
+              <div class="panel">
+                <div class="task-list" id="task-list"></div>
+                <div class="more-tasks" onclick="showView('tasks')">+8 more tasks</div>
+              </div>
+            </div>
+
+            <!-- Activity -->
+            <div class="fade-up">
+              <div class="section-header">
+                <div class="section-title">Recent Activity</div>
+                <button class="section-link">View all →</button>
+              </div>
+              <div class="panel">
+                <div class="activity-list" id="activity-list"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="fade-up">
+          <div class="section-header" style="margin-top:4px">
+            <div class="section-title">Create new</div>
+          </div>
+          <div class="quick-actions">
+            <div class="qa-grid">
+              <div class="qa-btn" onclick="openNewWorkspaceModal()">
+                <div class="qa-icon" style="background:#e8f3ed">🗂</div>
+                <div class="qa-label">New Workspace</div>
+                <div class="qa-sub">Start a new client file</div>
+              </div>
+              <div class="qa-btn" onclick="showView('formflow')">
+                <div class="qa-icon" style="background:#eff6ff">📋</div>
+                <div class="qa-label">New FormFlow</div>
+                <div class="qa-sub">Create a form workflow</div>
+              </div>
+              <div class="qa-btn" onclick="showView('documents')">
+                <div class="qa-icon" style="background:#fff7ed">📁</div>
+                <div class="qa-label">Upload Documents</div>
+                <div class="qa-sub">Add to file cabinet</div>
+              </div>
+              <div class="qa-btn" onclick="showView('signflow')">
+                <div class="qa-icon" style="background:#f5f3ff">✍️</div>
+                <div class="qa-label">Send for Signature</div>
+                <div class="qa-sub">Via SignFlow</div>
+              </div>
+              <div class="qa-btn" onclick="showView('contacts')">
+                <div class="qa-icon" style="background:#f0fdf4">👤</div>
+                <div class="qa-label">New Contact</div>
+                <div class="qa-sub">Add to your CRM</div>
+              </div>
+              <div class="qa-btn" onclick="showView('flowmail')">
+                <div class="qa-icon" style="background:#fef9c3">✉</div>
+                <div class="qa-label">New Email Campaign</div>
+                <div class="qa-sub">via FlowMail</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <!-- END DASHBOARD -->
+
+      <!-- ── HUBS VIEW ─────────────────────────────────────────── -->
+      <div class="view" id="view-hubs">
+        <div style="margin-bottom:24px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <h2 style="font-family:'Instrument Serif',serif;font-size:24px;margin-bottom:4px">Your Hubs</h2>
+            <p style="font-size:13px;color:var(--ink-3)">Organise your business by department or function.</p>
+          </div>
+          <button class="btn-primary" onclick="openNewHubModal()">+ Add hub</button>
+        </div>
+        <div class="hubs-full-grid" id="hubs-full-grid"></div>
+      </div>
+
+      <!-- ── WORKSPACES VIEW ────────────────────────────────────── -->
+      <div class="view" id="view-workspaces">
+        <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <h2 style="font-family:'Instrument Serif',serif;font-size:24px;margin-bottom:4px">Workspaces</h2>
+            <p style="font-size:13px;color:var(--ink-3)">All client files, matters and deals across your business.</p>
+          </div>
+          <button class="btn-primary" onclick="openNewWorkspaceModal()">+ New workspace</button>
+        </div>
+        <div class="ws-filters">
+          <button class="filter-btn active" onclick="filterWS(this,'all')">All (84)</button>
+          <button class="filter-btn" onclick="filterWS(this,'progress')">In Progress (34)</button>
+          <button class="filter-btn" onclick="filterWS(this,'docs')">Awaiting Docs (18)</button>
+          <button class="filter-btn" onclick="filterWS(this,'signature')">Awaiting Signature (14)</button>
+          <button class="filter-btn" onclick="filterWS(this,'hold')">On Hold (8)</button>
+          <button class="filter-btn" onclick="filterWS(this,'completed')">Completed (10)</button>
+        </div>
+        <div class="ws-full-grid" id="ws-full-grid"></div>
+      </div>
+
+      <!-- ── TASKS VIEW ─────────────────────────────────────────── -->
+      <div class="view" id="view-tasks">
+        <div style="margin-bottom:24px">
+          <h2 style="font-family:'Instrument Serif',serif;font-size:24px;margin-bottom:4px">Tasks</h2>
+          <p style="font-size:13px;color:var(--ink-3)">Everything that needs your attention.</p>
+        </div>
+        <div class="panel" id="tasks-full-list"></div>
+      </div>
+
+      <!-- ── FORMFLOW STUB ───────────────────────────────────────── -->
+      <div class="view" id="view-formflow">
+        <div style="text-align:center;padding:80px 40px">
+          <div style="font-size:48px;margin-bottom:16px">📋</div>
+          <h2 style="font-family:'Instrument Serif',serif;font-size:28px;margin-bottom:8px">FormFlow</h2>
+          <p style="font-size:14px;color:var(--ink-3);max-width:440px;margin:0 auto 28px;line-height:1.6">Compliance-grade onboarding, document uploads, and workflow automation. Build once, deploy across every client type.</p>
+          <div style="display:inline-block;padding:8px 20px;background:var(--indigo-light);color:var(--indigo);border-radius:20px;font-size:13px;font-weight:600">Coming next — in active development</div>
+        </div>
+      </div>
+
+      <!-- ── SIGNFLOW STUB ───────────────────────────────────────── -->
+      <div class="view" id="view-signflow">
+        <div style="text-align:center;padding:80px 40px">
+          <div style="font-size:48px;margin-bottom:16px">✍️</div>
+          <h2 style="font-family:'Instrument Serif',serif;font-size:28px;margin-bottom:8px">SignFlow</h2>
+          <p style="font-size:14px;color:var(--ink-3);max-width:440px;margin:0 auto 28px;line-height:1.6">Electronic signatures, audit trails, and completed PDF packages. Launch SignFlow to manage your signing requests.</p>
+          <button class="btn-primary" onclick="showToast('Opening SignFlow...')">Open SignFlow →</button>
+        </div>
+      </div>
+
+      <!-- ── DOCUMENTS STUB ─────────────────────────────────────── -->
+      <div class="view" id="view-documents">
+        <div style="margin-bottom:24px">
+          <h2 style="font-family:'Instrument Serif',serif;font-size:24px;margin-bottom:4px">Documents</h2>
+          <p style="font-size:13px;color:var(--ink-3)">All files across your workspaces.</p>
+        </div>
+        <div style="text-align:center;padding:60px;background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border)">
+          <div style="font-size:40px;margin-bottom:12px">📁</div>
+          <div style="font-size:15px;font-weight:600;margin-bottom:6px">Document centre</div>
+          <div style="font-size:13px;color:var(--ink-3)">Coming with FormFlow</div>
+        </div>
+      </div>
+
+      <!-- ── CONTACTS STUB ──────────────────────────────────────── -->
+      <div class="view" id="view-contacts">
+        <div style="text-align:center;padding:80px 40px">
+          <div style="font-size:48px;margin-bottom:16px">👥</div>
+          <h2 style="font-family:'Instrument Serif',serif;font-size:28px;margin-bottom:8px">Contacts</h2>
+          <p style="font-size:14px;color:var(--ink-3);max-width:440px;margin:0 auto 28px;line-height:1.6">Your CRM layer. Manage clients, prospects, and leads. Triggers FormFlow workflows and SignFlow signing requests.</p>
+          <div style="display:inline-block;padding:8px 20px;background:var(--indigo-light);color:var(--indigo);border-radius:20px;font-size:13px;font-weight:600">Coming soon</div>
+        </div>
+      </div>
+
+      <!-- ── FLOWMAIL STUB ───────────────────────────────────────── -->
+      <div class="view" id="view-flowmail">
+        <div style="text-align:center;padding:80px 40px">
+          <div style="font-size:48px;margin-bottom:16px">✉️</div>
+          <h2 style="font-family:'Instrument Serif',serif;font-size:28px;margin-bottom:8px">FlowMail</h2>
+          <p style="font-size:14px;color:var(--ink-3);max-width:440px;margin:0 auto 28px;line-height:1.6">Email campaigns, sequences, and client communication — all linked to your workspaces and contacts.</p>
+          <div style="display:inline-block;padding:8px 20px;background:var(--indigo-light);color:var(--indigo);border-radius:20px;font-size:13px;font-weight:600">Coming soon</div>
+        </div>
+      </div>
+
+      <!-- ── REPORTS STUB ────────────────────────────────────────── -->
+      <div class="view" id="view-reports">
+        <div style="text-align:center;padding:80px 40px">
+          <div style="font-size:48px;margin-bottom:16px">📊</div>
+          <h2 style="font-family:'Instrument Serif',serif;font-size:28px;margin-bottom:8px">Reports</h2>
+          <p style="font-size:14px;color:var(--ink-3);max-width:440px;margin:0 auto 28px;line-height:1.6">Operational analytics across all hubs, workspaces, and workflows.</p>
+          <div style="display:inline-block;padding:8px 20px;background:var(--indigo-light);color:var(--indigo);border-radius:20px;font-size:13px;font-weight:600">Coming soon</div>
+        </div>
+      </div>
+
+      <!-- ── PLUGINS STUB ────────────────────────────────────────── -->
+      <div class="view" id="view-plugins">
+        <div style="text-align:center;padding:80px 40px">
+          <div style="font-size:48px;margin-bottom:16px">🔌</div>
+          <h2 style="font-family:'Instrument Serif',serif;font-size:28px;margin-bottom:8px">Apps & Plugins</h2>
+          <p style="font-size:14px;color:var(--ink-3);max-width:440px;margin:0 auto 28px;line-height:1.6">Industry-specific modules — Real Estate, Legal, HR, Finance, Vehicle Sales — plus third-party integrations.</p>
+          <div style="display:inline-block;padding:8px 20px;background:var(--indigo-light);color:var(--indigo);border-radius:20px;font-size:13px;font-weight:600">Coming soon</div>
+        </div>
+      </div>
+
+      <!-- ── SETTINGS VIEW ──────────────────────────────────────── -->
+      <div class="view" id="view-settings">
+        <div style="margin-bottom:24px">
+          <h2 style="font-family:'Instrument Serif',serif;font-size:24px;margin-bottom:4px">Settings</h2>
+          <p style="font-size:13px;color:var(--ink-3)">Manage your organisation, integrations, and preferences.</p>
+        </div>
+        <div class="settings-grid">
+          <div class="settings-nav">
+            <div class="settings-nav-item active" onclick="settingsTab(this,'org')">🏢 Organisation</div>
+            <div class="settings-nav-item" onclick="settingsTab(this,'integrations')">🔗 Integrations</div>
+            <div class="settings-nav-item" onclick="settingsTab(this,'users')">👥 Users & Roles</div>
+            <div class="settings-nav-item" onclick="settingsTab(this,'notifications')">🔔 Notifications</div>
+            <div class="settings-nav-item" onclick="settingsTab(this,'billing')">💳 Billing</div>
+          </div>
+          <div>
+            <!-- Org settings -->
+            <div class="settings-panel" id="settings-org">
+              <div class="settings-section">
+                <div class="settings-section-title">Organisation details</div>
+                <div class="settings-section-desc">Your business name and profile shown across all Flow tools.</div>
+                <div class="form-row">
+                  <label class="form-label">Organisation name</label>
+                  <input class="form-input" value="Elegante Estates" id="settings-org-name">
+                </div>
+                <div class="form-row">
+                  <label class="form-label">Industry</label>
+                  <select class="form-input" id="settings-industry">
+                    <option selected>Real Estate</option>
+                    <option>Legal</option>
+                    <option>HR / Corporate</option>
+                    <option>Finance</option>
+                    <option>Insurance</option>
+                    <option>Vehicle Sales</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+                <div class="form-row">
+                  <label class="form-label">Support email</label>
+                  <input class="form-input" value="admin@elegante.co.za" type="email">
+                </div>
+                <button class="btn-primary" onclick="showToast('Settings saved')">Save changes</button>
+              </div>
+              <div class="settings-section">
+                <div class="settings-section-title">SignFlow integration</div>
+                <div class="settings-section-desc">Connect your SignFlow instance to send documents for signing directly from Flow workspaces.</div>
+                <div class="form-row">
+                  <label class="form-label">SignFlow URL</label>
+                  <input class="form-input" placeholder="https://your-signflow-instance.com">
+                </div>
+                <div class="form-row">
+                  <label class="form-label">API key</label>
+                  <input class="form-input" type="password" placeholder="sk_live_...">
+                </div>
+                <button class="btn-primary" onclick="showToast('SignFlow connected')">Connect SignFlow</button>
+              </div>
+            </div>
+
+            <!-- Integrations -->
+            <div class="settings-panel" id="settings-integrations" style="display:none">
+              <div class="settings-section">
+                <div class="settings-section-title">Connected apps</div>
+                <div class="settings-section-desc">Connect third-party services to your Flow workspace.</div>
+                <div class="integration-grid">
+                  <div class="integration-card">
+                    <div class="integration-icon">📧</div>
+                    <div>
+                      <div class="integration-name">Resend</div>
+                      <div class="integration-status connected">● Connected</div>
+                    </div>
+                    <button class="connect-btn connected">Connected</button>
+                  </div>
+                  <div class="integration-card">
+                    <div class="integration-icon">🗄</div>
+                    <div>
+                      <div class="integration-name">Supabase</div>
+                      <div class="integration-status connected">● Connected</div>
+                    </div>
+                    <button class="connect-btn connected">Connected</button>
+                  </div>
+                  <div class="integration-card">
+                    <div class="integration-icon">📁</div>
+                    <div>
+                      <div class="integration-name">Google Drive</div>
+                      <div class="integration-status">Not connected</div>
+                    </div>
+                    <button class="connect-btn" onclick="showToast('Google Drive — Phase 2')">Connect</button>
+                  </div>
+                  <div class="integration-card">
+                    <div class="integration-icon">☁</div>
+                    <div>
+                      <div class="integration-name">OneDrive</div>
+                      <div class="integration-status">Not connected</div>
+                    </div>
+                    <button class="connect-btn" onclick="showToast('OneDrive — Phase 2')">Connect</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Users -->
+            <div class="settings-panel" id="settings-users" style="display:none">
+              <div class="settings-section">
+                <div class="settings-section-title">Team members</div>
+                <div class="settings-section-desc">Manage who has access to your Flow workspace.</div>
+                <div style="font-size:13px;color:var(--ink-3);padding:20px 0">User management coming with full multi-user release.</div>
+              </div>
+            </div>
+
+            <!-- Notifications -->
+            <div class="settings-panel" id="settings-notifications" style="display:none">
+              <div class="settings-section">
+                <div class="settings-section-title">Notification preferences</div>
+                <div class="settings-section-desc">Choose what you get notified about.</div>
+                <div class="settings-row">
+                  <div><div class="settings-row-label">New document uploaded</div><div class="settings-row-sub">When a client uploads a document</div></div>
+                  <div class="toggle on" onclick="this.classList.toggle('on')"><div class="toggle-knob"></div></div>
+                </div>
+                <div class="settings-row">
+                  <div><div class="settings-row-label">Workspace completed</div><div class="settings-row-sub">When all tasks in a workspace are done</div></div>
+                  <div class="toggle on" onclick="this.classList.toggle('on')"><div class="toggle-knob"></div></div>
+                </div>
+                <div class="settings-row">
+                  <div><div class="settings-row-label">Signature completed</div><div class="settings-row-sub">When all parties have signed</div></div>
+                  <div class="toggle on" onclick="this.classList.toggle('on')"><div class="toggle-knob"></div></div>
+                </div>
+                <div class="settings-row">
+                  <div><div class="settings-row-label">Task overdue</div><div class="settings-row-sub">Daily digest of overdue tasks</div></div>
+                  <div class="toggle" onclick="this.classList.toggle('on')"><div class="toggle-knob"></div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Billing -->
+            <div class="settings-panel" id="settings-billing" style="display:none">
+              <div class="settings-section">
+                <div class="settings-section-title">Current plan</div>
+                <div class="settings-section-desc">You are on the Pro plan.</div>
+                <div style="background:var(--indigo-light);border-radius:10px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between">
+                  <div>
+                    <div style="font-size:15px;font-weight:700;color:var(--indigo)">Flow Pro</div>
+                    <div style="font-size:12px;color:var(--indigo-mid);margin-top:2px">Unlimited workspaces · 5 users · All tools</div>
+                  </div>
+                  <div style="font-size:20px;font-weight:700;color:var(--indigo);font-family:'Instrument Serif',serif">R799<span style="font-size:12px;font-weight:400">/mo</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end page-scroll -->
+  </div><!-- end main-wrap -->
+</div><!-- end app -->
+
+<!-- NEW WORKSPACE MODAL -->
+<div class="modal-overlay" id="new-workspace-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">New workspace</div>
+      <div class="modal-close" onclick="closeModal('new-workspace-modal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label">Workspace name</label>
+        <input class="form-input" id="new-ws-name" placeholder="e.g. 12 Oak Street — Purchase">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Hub</label>
+        <select class="form-input" id="new-ws-hub">
+          <option>Deals</option>
+          <option>HR</option>
+          <option>Legal</option>
+          <option>Finance</option>
+          <option>Marketing</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Type</label>
+        <div class="hub-type-grid">
+          <div class="hub-type-btn selected" onclick="selectType(this)">🏠<span>Deal</span></div>
+          <div class="hub-type-btn" onclick="selectType(this)">👤<span>Client</span></div>
+          <div class="hub-type-btn" onclick="selectType(this)">⚖️<span>Matter</span></div>
+          <div class="hub-type-btn" onclick="selectType(this)">👔<span>Employee</span></div>
+          <div class="hub-type-btn" onclick="selectType(this)">📋<span>Project</span></div>
+          <div class="hub-type-btn" onclick="selectType(this)">📁<span>Other</span></div>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Client name (optional)</label>
+        <input class="form-input" id="new-ws-client" placeholder="e.g. John Smith">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('new-workspace-modal')">Cancel</button>
+      <button class="btn-primary" onclick="createWorkspace()">Create workspace</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW HUB MODAL -->
+<div class="modal-overlay" id="new-hub-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add hub</div>
+      <div class="modal-close" onclick="closeModal('new-hub-modal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label">Hub name</label>
+        <input class="form-input" id="new-hub-name" placeholder="e.g. Operations, Conveyancing, Fleet">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Description</label>
+        <input class="form-input" id="new-hub-desc" placeholder="What kind of workspaces live here?">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Icon</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="hub-type-btn selected" onclick="selectType(this)" style="width:44px;font-size:20px">🏠</span>
+          <span class="hub-type-btn" onclick="selectType(this)" style="width:44px;font-size:20px">👤</span>
+          <span class="hub-type-btn" onclick="selectType(this)" style="width:44px;font-size:20px">⚖️</span>
+          <span class="hub-type-btn" onclick="selectType(this)" style="width:44px;font-size:20px">💰</span>
+          <span class="hub-type-btn" onclick="selectType(this)" style="width:44px;font-size:20px">📋</span>
+          <span class="hub-type-btn" onclick="selectType(this)" style="width:44px;font-size:20px">📣</span>
+          <span class="hub-type-btn" onclick="selectType(this)" style="width:44px;font-size:20px">🚗</span>
+          <span class="hub-type-btn" onclick="selectType(this)" style="width:44px;font-size:20px">🏗</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('new-hub-modal')">Cancel</button>
+      <button class="btn-primary" onclick="createHub()">Add hub</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+  // ── CONFIG ──────────────────────────────────────────────────
+  const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+  const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+
+  // ── STATE ───────────────────────────────────────────────────
+  let currentUser = null;
+  let currentView = 'dashboard';
+
+  // ── DEMO DATA ───────────────────────────────────────────────
+  const demoWorkspaces = [
+    { id:1, name:'12 Main Road — Purchase',        hub:'Deals',   type:'Deal',     client:'John Smith',    status:'progress',  updated:'2h ago',  icon:'🏠', progress:65 },
+    { id:2, name:'Sandy Close — Sale',             hub:'Deals',   type:'Deal',     client:'Mary Jacobs',   status:'docs',      updated:'5h ago',  icon:'🏠', progress:40 },
+    { id:3, name:'Employee Onboarding — Thabo M.', hub:'HR',      type:'Employee', client:'Thabo Mokoena', status:'progress',  updated:'1d ago',  icon:'👔', progress:30 },
+    { id:4, name:'Acme Corp — Lease Agreement',    hub:'Legal',   type:'Matter',   client:'Acme Corp',     status:'signature', updated:'1d ago',  icon:'⚖️', progress:85 },
+    { id:5, name:'Trust Account — May 2025',       hub:'Finance', type:'Other',    client:'Various',       status:'completed', updated:'2d ago',  icon:'💰', progress:100 },
+    { id:6, name:'Van der Merwe — Bond Application',hub:'Deals',  type:'Deal',     client:'P van der Merwe',status:'docs',     updated:'3d ago',  icon:'🏠', progress:55 },
+    { id:7, name:'Sarah Nkosi — FICA Pack',        hub:'Legal',   type:'Client',   client:'Sarah Nkosi',   status:'hold',      updated:'4d ago',  icon:'📋', progress:20 },
+    { id:8, name:'Winter Campaign Q3',             hub:'Marketing',type:'Project', client:'Internal',      status:'progress',  updated:'5d ago',  icon:'📣', progress:70 },
+  ];
+
+  const demoTasks = [
+    { title:'Review FICA — John Smith',      due:'Overdue',     type:'overdue' },
+    { title:'Upload ID — Mary Jacobs',       due:'Due today',   type:'today'   },
+    { title:'Sign OTP — 12 Main Road',       due:'Due today',   type:'today'   },
+    { title:'Confirm banking details',       due:'Due tomorrow',type:'soon'    },
+    { title:'Employee contract review',      due:'Due in 2 days',type:'soon'   },
+  ];
+
+  const demoActivity = [
+    { icon:'✍️', title:'OTP — 12 Main Road',         sub:'Signed by John Smith',         time:'2h ago' },
+    { icon:'📁', title:'FICA documents uploaded',    sub:'Mary Jacobs',                  time:'5h ago' },
+    { icon:'🗂', title:'New workspace created',      sub:'Sandy Close — Sale',           time:'1d ago' },
+    { icon:'✅', title:'Lease Agreement',            sub:'Fully executed',               time:'2d ago' },
+    { icon:'👤', title:'New employee onboarded',     sub:'Thabo Mokoena — HR',           time:'3d ago' },
+  ];
+
+  const demoHubs = [
+    { name:'Deals',     icon:'🏠', color:'var(--hub-deals)',     desc:'Property transactions, OTPs, mandates',       workspaces:32, active:24, completed:8  },
+    { name:'HR',        icon:'👔', color:'var(--hub-hr)',        desc:'Employee onboarding, contracts, policies',    workspaces:24, active:18, completed:6  },
+    { name:'Legal',     icon:'⚖️', color:'var(--hub-legal)',    desc:'Client matters, FICA/KYC, precedents',        workspaces:12, active:9,  completed:3  },
+    { name:'Finance',   icon:'💰', color:'var(--hub-finance)',   desc:'Trust accounts, bond applications, invoices', workspaces:16, active:11, completed:5  },
+    { name:'Marketing', icon:'📣', color:'var(--hub-marketing)', desc:'Campaigns, content, outreach sequences',     workspaces:12, active:10, completed:2  },
+  ];
+
+  // ── AUTH ────────────────────────────────────────────────────
+  function sendOTP() {
+    const email = document.getElementById('auth-email').value.trim();
+    if (!email || !email.includes('@')) {
+      showAuthMsg('email-error', 'Please enter a valid email address.', 'error');
+      return;
+    }
+    document.getElementById('otp-sub').textContent = `We sent a 6-digit code to ${email}`;
+    showStep('step-otp');
+    showAuthMsg('otp-success', 'Code sent! Check your inbox.', 'success');
+  }
+
+  function verifyOTP() {
+    const code = document.getElementById('auth-otp').value.trim();
+    if (code.length !== 6) {
+      showAuthMsg('otp-error', 'Please enter the 6-digit code.', 'error');
+      return;
+    }
+    const email = document.getElementById('auth-email').value.trim();
+    enterApp(email);
+  }
+
+  function devBypass() {
+    const email = document.getElementById('auth-email').value.trim() || 'john@elegante.co.za';
+    enterApp(email);
+  }
+
+  function enterApp(email) {
+    currentUser = { email };
+    const name = email.split('@')[0].replace('.', ' ').replace(/\b\w/g, c => c.toUpperCase());
+    document.getElementById('sidebar-name').textContent = name;
+    document.getElementById('sidebar-avatar').textContent = name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+
+    setGreeting(name.split(' ')[0]);
+    renderRecent();
+    renderTasks();
+    renderActivity();
+    renderHubsFull();
+    renderWSFull();
+    renderTasksFull();
+    setDate();
+
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').classList.add('visible');
+  }
+
+  function backToEmail() { showStep('step-email'); }
+
+  function showStep(id) {
+    document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function showAuthMsg(id, msg, type) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.className = 'auth-msg ' + type;
+    el.style.display = 'block';
+  }
+
+  // ── NAVIGATION ──────────────────────────────────────────────
+  function showView(id) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + id).classList.add('active');
+
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const map = { dashboard:'⊞ Dashboard', hubs:'◫ Hubs', workspaces:'🗂 Workspaces', tasks:'✓ Tasks', documents:'📄 Documents', formflow:'📋 FormFlow', signflow:'✍️ SignFlow', contacts:'👥 Contacts', flowmail:'✉ FlowMail', reports:'↗ Reports', settings:'⚙ Settings', plugins:'🔌 Apps & Plugins' };
+    const titles = { dashboard:'Dashboard', hubs:'Hubs', workspaces:'Workspaces', tasks:'Tasks', documents:'Documents', formflow:'FormFlow', signflow:'SignFlow', contacts:'Contacts', flowmail:'FlowMail', reports:'Reports', settings:'Settings', plugins:'Apps & Plugins' };
+    document.getElementById('topbar-title').textContent = titles[id] || id;
+
+    document.querySelectorAll('.nav-item').forEach(n => {
+      if (n.textContent.trim().startsWith(Object.entries(map).find(([k])=>k===id)?.[1]?.[0]||'')) {}
+    });
+
+    // Match nav item by text
+    document.querySelectorAll('.nav-item').forEach(n => {
+      const txt = n.textContent.trim();
+      const label = titles[id];
+      if (label && txt.includes(label)) n.classList.add('active');
+    });
+
+    currentView = id;
+  }
+
+  // ── RENDER ──────────────────────────────────────────────────
+  function statusClass(s) {
+    const m = { progress:'status-progress', docs:'status-docs', signature:'status-signature', hold:'status-hold', completed:'status-completed', planning:'status-planning' };
+    return m[s] || 'status-hold';
+  }
+
+  function statusLabel(s) {
+    const m = { progress:'In Progress', docs:'Awaiting Docs', signature:'Awaiting Signature', hold:'On Hold', completed:'Completed', planning:'Planning' };
+    return m[s] || s;
+  }
+
+  function progressColor(s) {
+    const m = { progress:'#1d4ed8', docs:'#b45309', signature:'#6d28d9', hold:'#94a3b8', completed:'#16a34a', planning:'#c2410c' };
+    return m[s] || '#94a3b8';
+  }
+
+  function renderRecent() {
+    const list = document.getElementById('recent-workspace-list');
+    list.innerHTML = demoWorkspaces.slice(0,6).map(ws => `
+      <div class="workspace-row" onclick="showToast('Opening: ${ws.name}')">
+        <div class="ws-icon" style="background:${hubBg(ws.hub)}">${ws.icon}</div>
+        <div class="ws-info">
+          <div class="ws-name">${ws.name}</div>
+          <div class="ws-meta">
+            <span>${ws.hub}</span>
+            <div class="ws-meta-dot"></div>
+            <span>${ws.type}</span>
+            ${ws.client ? `<div class="ws-meta-dot"></div><span>${ws.client}</span>` : ''}
+          </div>
+        </div>
+        <span class="status-badge ${statusClass(ws.status)}">${statusLabel(ws.status)}</span>
+        <span class="ws-updated">${ws.updated}</span>
+        <div class="ws-menu">⋯</div>
+      </div>
+    `).join('');
+  }
+
+  function renderTasks() {
+    const list = document.getElementById('task-list');
+    list.innerHTML = demoTasks.map(t => `
+      <div class="task-row">
+        <div class="task-check" onclick="this.classList.toggle('done');this.textContent=this.classList.contains('done')?'✓':''"></div>
+        <div class="task-body">
+          <div class="task-title">${t.title}</div>
+          <div class="task-due ${t.type}">${t.due}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderActivity() {
+    const list = document.getElementById('activity-list');
+    list.innerHTML = demoActivity.map(a => `
+      <div class="activity-row">
+        <div class="activity-icon">${a.icon}</div>
+        <div class="activity-body">
+          <div class="activity-title">${a.title}</div>
+          <div class="activity-sub">${a.sub}</div>
+        </div>
+        <div class="activity-time">${a.time}</div>
+      </div>
+    `).join('');
+  }
+
+  function renderHubsFull() {
+    const grid = document.getElementById('hubs-full-grid');
+    grid.innerHTML = demoHubs.map(h => `
+      <div class="hub-full-card" onclick="showToast('Opening ${h.name} hub...')">
+        <div style="position:absolute;top:0;left:0;right:0;height:4px;background:${h.color};border-radius:14px 14px 0 0"></div>
+        <div class="hub-full-icon" style="background:${hubBg2(h.color)}">${h.icon}</div>
+        <div class="hub-full-name">${h.name}</div>
+        <div class="hub-full-desc">${h.desc}</div>
+        <div class="hub-full-stats">
+          <div class="hub-stat">
+            <div class="hub-stat-val">${h.workspaces}</div>
+            <div class="hub-stat-lbl">Total</div>
+          </div>
+          <div class="hub-stat">
+            <div class="hub-stat-val">${h.active}</div>
+            <div class="hub-stat-lbl">Active</div>
+          </div>
+          <div class="hub-stat">
+            <div class="hub-stat-val">${h.completed}</div>
+            <div class="hub-stat-lbl">Done</div>
+          </div>
+        </div>
+      </div>
+    `).join('') + `
+      <div class="hub-full-card hub-add" onclick="openNewHubModal()" style="min-height:180px">
+        <div style="font-size:28px;margin-bottom:8px">+</div>
+        <div style="font-size:14px;font-weight:600">Add Hub</div>
+        <div style="font-size:12px;margin-top:4px">Create a new operational hub</div>
+      </div>
+    `;
+  }
+
+  function renderWSFull(filter='all') {
+    const grid = document.getElementById('ws-full-grid');
+    const filtered = filter === 'all' ? demoWorkspaces : demoWorkspaces.filter(w => w.status === filter);
+    grid.innerHTML = filtered.map(ws => `
+      <div class="ws-full-card" onclick="showToast('Opening workspace: ${ws.name}')">
+        <div class="ws-card-top">
+          <div style="display:flex;align-items:flex-start;gap:12px;flex:1;min-width:0">
+            <div class="ws-card-icon" style="background:${hubBg(ws.hub)}">${ws.icon}</div>
+            <div style="flex:1;min-width:0">
+              <div class="ws-card-name">${ws.name}</div>
+              <div class="ws-card-meta">${ws.hub} · ${ws.type}${ws.client ? ' · ' + ws.client : ''}</div>
+            </div>
+          </div>
+          <span class="status-badge ${statusClass(ws.status)}">${statusLabel(ws.status)}</span>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span>Progress</span><span>${ws.progress}%</span></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${ws.progress}%;background:${progressColor(ws.status)}"></div></div>
+        </div>
+        <div class="ws-card-footer">
+          <span style="font-size:11px;color:var(--ink-4)">Updated ${ws.updated}</span>
+          <span style="font-size:11px;color:var(--indigo);font-weight:600;cursor:pointer">Open →</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderTasksFull() {
+    const allTasks = [
+      ...demoTasks,
+      { title:'Review employment contract — S. Nkosi', due:'Due in 3 days', type:'soon' },
+      { title:'Upload FICA — Van der Merwe',           due:'Due in 4 days', type:'soon' },
+      { title:'Send lease to SignFlow',                due:'Due in 5 days', type:'soon' },
+      { title:'Approve bond application',              due:'Due in 5 days', type:'soon' },
+      { title:'Process trust account statement',       due:'Due in 7 days', type:'soon' },
+    ];
+    const list = document.getElementById('tasks-full-list');
+    list.innerHTML = allTasks.map(t => `
+      <div class="task-row">
+        <div class="task-check" onclick="this.classList.toggle('done');this.textContent=this.classList.contains('done')?'✓':''"></div>
+        <div class="task-body">
+          <div class="task-title">${t.title}</div>
+          <div class="task-due ${t.type}">${t.due}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ── HELPERS ─────────────────────────────────────────────────
+  function hubBg(hub) {
+    const m = { Deals:'#e8f3ed', HR:'#eff6ff', Legal:'#f5f3ff', Finance:'#fffbeb', Marketing:'#fff7ed', Other:'#f1f5f9' };
+    return m[hub] || '#f1f5f9';
+  }
+
+  function hubBg2(color) {
+    if (color.includes('hub-deals'))     return '#e8f3ed';
+    if (color.includes('hub-hr'))        return '#eff6ff';
+    if (color.includes('hub-legal'))     return '#f5f3ff';
+    if (color.includes('hub-finance'))   return '#fffbeb';
+    if (color.includes('hub-marketing')) return '#fff7ed';
+    return '#f1f5f9';
+  }
+
+  function setGreeting(name) {
+    const h = new Date().getHours();
+    const g = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+    document.getElementById('greeting-text').textContent = `${g}, ${name} 👋`;
+  }
+
+  function setDate() {
+    const d = new Date();
+    document.getElementById('greeting-date').textContent = d.toLocaleDateString('en-ZA', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  }
+
+  // ── MODALS ──────────────────────────────────────────────────
+  function openNewWorkspaceModal() {
+    document.getElementById('new-workspace-modal').classList.add('open');
+  }
+
+  function openNewHubModal() {
+    document.getElementById('new-hub-modal').classList.add('open');
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+  }
+
+  function selectType(el) {
+    el.closest('.hub-type-grid, div').querySelectorAll('.hub-type-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function createWorkspace() {
+    const name = document.getElementById('new-ws-name').value.trim();
+    if (!name) { showToast('Please enter a workspace name'); return; }
+    closeModal('new-workspace-modal');
+    showToast('Workspace created: ' + name);
+    document.getElementById('new-ws-name').value = '';
+  }
+
+  function createHub() {
+    const name = document.getElementById('new-hub-name').value.trim();
+    if (!name) { showToast('Please enter a hub name'); return; }
+    closeModal('new-hub-modal');
+    showToast('Hub created: ' + name);
+    document.getElementById('new-hub-name').value = '';
+  }
+
+  // ── FILTERS ─────────────────────────────────────────────────
+  function filterWS(btn, filter) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderWSFull(filter);
+  }
+
+  // ── SETTINGS ────────────────────────────────────────────────
+  function settingsTab(el, tab) {
+    document.querySelectorAll('.settings-nav-item').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+    ['org','integrations','users','notifications','billing'].forEach(t => {
+      const panel = document.getElementById('settings-' + t);
+      if (panel) panel.style.display = t === tab ? 'block' : 'none';
+    });
+  }
+
+  // ── TOAST ───────────────────────────────────────────────────
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // ── CLOSE MODAL ON BACKDROP ─────────────────────────────────
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) overlay.classList.remove('open');
+    });
+  });
+
+  // ── SESSION RESTORE ─────────────────────────────────────────
+  window.addEventListener('load', () => {
+    const saved = localStorage.getItem('flow_auth_email');
+    if (saved) { enterApp(saved); return; }
+  });
+</script>
+
+</body>
+</html>
