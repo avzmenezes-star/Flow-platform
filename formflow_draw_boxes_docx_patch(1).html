@@ -1,0 +1,821 @@
+
+<!-- FORMFLOW DOCUMENT BUILDER PATCH: DRAW BOXES + FIELD PLACEMENT + DOCX TEMPLATE FEEDBACK -->
+
+<!-- 
+HOW TO USE:
+1. Add the CSS inside your existing <style> block.
+2. Add the HTML where your Document Builder/Mapper area currently renders.
+3. Add the JS inside your existing <script> block.
+4. This keeps PDF mapping visual/conceptual and gives DOCX uploads a proper feedback panel.
+-->
+
+<!-- =========================
+     HTML: DOCUMENT BUILDER AREA
+========================= -->
+<div class="doc-builder-shell">
+
+  <div class="doc-builder-topbar">
+    <div>
+      <div class="doc-builder-title">Document Builder</div>
+      <div class="doc-builder-sub">Use the PDF as the visual guide. Use the DOCX template for final generation.</div>
+    </div>
+
+    <div class="doc-builder-actions">
+      <label class="doc-upload-btn">
+        Upload PDF reference
+        <input type="file" accept="application/pdf,image/*" onchange="handleReferencePdfUpload(event)" hidden>
+      </label>
+
+      <label class="doc-upload-btn secondary">
+        Upload DOCX template
+        <input type="file" accept=".docx,.doc" onchange="handleDocxTemplateUpload(event)" hidden>
+      </label>
+
+      <button class="doc-action-btn" onclick="clearMappedBoxes()">Clear boxes</button>
+      <button class="doc-primary-btn" onclick="previewGeneratedFormFromMappings()">Preview form</button>
+    </div>
+  </div>
+
+  <div class="doc-builder-grid">
+
+    <div class="doc-preview-panel">
+      <div class="doc-preview-header">
+        <span id="reference-doc-name">No PDF reference uploaded</span>
+        <span class="doc-preview-note">Scroll here only</span>
+      </div>
+
+      <div id="pdf-scroll-shell">
+        <div id="pdf-stage">
+          <iframe id="pdf-preview-frame"></iframe>
+          <img id="image-preview-frame" alt="Reference preview" style="display:none;">
+          <div id="field-overlay"></div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="doc-toolbox">
+
+      <div class="tool-section">
+        <div class="tool-title">Placement mode</div>
+        <button class="tool-btn" onclick="setPlacementMode('field')">Place mapped field</button>
+        <button class="tool-btn" onclick="setPlacementMode('box')">Draw visual box</button>
+      </div>
+
+      <div class="tool-section">
+        <div class="tool-title">Mapped fields</div>
+
+        <div class="party-select-row">
+          <label>Party</label>
+          <select id="active-party-select">
+            <option value="purchaser">Purchaser</option>
+            <option value="seller">Seller</option>
+            <option value="agent">Agent</option>
+            <option value="attorney">Attorney</option>
+            <option value="generic">Generic</option>
+          </select>
+        </div>
+
+        <button class="tool-btn" onclick="selectMappedField('text','Full name')">Full name</button>
+        <button class="tool-btn" onclick="selectMappedField('id','ID / Reg number')">ID / Reg number</button>
+        <button class="tool-btn" onclick="selectMappedField('email','Email')">Email</button>
+        <button class="tool-btn" onclick="selectMappedField('phone','Phone')">Phone</button>
+        <button class="tool-btn" onclick="selectMappedField('date','Date')">Date</button>
+        <button class="tool-btn" onclick="selectMappedField('money','Amount')">Amount</button>
+        <button class="tool-btn" onclick="selectMappedField('signature','Signature')">Signature</button>
+        <button class="tool-btn" onclick="selectMappedField('initials','Initials')">Initials</button>
+      </div>
+
+      <div class="tool-section">
+        <div class="tool-title">Custom field</div>
+        <input class="tool-input" id="custom-field-label" placeholder="e.g. Occupation date">
+        <button class="tool-btn primary" onclick="selectCustomField()">Place custom field</button>
+      </div>
+
+      <div class="tool-section">
+        <div class="tool-title">DOCX merge template</div>
+        <div id="docx-template-status" class="docx-status">
+          No DOCX template uploaded yet.
+        </div>
+        <div id="docx-placeholder-list" class="placeholder-list"></div>
+      </div>
+
+      <div class="tool-section">
+        <div class="tool-title">Mapped items</div>
+        <div id="mapped-items-list" class="mapped-items-list">
+          No mapped items yet.
+        </div>
+      </div>
+
+      <div id="placement-hint" class="placement-hint">
+        Upload a PDF, then choose a field or draw a box.
+      </div>
+
+    </aside>
+
+  </div>
+</div>
+
+
+<!-- =========================
+     CSS
+========================= -->
+<style>
+.doc-builder-shell {
+  height: calc(100vh - 90px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.doc-builder-topbar {
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.doc-builder-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: 20px;
+  color: var(--ink, #111827);
+}
+
+.doc-builder-sub {
+  font-size: 12px;
+  color: var(--ink-3, #6b7280);
+}
+
+.doc-builder-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.doc-upload-btn,
+.doc-action-btn,
+.doc-primary-btn {
+  border: 1px solid var(--border, #e5e7eb);
+  background: #fff;
+  color: var(--ink-2, #374151);
+  border-radius: 9px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Instrument Sans', sans-serif;
+}
+
+.doc-upload-btn:hover,
+.doc-action-btn:hover {
+  background: var(--surface-2, #f8f7f5);
+  border-color: var(--ff, #0d9488);
+}
+
+.doc-upload-btn.secondary {
+  border-color: #c7d2fe;
+  color: #4338ca;
+}
+
+.doc-primary-btn {
+  border: none;
+  background: var(--ff, #0d9488);
+  color: white;
+}
+
+.doc-builder-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 14px;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.doc-preview-panel {
+  min-width: 0;
+  min-height: 0;
+  background: #eef0f3;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.doc-preview-header {
+  height: 38px;
+  background: white;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 12px;
+  color: var(--ink-3, #6b7280);
+  flex-shrink: 0;
+}
+
+.doc-preview-note {
+  color: var(--ff, #0d9488);
+  font-weight: 600;
+}
+
+#pdf-scroll-shell {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+  position: relative;
+}
+
+#pdf-stage {
+  position: relative;
+  min-height: 1100px;
+  width: 100%;
+}
+
+#pdf-preview-frame {
+  width: 100%;
+  height: 1100px;
+  border: 0;
+  display: block;
+  background: white;
+}
+
+#image-preview-frame {
+  max-width: 100%;
+  width: 100%;
+  display: block;
+  background: white;
+}
+
+#field-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  cursor: crosshair;
+}
+
+.mapped-field,
+.visual-box {
+  position: absolute;
+  border-radius: 6px;
+  user-select: none;
+  pointer-events: auto;
+  z-index: 5;
+}
+
+.mapped-field {
+  min-width: 130px;
+  min-height: 28px;
+  padding: 6px 28px 6px 8px;
+  border: 2px solid var(--ff, #0d9488);
+  background: rgba(240, 253, 250, 0.94);
+  color: var(--ff-dark, #134e4a);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: move;
+}
+
+.visual-box {
+  width: 150px;
+  height: 36px;
+  border: 2px dashed #4338ca;
+  background: rgba(238, 242, 255, 0.45);
+  cursor: move;
+}
+
+.mapped-field small {
+  display: block;
+  font-size: 9px;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+.field-delete {
+  position: absolute;
+  top: 3px;
+  right: 5px;
+  border: none;
+  background: transparent;
+  color: #dc2626;
+  font-weight: 900;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.doc-toolbox {
+  min-height: 0;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.tool-section {
+  border-bottom: 1px solid var(--border, #e5e7eb);
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+
+.tool-section:last-child {
+  border-bottom: none;
+}
+
+.tool-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-4, #9ca3af);
+  margin-bottom: 8px;
+}
+
+.tool-btn {
+  width: 100%;
+  display: block;
+  margin-bottom: 7px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border, #e5e7eb);
+  background: white;
+  color: var(--ink-2, #374151);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  font-family: 'Instrument Sans', sans-serif;
+}
+
+.tool-btn:hover {
+  border-color: var(--ff, #0d9488);
+  background: var(--ff-light, #f0fdfa);
+}
+
+.tool-btn.primary {
+  background: var(--ff, #0d9488);
+  color: white;
+  border: none;
+  text-align: center;
+}
+
+.tool-input,
+.party-select-row select {
+  width: 100%;
+  border: 1.5px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  margin-bottom: 8px;
+  font-family: 'Instrument Sans', sans-serif;
+}
+
+.party-select-row label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-3, #6b7280);
+  margin-bottom: 4px;
+}
+
+.docx-status {
+  font-size: 12px;
+  color: var(--ink-3, #6b7280);
+  background: var(--surface-2, #f8f7f5);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  padding: 9px;
+  line-height: 1.4;
+}
+
+.placeholder-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.placeholder-chip {
+  font-size: 10px;
+  font-family: monospace;
+  color: var(--ff-dark, #134e4a);
+  background: var(--ff-light, #f0fdfa);
+  border: 1px solid #99f6e4;
+  padding: 3px 6px;
+  border-radius: 6px;
+}
+
+.mapped-items-list {
+  font-size: 12px;
+  color: var(--ink-3, #6b7280);
+}
+
+.mapped-item-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+}
+
+.mapped-item-row:last-child {
+  border-bottom: none;
+}
+
+.mapped-item-row strong {
+  color: var(--ink, #111827);
+  font-size: 12px;
+}
+
+.mapped-item-row span {
+  font-size: 10px;
+  color: var(--ink-4, #9ca3af);
+}
+
+.placement-hint {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  border-radius: 9px;
+  padding: 9px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+</style>
+
+
+<!-- =========================
+     JAVASCRIPT
+========================= -->
+<script>
+let placementMode = null; // 'field' or 'box'
+let pendingField = null;
+let mappedItems = [];
+let activeDrag = null;
+let drawState = null;
+let docxTemplate = null;
+
+function handleReferencePdfUpload(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  const url = URL.createObjectURL(file);
+  const frame = document.getElementById('pdf-preview-frame');
+  const img = document.getElementById('image-preview-frame');
+
+  document.getElementById('reference-doc-name').textContent = file.name;
+
+  if (file.type.startsWith('image/')) {
+    frame.style.display = 'none';
+    img.style.display = 'block';
+    img.src = url;
+  } else {
+    img.style.display = 'none';
+    frame.style.display = 'block';
+    frame.src = url;
+  }
+
+  setPlacementHint('PDF reference loaded. Choose a field or draw a visual box.');
+}
+
+async function handleDocxTemplateUpload(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  docxTemplate = {
+    name: file.name,
+    size: file.size,
+    uploadedAt: new Date().toISOString()
+  };
+
+  const status = document.getElementById('docx-template-status');
+  status.innerHTML = `
+    <strong>${file.name}</strong><br>
+    DOCX template attached for final generation.<br>
+    This file is not visually opened in-browser. It will be used later for placeholder merging.
+  `;
+
+  // Basic placeholder extraction only works reliably if user uploads a text-like file.
+  // Real DOCX placeholder extraction needs Mammoth.js or server-side parsing.
+  const placeholders = await tryExtractPlaceholdersFromDocxLikeFile(file);
+  renderDocxPlaceholders(placeholders);
+
+  setPlacementHint('DOCX attached. Now map fields visually on the PDF reference.');
+}
+
+async function tryExtractPlaceholdersFromDocxLikeFile(file) {
+  try {
+    const text = await file.text();
+    const found = [...text.matchAll(/\{\{([a-zA-Z0-9_]+)\}\}/g)].map(m => m[1]);
+    return [...new Set(found)];
+  } catch (e) {
+    return [];
+  }
+}
+
+function renderDocxPlaceholders(placeholders) {
+  const list = document.getElementById('docx-placeholder-list');
+  if (!list) return;
+
+  if (!placeholders || placeholders.length === 0) {
+    list.innerHTML = `
+      <div style="font-size:11px;color:#9ca3af;line-height:1.4">
+        No placeholders detected in browser preview. For real DOCX parsing, connect Mammoth.js or server-side parsing later.
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = placeholders.map(p => `<span class="placeholder-chip">{{${p}}}</span>`).join('');
+}
+
+function setPlacementMode(mode) {
+  placementMode = mode;
+  pendingField = null;
+
+  if (mode === 'box') {
+    setPlacementHint('Draw mode active. Click and drag on the PDF to draw a visual box.');
+  } else {
+    setPlacementHint('Field mode active. Choose a mapped field, then click the PDF.');
+  }
+}
+
+function selectMappedField(type, label) {
+  placementMode = 'field';
+  const party = document.getElementById('active-party-select')?.value || 'generic';
+  pendingField = {
+    type,
+    label: `${toTitleCase(party)} ${label}`,
+    party,
+    key: makeFieldKey(`${party}_${label}`)
+  };
+
+  setPlacementHint(`Click the PDF to place: ${pendingField.label}`);
+}
+
+function selectCustomField() {
+  const input = document.getElementById('custom-field-label');
+  const label = input.value.trim();
+  if (!label) {
+    setPlacementHint('Enter a custom field label first.');
+    return;
+  }
+
+  const party = document.getElementById('active-party-select')?.value || 'generic';
+  placementMode = 'field';
+  pendingField = {
+    type: 'custom',
+    label,
+    party,
+    key: makeFieldKey(`${party}_${label}`)
+  };
+
+  setPlacementHint(`Click the PDF to place custom field: ${label}`);
+  input.value = '';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const overlay = document.getElementById('field-overlay');
+  if (!overlay) return;
+
+  overlay.addEventListener('mousedown', function(e) {
+    if (e.target !== overlay) return;
+
+    const rect = overlay.getBoundingClientRect();
+
+    if (placementMode === 'box') {
+      drawState = {
+        startX: e.clientX - rect.left,
+        startY: e.clientY - rect.top
+      };
+
+      const box = {
+        id: 'box_' + Date.now(),
+        kind: 'box',
+        x: drawState.startX,
+        y: drawState.startY,
+        width: 1,
+        height: 1
+      };
+
+      mappedItems.push(box);
+      drawState.id = box.id;
+      renderMappedItems();
+
+      document.addEventListener('mousemove', resizeDrawnBox);
+      document.addEventListener('mouseup', finishDrawnBox);
+      return;
+    }
+
+    if (placementMode === 'field' && pendingField) {
+      const item = {
+        id: 'field_' + Date.now(),
+        kind: 'field',
+        ...pendingField,
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+        width: 150,
+        height: 34
+      };
+
+      mappedItems.push(item);
+      pendingField = null;
+      renderMappedItems();
+      renderMappedItemsList();
+      setPlacementHint('Field placed. Choose another field or draw a box.');
+      return;
+    }
+  });
+});
+
+function resizeDrawnBox(e) {
+  if (!drawState) return;
+  const overlay = document.getElementById('field-overlay');
+  const rect = overlay.getBoundingClientRect();
+  const item = mappedItems.find(i => i.id === drawState.id);
+  if (!item) return;
+
+  const currentX = e.clientX - rect.left;
+  const currentY = e.clientY - rect.top;
+
+  item.x = Math.min(drawState.startX, currentX);
+  item.y = Math.min(drawState.startY, currentY);
+  item.width = Math.abs(currentX - drawState.startX);
+  item.height = Math.abs(currentY - drawState.startY);
+
+  renderMappedItems();
+}
+
+function finishDrawnBox() {
+  document.removeEventListener('mousemove', resizeDrawnBox);
+  document.removeEventListener('mouseup', finishDrawnBox);
+  drawState = null;
+  renderMappedItemsList();
+  setPlacementHint('Visual box added. It is a guide only and does not affect DOCX generation.');
+}
+
+function renderMappedItems() {
+  const overlay = document.getElementById('field-overlay');
+  if (!overlay) return;
+
+  overlay.innerHTML = mappedItems.map(item => {
+    if (item.kind === 'box') {
+      return `
+        <div class="visual-box"
+          style="left:${item.x}px;top:${item.y}px;width:${Math.max(item.width, 24)}px;height:${Math.max(item.height, 18)}px"
+          onmousedown="startMappedDrag(event,'${item.id}')">
+          <button class="field-delete" onclick="deleteMappedItem(event,'${item.id}')">×</button>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="mapped-field"
+        style="left:${item.x}px;top:${item.y}px;width:${item.width}px;height:${item.height}px"
+        onmousedown="startMappedDrag(event,'${item.id}')"
+        ondblclick="renameMappedItem('${item.id}')">
+        ${item.label}
+        <small>{{${item.key}}}</small>
+        <button class="field-delete" onclick="deleteMappedItem(event,'${item.id}')">×</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function startMappedDrag(e, id) {
+  if (e.target.classList.contains('field-delete')) return;
+  e.preventDefault();
+
+  const item = mappedItems.find(i => i.id === id);
+  if (!item) return;
+
+  activeDrag = {
+    id,
+    startX: e.clientX,
+    startY: e.clientY,
+    originalX: item.x,
+    originalY: item.y
+  };
+
+  document.addEventListener('mousemove', dragMappedItem);
+  document.addEventListener('mouseup', stopMappedDrag);
+}
+
+function dragMappedItem(e) {
+  if (!activeDrag) return;
+
+  const item = mappedItems.find(i => i.id === activeDrag.id);
+  if (!item) return;
+
+  item.x = activeDrag.originalX + (e.clientX - activeDrag.startX);
+  item.y = activeDrag.originalY + (e.clientY - activeDrag.startY);
+
+  renderMappedItems();
+}
+
+function stopMappedDrag() {
+  activeDrag = null;
+  document.removeEventListener('mousemove', dragMappedItem);
+  document.removeEventListener('mouseup', stopMappedDrag);
+  renderMappedItemsList();
+}
+
+function deleteMappedItem(e, id) {
+  e.stopPropagation();
+  mappedItems = mappedItems.filter(i => i.id !== id);
+  renderMappedItems();
+  renderMappedItemsList();
+  setPlacementHint('Mapped item deleted.');
+}
+
+function renameMappedItem(id) {
+  const item = mappedItems.find(i => i.id === id);
+  if (!item || item.kind !== 'field') return;
+
+  const newLabel = prompt('Rename mapped field:', item.label);
+  if (!newLabel) return;
+
+  item.label = newLabel;
+  item.key = makeFieldKey(newLabel);
+  renderMappedItems();
+  renderMappedItemsList();
+}
+
+function renderMappedItemsList() {
+  const list = document.getElementById('mapped-items-list');
+  if (!list) return;
+
+  if (!mappedItems.length) {
+    list.innerHTML = 'No mapped items yet.';
+    return;
+  }
+
+  list.innerHTML = mappedItems.map(item => {
+    if (item.kind === 'box') {
+      return `
+        <div class="mapped-item-row">
+          <div><strong>Visual box</strong><br><span>Guide only</span></div>
+          <button class="field-delete" onclick="deleteMappedItem(event,'${item.id}')">×</button>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="mapped-item-row">
+        <div><strong>${item.label}</strong><br><span>{{${item.key}}} · ${item.party}</span></div>
+        <button class="field-delete" onclick="deleteMappedItem(event,'${item.id}')">×</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function clearMappedBoxes() {
+  if (!confirm('Clear all mapped fields and visual boxes?')) return;
+  mappedItems = [];
+  renderMappedItems();
+  renderMappedItemsList();
+  setPlacementHint('All mapped items cleared.');
+}
+
+function previewGeneratedFormFromMappings() {
+  const fields = mappedItems
+    .filter(i => i.kind === 'field')
+    .map(i => ({
+      id: i.key,
+      key: i.key,
+      label: i.label,
+      type: i.type === 'money' ? 'number' : i.type,
+      party: i.party,
+      required: true
+    }));
+
+  console.log('Generated form fields:', fields);
+  alert(`Generated ${fields.length} form field(s) from the visual mapping. In the main app, this should open the party form preview.`);
+}
+
+function setPlacementHint(text) {
+  const el = document.getElementById('placement-hint');
+  if (el) el.textContent = text;
+}
+
+function makeFieldKey(label) {
+  return String(label || 'field')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '');
+}
+
+function toTitleCase(str) {
+  return String(str || '')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+</script>
