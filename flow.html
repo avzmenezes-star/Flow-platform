@@ -3008,24 +3008,57 @@
     }).join('');
   }
 
+  let activityItemsCache = [];
+
+  function getActivityTarget(a) {
+    if (!a) return { workspaceId: '', taskId: '' };
+
+    let workspaceId = a.workspace_id || a.workspaceId || a.detail?.workspace_id || a.detail?.workspaceId || '';
+    let taskId      = a.task_id || a.taskId || a.detail?.task_id || a.detail?.taskId || '';
+
+    const haystack = `${a.title || ''} ${a.sub || ''} ${a.msg || ''} ${a.detail?.name || ''} ${a.detail?.title || ''}`.toLowerCase();
+    const workspaces = liveWorkspaces.length ? liveWorkspaces : demoWorkspaces;
+
+    if (!workspaceId && taskId) {
+      const taskMatch = (allTasks || []).find(t => String(t.id) === String(taskId));
+      if (taskMatch?.workspace_id) workspaceId = taskMatch.workspace_id;
+    }
+
+    if (!workspaceId) {
+      const wsMatch = workspaces.find(w =>
+        haystack.includes(String(w.name || '').toLowerCase()) ||
+        haystack.includes(String(w.client_name || w.client || '').toLowerCase())
+      );
+      if (wsMatch) workspaceId = wsMatch.id;
+    }
+
+    if (!taskId) {
+      const taskPool = (allTasks && allTasks.length ? allTasks : demoTasks);
+      const taskMatch = taskPool.find(t => haystack.includes(String(t.title || '').toLowerCase()));
+      if (taskMatch) {
+        taskId = taskMatch.id || '';
+        if (!workspaceId && taskMatch.workspace_id) workspaceId = taskMatch.workspace_id;
+      }
+    }
+
+    return { workspaceId, taskId };
+  }
+
   function renderActivity(activity) {
     const list = document.getElementById('activity-list');
     const data = activity || demoActivity;
+    activityItemsCache = data;
     if (!list) return;
-    list.innerHTML = data.slice(0,5).map(a => {
-      const wsId = a.workspace_id || a.workspaceId || a.detail?.workspace_id || '';
-      const taskId = a.detail?.task_id || a.task_id || '';
-      return `
-        <div class="activity-row" onclick="openActivityItem('${String(wsId).replace(/'/g,"\\'")}', '${String(taskId).replace(/'/g,"\\'")}')" style="cursor:pointer" title="Open related item">
-          <div class="activity-icon">${a.icon || '📋'}</div>
-          <div class="activity-body">
-            <div class="activity-title">${escapeHTML(a.title || '')}</div>
-            <div class="activity-sub">${escapeHTML(a.sub || '')}</div>
-          </div>
-          <div class="activity-time">${escapeHTML(a.time || '')}</div>
+    list.innerHTML = data.slice(0,5).map((a, i) => `
+      <div class="activity-row" onclick="openActivityIndex(${i})" style="cursor:pointer" title="Open related item">
+        <div class="activity-icon">${a.icon || '📋'}</div>
+        <div class="activity-body">
+          <div class="activity-title">${escapeHTML(a.title || a.msg || '')}</div>
+          <div class="activity-sub">${escapeHTML(a.sub || '')}</div>
         </div>
-      `;
-    }).join('');
+        <div class="activity-time">${escapeHTML(a.time || '')}</div>
+      </div>
+    `).join('');
     renderActivityFull(data);
   }
 
@@ -3033,20 +3066,23 @@
     const list = document.getElementById('activity-full-list');
     if (!list) return;
     const data = activity && activity.length ? activity : demoActivity;
-    list.innerHTML = data.map(a => {
-      const wsId = a.workspace_id || a.workspaceId || a.detail?.workspace_id || '';
-      const taskId = a.detail?.task_id || a.task_id || '';
-      return `
-        <div class="activity-row" onclick="openActivityItem('${String(wsId).replace(/'/g,"\\'")}', '${String(taskId).replace(/'/g,"\\'")}')" style="cursor:pointer">
-          <div class="activity-icon">${a.icon || '📋'}</div>
-          <div class="activity-body">
-            <div class="activity-title">${escapeHTML(a.title || '')}</div>
-            <div class="activity-sub">${escapeHTML(a.sub || '')}</div>
-          </div>
-          <div class="activity-time">${escapeHTML(a.time || '')}</div>
+    activityItemsCache = data;
+    list.innerHTML = data.map((a, i) => `
+      <div class="activity-row" onclick="openActivityIndex(${i})" style="cursor:pointer" title="Open related item">
+        <div class="activity-icon">${a.icon || '📋'}</div>
+        <div class="activity-body">
+          <div class="activity-title">${escapeHTML(a.title || a.msg || '')}</div>
+          <div class="activity-sub">${escapeHTML(a.sub || '')}</div>
         </div>
-      `;
-    }).join('');
+        <div class="activity-time">${escapeHTML(a.time || '')}</div>
+      </div>
+    `).join('');
+  }
+
+  function openActivityIndex(index) {
+    const item = activityItemsCache[index];
+    const target = getActivityTarget(item);
+    openActivityItem(target.workspaceId, target.taskId);
   }
 
   function openTaskItem(taskId, workspaceId) {
@@ -3517,7 +3553,7 @@
       renderWSActivity(activity || []);
       const preview = (activity || []).slice(0,4);
       document.getElementById('ws-detail-activity').innerHTML = preview.length
-        ? preview.map(a => `<div class="activity-row"><div class="activity-icon">${{'workspace.created':'🗂','task.completed':'✅','task.created':'➕','message.posted':'💬','signflow.triggered':'✍️'}[a.action]||'📋'}</div><div class="activity-body"><div class="activity-title">${a.action.replace('.',' — ')}</div><div class="activity-sub">${a.actor_name||'System'} · ${timeAgo(a.created_at)}</div></div></div>`).join('')
+        ? preview.map((a, i) => `<div class="activity-row" onclick="switchWSTab('activity')" style="cursor:pointer"><div class="activity-icon">${{'workspace.created':'🗂','task.completed':'✅','task.created':'➕','message.posted':'💬','signflow.triggered':'✍️'}[a.action]||'📋'}</div><div class="activity-body"><div class="activity-title">${a.action.replace('.',' — ')}</div><div class="activity-sub">${a.actor_name||'System'} · ${timeAgo(a.created_at)}</div></div></div>`).join('')
         : '<div style="padding:20px;text-align:center;color:var(--ink-4);font-size:13px">No activity yet.</div>';
     } catch(e) { console.error('WS data error:', e); }
   }
