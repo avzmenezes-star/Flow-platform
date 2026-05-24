@@ -1443,7 +1443,7 @@
         <div class="icon-btn" title="Notifications">
           🔔 <div class="notif-dot"></div>
         </div>
-        <div class="icon-btn" title="Help">?</div>
+        <div class="icon-btn" title="Coming soon" onclick="showToast('Help centre coming soon')">?</div>
         <button class="btn-new" onclick="openNewWorkspaceModal()">+ New</button>
       </div>
     </header>
@@ -1663,13 +1663,14 @@
           </div>
           <button class="btn-primary" onclick="openNewWorkspaceModal()">+ New workspace</button>
         </div>
-        <div class="ws-filters">
-          <button class="filter-btn active" onclick="filterWS(this,'all')">All (84)</button>
-          <button class="filter-btn" onclick="filterWS(this,'progress')">In Progress (34)</button>
-          <button class="filter-btn" onclick="filterWS(this,'docs')">Awaiting Docs (18)</button>
-          <button class="filter-btn" onclick="filterWS(this,'signature')">Awaiting Signature (14)</button>
-          <button class="filter-btn" onclick="filterWS(this,'hold')">On Hold (8)</button>
-          <button class="filter-btn" onclick="filterWS(this,'completed')">Completed (10)</button>
+        <div class="ws-filters" id="ws-filters">
+          <button class="filter-btn active" onclick="filterWS(this,'all')">All</button>
+          <button class="filter-btn" onclick="filterWS(this,'progress')">In Progress</button>
+          <button class="filter-btn" onclick="filterWS(this,'docs')">Awaiting Docs</button>
+          <button class="filter-btn" onclick="filterWS(this,'signature')">Awaiting Signature</button>
+          <button class="filter-btn" onclick="filterWS(this,'hold')">On Hold</button>
+          <button class="filter-btn" onclick="filterWS(this,'completed')">Completed</button>
+          <button class="filter-btn" onclick="filterWS(this,'archived')" style="color:var(--ink-4)">📦 Archived</button>
         </div>
         <div class="ws-full-grid" id="ws-full-grid"></div>
       </div>
@@ -2721,7 +2722,7 @@
     `;
   }
 
-  function renderWSFull(workspaces, filter) {
+  function renderWSFull(workspaces, filter, isArchivedView) {
     const grid = document.getElementById('ws-full-grid');
     let data = workspaces || demoWorkspaces;
 
@@ -2730,14 +2731,18 @@
     }
 
     if (data.length === 0) {
-      grid.innerHTML = '<div style="padding:48px;text-align:center;color:var(--ink-4);font-size:13px;grid-column:1/-1">No workspaces found. Create your first one using the + New button.</div>';
+      grid.innerHTML = `<div style="padding:48px;text-align:center;color:var(--ink-4);font-size:13px;grid-column:1/-1">
+        ${isArchivedView
+          ? '📦 No archived workspaces. Archive a workspace using the ⋯ menu on any workspace card.'
+          : 'No workspaces found. Create your first one using the + New button.'}
+      </div>`;
       return;
     }
 
     grid.innerHTML = data.map((ws, i) => `
-      <div class="ws-full-card">
+      <div class="ws-full-card" style="${isArchivedView ? 'opacity:0.7' : ''}">
         <div class="ws-card-top">
-          <div style="display:flex;align-items:flex-start;gap:12px;flex:1;min-width:0" onclick="openWorkspace('${ws.id}')" style="cursor:pointer">
+          <div style="display:flex;align-items:flex-start;gap:12px;flex:1;min-width:0;cursor:pointer" onclick="openWorkspace('${ws.id}')">
             <div class="ws-card-icon" style="background:${hubBg(wsHub(ws))}">${wsIcon(ws)}</div>
             <div style="flex:1;min-width:0">
               <div class="ws-card-name">${ws.name}</div>
@@ -2745,17 +2750,23 @@
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-            <span class="status-badge ${statusClass(ws.status)}">${statusLabel(ws.status)}</span>
-            <div class="ws-menu" onclick="event.stopPropagation();showWSMenu(event,'${ws.id}','${ws.name.replace(/'/g,"\\'")}')">⋯</div>
+            ${isArchivedView
+              ? `<span class="status-badge status-hold">Archived</span>`
+              : `<span class="status-badge ${statusClass(ws.status)}">${statusLabel(ws.status)}</span>`}
+            <div class="ws-menu" onclick="event.stopPropagation();showWSMenu(event,'${ws.id}','${ws.name.replace(/'/g,"\\'")}',${!!isArchivedView})">⋯</div>
           </div>
         </div>
         <div class="progress-wrap" onclick="openWorkspace('${ws.id}')" style="cursor:pointer">
           <div class="progress-label"><span>Progress</span><span>${ws.progress || 0}%</span></div>
-          <div class="progress-bar"><div class="progress-fill" style="width:${ws.progress||0}%;background:${progressColor(ws.status)}"></div></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${ws.progress||0}%;background:${isArchivedView ? '#94a3b8' : progressColor(ws.status)}"></div></div>
         </div>
         <div class="ws-card-footer">
-          <span style="font-size:11px;color:var(--ink-4)">Updated ${ws.updated || timeAgo(ws.updated_at)}</span>
-          <span style="font-size:11px;color:var(--indigo);font-weight:600;cursor:pointer" onclick="openWorkspace('${ws.id}')">Open →</span>
+          <span style="font-size:11px;color:var(--ink-4)">
+            ${isArchivedView ? 'Archived ' + timeAgo(ws.archived_at || ws.updated_at) : 'Updated ' + (ws.updated || timeAgo(ws.updated_at))}
+          </span>
+          ${isArchivedView
+            ? `<span style="font-size:11px;color:var(--success);font-weight:600;cursor:pointer" onclick="restoreWorkspace('${ws.id}','${ws.name.replace(/'/g,"\\'")}')">↩ Restore</span>`
+            : `<span style="font-size:11px;color:var(--indigo);font-weight:600;cursor:pointer" onclick="openWorkspace('${ws.id}')">Open →</span>`}
         </div>
       </div>
     `).join('');
@@ -2864,8 +2875,40 @@
   function filterWS(btn, filter) {
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+
+    if (filter === 'archived') {
+      // Load archived workspaces from Supabase
+      loadArchivedWorkspaces();
+      return;
+    }
+
     const data = liveWorkspaces.length > 0 ? liveWorkspaces : demoWorkspaces;
     renderWSFull(data, filter === 'all' ? null : filter);
+  }
+
+  async function loadArchivedWorkspaces() {
+    if (!currentOrg) {
+      // Demo mode — show empty archived
+      renderWSFull([], null, true);
+      return;
+    }
+    try {
+      const { data: archived } = await sb
+        .from('ff_workspaces')
+        .select('*')
+        .eq('organisation_id', currentOrg.id)
+        .neq('type', 'hub')
+        .eq('archived', true)
+        .order('updated_at', { ascending: false });
+
+      renderWSFull(archived || [], null, true);
+
+      if (!archived || archived.length === 0) {
+        showToast('No archived workspaces');
+      }
+    } catch(e) {
+      showToast('Error loading archived: ' + e.message);
+    }
   }
 
   // ── SETTINGS ────────────────────────────────────────────────
@@ -2893,22 +2936,21 @@
 
   document.addEventListener('click', closeCtxMenu);
 
-  function showWSMenu(e, wsId, wsName) {
+  function showWSMenu(e, wsId, wsName, isArchived) {
     closeCtxMenu();
-    const ws = liveWorkspaces.find(w => String(w.id) === String(wsId))
-            || demoWorkspaces.find(w => String(w.id) === String(wsId));
-    const isArchived = ws?.archived;
-
     const menu = document.createElement('div');
     menu.id = 'ctx-menu';
     menu.className = 'ctx-menu';
     menu.innerHTML = `
       <div class="ctx-item" onclick="openWorkspace('${wsId}')">📂 Open workspace</div>
       <div class="ctx-divider"></div>
-      ${!isArchived ? `<div class="ctx-item" onclick="archiveWorkspace('${wsId}','${wsName}')">📦 Archive</div>` : `<div class="ctx-item" onclick="restoreWorkspace('${wsId}','${wsName}')">↩ Restore</div>`}
-      ${isArchived ? `<div class="ctx-divider"></div><div class="ctx-item danger" onclick="deleteWorkspace('${wsId}','${wsName}')">🗑 Delete permanently</div>` : ''}
+      ${!isArchived
+        ? `<div class="ctx-item" onclick="archiveWorkspace('${wsId}','${wsName}')">📦 Archive</div>`
+        : `<div class="ctx-item" onclick="restoreWorkspace('${wsId}','${wsName}')">↩ Restore</div>
+           <div class="ctx-divider"></div>
+           <div class="ctx-item danger" onclick="deleteWorkspace('${wsId}','${wsName}')">🗑 Delete permanently</div>`
+      }
     `;
-
     positionMenu(menu, e);
   }
 
