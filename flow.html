@@ -2414,11 +2414,9 @@
           detail:          { name, type, hub }
         });
 
-        liveWorkspaces.unshift(ws);
-        renderRecent(liveWorkspaces);
-        renderWSFull(liveWorkspaces);
-        updateStats(liveWorkspaces);
-        showToast('Workspace created: ' + name);
+        await loadLiveData();
+        showToast("Workspace created: " + name);
+        showView("workspaces");
       } else {
         // Demo mode
         demoWorkspaces.unshift({
@@ -2428,6 +2426,7 @@
         renderRecent(demoWorkspaces);
         renderWSFull(demoWorkspaces);
         showToast('Workspace created: ' + name);
+        showView('workspaces');
       }
 
       closeModal('new-workspace-modal');
