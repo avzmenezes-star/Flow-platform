@@ -400,7 +400,15 @@
     .mapper-doc-toolbar { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid var(--border); background:var(--surface-2); }
     .mapper-doc-title { font-size:13px; font-weight:700; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .mapper-preview { padding:18px; min-height:520px; max-height:68vh; overflow:auto; background:#fbfaf8; }
-    .mapper-paper { background:white; border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow); padding:26px; font-size:13px; line-height:1.7; white-space:pre-wrap; color:var(--ink-2); }
+    .mapper-paper { background:white; border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow); padding:26px; font-size:13px; line-height:1.7; white-space:pre-wrap; color:var(--ink-2); position:relative; min-height:620px; cursor:crosshair; }
+    .mapper-paper.has-frame { padding:0; overflow:hidden; }
+    .mapper-frame { width:100%; min-height:720px; border:0; display:block; background:white; }
+    .mapper-click-note { font-size:11px; color:var(--ink-4); margin-top:4px; }
+    .mapper-marker { position:absolute; transform:translate(-50%,-50%); z-index:5; background:var(--ff); color:white; border-radius:999px; font-size:10px; line-height:1; padding:5px 7px; box-shadow:0 4px 12px rgba(0,0,0,0.18); border:2px solid white; max-width:130px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .mapper-marker.pending { background:var(--warning); }
+    .template-actions { display:flex; gap:6px; margin-top:12px; padding-top:12px; border-top:1px solid var(--border); }
+    .template-mini-btn { flex:1; padding:6px 8px; border-radius:7px; border:1px solid var(--border); background:var(--surface-2); color:var(--ink-2); font-size:11px; font-weight:600; cursor:pointer; font-family:'Instrument Sans',sans-serif; }
+    .template-mini-btn:hover { border-color:var(--ff); color:var(--ff); background:var(--ff-light); }
     .mapper-placeholder { display:inline-flex; padding:1px 6px; border-radius:5px; background:var(--ff-light); color:var(--ff-dark); font-family:monospace; font-size:12px; border:1px solid #99f6e4; cursor:pointer; }
     .mapper-side { display:flex; flex-direction:column; gap:14px; }
     .mapper-field-row { display:flex; align-items:center; gap:10px; padding:10px 12px; border-bottom:1px solid var(--border); }
@@ -757,6 +765,7 @@
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn-ghost" onclick="openUploadModal()">Upload/change document</button>
             <button class="btn-ghost" onclick="mapperLoadEntityPreset()">Add OTP entity pack</button>
+            <button class="btn-ghost" onclick="saveMapperToActiveTemplate()">Save mapping to template</button>
             <button class="btn-primary" onclick="useMapperFieldsInBuilder()">Use mapped fields in form</button>
           </div>
         </div>
@@ -1152,6 +1161,10 @@
   let currentClientConfig = null;
   let clientEntityCounters = {};
   let isDemo         = false;
+  let mapperDocument = { name:'', text:'', detected:[], type:'', objectUrl:'', previewKind:'text' };
+  let mappedFields = [];
+  let pendingMapperPosition = null;
+  let activeTemplateId = null;
   const DEV_STORAGE_KEY = 'formflow_developer_mode_state_v1';
 
   function deepClone(value) {
@@ -1187,7 +1200,7 @@
   function saveDevState() {
     if (!isDemo) return;
     try {
-      localStorage.setItem(DEV_STORAGE_KEY, JSON.stringify({ workflows, templates, submissions }));
+      localStorage.setItem(DEV_STORAGE_KEY, JSON.stringify({ workflows, templates, submissions, generatedDocuments: [] }));
     } catch (e) {
       console.warn('Developer state could not be saved', e);
     }
@@ -1216,7 +1229,9 @@
       category: t.category || 'other',
       fields: Array.isArray(t.fields) ? t.fields : [],
       icon: t.icon || categoryIcon(t.category || 'other'),
-      desc: t.description || t.desc || ''
+      desc: t.description || t.desc || '',
+      document: t.document || null,
+      mappings: Array.isArray(t.mappings) ? t.mappings : (Array.isArray(t.fields) ? t.fields : [])
     };
   }
 
@@ -1549,8 +1564,12 @@
         <div class="template-name">${t.name}</div>
         <div class="template-desc">${t.desc||''}</div>
         <div class="template-footer">
-          <div class="template-fields">${(t.fields||[]).length} merge fields</div>
+          <div class="template-fields">${(t.fields||[]).length} mapped field${(t.fields||[]).length===1?'':'s'}</div>
           <div class="template-cat">${t.category}</div>
+        </div>
+        <div class="template-actions" onclick="event.stopPropagation()">
+          <button class="template-mini-btn" onclick="openTemplateMapper('${t.id}')">Map document</button>
+          <button class="template-mini-btn" onclick="useTemplate('${t.id}')">Use fields</button>
         </div>
       </div>
     `).join('') + `
@@ -1564,11 +1583,23 @@
   function useTemplate(id) {
     const t = templates.find(t=>String(t.id)===String(id));
     if (!t) return;
-    builderFields = (t.fields||[]).map(f=> typeof f === 'string' ? ({ id:f, label:formatLabel(f), placeholder:'{{'+f+'}}', type:guessFieldType(f), required:true }) : f);
+    const sourceFields = Array.isArray(t.mappings) && t.mappings.length ? t.mappings : (t.fields || []);
+    builderFields = sourceFields.map(f=> typeof f === 'string' ? ({ id:f, label:formatLabel(f), placeholder:'{{'+f+'}}', type:guessFieldType(f), required:true }) : f);
     renderBuilderFields(builderFields);
     document.getElementById('builder-title').value = t.name;
     showView('builder');
     showToast('Template loaded: ' + t.name);
+  }
+
+  function openTemplateMapper(id) {
+    const t = templates.find(t=>String(t.id)===String(id));
+    if (!t) return;
+    activeTemplateId = t.id;
+    mappedFields = deepClone(Array.isArray(t.mappings) && t.mappings.length ? t.mappings : (t.fields || []));
+    mapperDocument = t.document ? deepClone(t.document) : { name:t.name, text:'', detected:(t.fields||[]).map(f => typeof f === 'string' ? f : f.id).filter(Boolean), type:'', objectUrl:'', previewKind:'simulated' };
+    renderMapperWorkspace();
+    showView('mapper');
+    showToast('Opened mapper for: ' + t.name);
   }
 
   // ── TEMPLATE UPLOAD ─────────────────────────────────────────
@@ -1576,6 +1607,9 @@
     document.getElementById('upload-step-1').style.display = 'block';
     document.getElementById('upload-step-2').style.display = 'none';
     document.getElementById('upload-btn').style.display    = 'none';
+    activeTemplateId = null;
+    mappedFields = [];
+    pendingMapperPosition = null;
     document.getElementById('upload-modal').classList.add('open');
   }
 
@@ -1583,38 +1617,60 @@
     const file = input.files[0];
     if (!file) return;
 
+    const ext = file.name.split('.').pop().toLowerCase();
+    const objectUrl = URL.createObjectURL(file);
+    const fallbackFields = inferFieldsFromFilename(file.name);
+
     const reader = new FileReader();
     reader.onload = function(e) {
       const content = e.target.result || '';
-      // Detect {{placeholders}} in text content
-      const placeholders = detectPlaceholders(content);
-      mapperDocument = { name:file.name, text:content, detected:placeholders || [], type:file.name.split('.').pop().toLowerCase() };
+      const placeholders = detectPlaceholders(content) || fallbackFields;
+      mapperDocument = {
+        name: file.name,
+        text: ext === 'txt' ? content : '',
+        detected: placeholders || [],
+        type: ext,
+        objectUrl,
+        previewKind: ext === 'pdf' ? 'pdf' : (ext === 'txt' ? 'text' : 'simulated')
+      };
       showUploadStep2(file.name, placeholders, content);
+      autoSelectTemplateCategory(file.name);
     };
 
-    // Read as text for docx/txt, handle gracefully
-    if (file.name.endsWith('.txt')) {
+    if (ext === 'txt') {
       reader.readAsText(file);
     } else {
-      // For docx/pdf, simulate detection with file name + common fields
-      // In production, you'd use a server-side parser
+      // For browser-only developer mode, PDFs are previewed with an iframe.
+      // DOCX needs server-side parsing later, so we show a simulated mapping sheet.
       reader.readAsText(file);
-      // Fallback: show detected fields from filename context
-      setTimeout(() => {
-        const cat = file.name.toLowerCase();
-        let fields = [];
-        if (cat.includes('lease') || cat.includes('rental')) {
-          fields = ['tenant_name','landlord_name','property_address','monthly_rental','lease_start','lease_end','deposit_amount','id_number','phone_number','email_address'];
-        } else if (cat.includes('employ') || cat.includes('contract')) {
-          fields = ['employee_name','position','start_date','salary','id_number','tax_number','notice_period','department','line_manager'];
-        } else if (cat.includes('otp') || cat.includes('purchase')) {
-          fields = ['buyer_name','seller_name','property_address','purchase_price','deposit','transfer_date','bond_amount','id_number'];
-        } else {
-          fields = ['client_name','id_number','phone_number','email_address','physical_address','date_of_birth','company_name','tax_number'];
-        }
-        if (fields.length > 0) { mapperDocument = { name:file.name, text:'', detected:fields, type:file.name.split('.').pop().toLowerCase() }; showUploadStep2(file.name, fields, ''); }
-      }, 600);
     }
+  }
+
+  function inferFieldsFromFilename(filename) {
+    const cat = filename.toLowerCase();
+    if (cat.includes('lease') || cat.includes('rental')) {
+      return ['tenant_name','landlord_name','property_address','monthly_rental','lease_start','lease_end','deposit_amount','id_number','phone_number','email_address'];
+    }
+    if (cat.includes('employ') || cat.includes('contract')) {
+      return ['employee_name','position','start_date','salary','id_number','tax_number','notice_period','department','line_manager'];
+    }
+    if (cat.includes('otp') || cat.includes('offer') || cat.includes('purchase')) {
+      return ['buyer_name','seller_name','property_address','purchase_price','deposit_amount','transfer_date','bond_amount','occupation_date','id_number'];
+    }
+    if (cat.includes('invoice')) {
+      return ['client_name','invoice_number','invoice_date','line_items','amount_due','vat_number'];
+    }
+    return ['client_name','id_number','phone_number','email_address','physical_address','date_of_birth','company_name','tax_number'];
+  }
+
+  function autoSelectTemplateCategory(filename) {
+    const sel = document.getElementById('template-category');
+    if (!sel) return;
+    const n = filename.toLowerCase();
+    if (n.includes('otp') || n.includes('offer') || n.includes('purchase')) sel.value = 'otp';
+    else if (n.includes('lease') || n.includes('rental')) sel.value = 'lease';
+    else if (n.includes('employ')) sel.value = 'employment';
+    else if (n.includes('mandate')) sel.value = 'mandate';
   }
 
   function detectPlaceholders(text) {
@@ -1657,13 +1713,17 @@
     const category = document.getElementById('template-category').value;
     if (!name) { showToast('Please enter a template name'); return; }
 
-    const fields = mappedFields.length ? mappedFields : (window._detectedFields || []);
+    const fields = mappedFields.length ? mappedFields : (window._detectedFields || []).map(f => ({
+      id: normaliseFieldId(f), label: formatLabel(f), type: guessFieldType(f), required: true, source: 'detected', section: inferSection(f), placeholder: '{{' + normaliseFieldId(f) + '}}'
+    }));
     const templatePayload = {
       name,
       category,
       fields,
+      mappings: fields,
+      document: mapperDocument?.name ? { ...mapperDocument, objectUrl: mapperDocument.objectUrl || '' } : null,
       icon: categoryIcon(category),
-      description: `${fields.length} merge fields detected`
+      description: `${fields.length} mapped field${fields.length===1?'':'s'}${mapperDocument?.name ? ' · '+mapperDocument.name : ''}`
     };
 
     try {
@@ -1672,7 +1732,7 @@
       if (!isDemo && currentOrg?.id) {
         const { data, error } = await sb
           .from('ff_templates')
-          .insert({ ...templatePayload, organisation_id: currentOrg.id })
+          .insert({ name: templatePayload.name, category: templatePayload.category, fields: templatePayload.fields, icon: templatePayload.icon, description: templatePayload.description, organisation_id: currentOrg.id })
           .select()
           .single();
 
@@ -1727,17 +1787,43 @@
 
     if (!mapperDocument.name) {
       title.textContent = 'No document loaded';
-      preview.innerHTML = `<div class="mapper-empty"><div style="font-size:34px;margin-bottom:10px">📄</div><div style="font-weight:700;color:var(--ink);margin-bottom:6px">No document preview yet</div><div>Upload a document first. For now, TXT files show full text, while DOCX/PDF use a simulated preview until server-side parsing is added.</div></div>`;
+      preview.innerHTML = `<div class="mapper-empty"><div style="font-size:34px;margin-bottom:10px">📄</div><div style="font-weight:700;color:var(--ink);margin-bottom:6px">No document preview yet</div><div>Upload a document first. Then click anywhere on the preview to place a field marker.</div></div>`;
       return;
     }
 
     title.textContent = mapperDocument.name;
-    let text = mapperDocument.text || '';
-    if (!text.trim()) {
-      text = buildSimulatedDocumentPreview(mapperDocument.name, mapperDocument.detected || []);
+    const markers = renderMapperMarkers();
+    const pending = pendingMapperPosition ? `<span class="mapper-marker pending" style="left:${pendingMapperPosition.x}%;top:${pendingMapperPosition.y}%">new field</span>` : '';
+
+    if (mapperDocument.previewKind === 'pdf' && mapperDocument.objectUrl) {
+      preview.innerHTML = `<div class="mapper-paper has-frame" onclick="handleMapperPaperClick(event)"><iframe class="mapper-frame" src="${mapperDocument.objectUrl}"></iframe>${markers}${pending}</div><div class="mapper-click-note">Click on the document area to indicate where a form field should sit. PDF preview is browser-based in developer mode.</div>`;
+      return;
     }
-    const escaped = escapeHtml(text).replace(/\{\{([a-zA-Z0-9_]+)\}\}/g, (m, p) => `<span class="mapper-placeholder" onclick="addDetectedField('${p}')">{{${p}}}</span>`);
-    preview.innerHTML = `<div class="mapper-paper">${escaped}</div>`;
+
+    let text = mapperDocument.text || '';
+    if (!text.trim()) text = buildSimulatedDocumentPreview(mapperDocument.name, mapperDocument.detected || []);
+    const escaped = escapeHtml(text).replace(/\{\{([a-zA-Z0-9_]+)\}\}/g, (m, p) => `<span class="mapper-placeholder" onclick="event.stopPropagation();addDetectedField('${p}')">{{${p}}}</span>`);
+    preview.innerHTML = `<div class="mapper-paper" onclick="handleMapperPaperClick(event)">${escaped}${markers}${pending}</div><div class="mapper-click-note">Click the document where the field belongs, then add the field on the right. Placeholder chips can also be clicked.</div>`;
+  }
+
+  function renderMapperMarkers() {
+    return mappedFields
+      .filter(f => f.position && typeof f.position.x === 'number' && typeof f.position.y === 'number')
+      .map(f => `<span class="mapper-marker" title="${escapeHtml(f.label)}" style="left:${f.position.x}%;top:${f.position.y}%">${escapeHtml(f.label)}</span>`)
+      .join('');
+  }
+
+  function handleMapperPaperClick(event) {
+    if (event.target.classList.contains('mapper-placeholder') || event.target.classList.contains('mapper-marker')) return;
+    const paper = event.currentTarget;
+    const rect = paper.getBoundingClientRect();
+    const x = Math.max(0, Math.min(100, ((event.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((event.clientY - rect.top) / rect.height) * 100));
+    pendingMapperPosition = { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
+    renderMapperDocument();
+    const labelEl = document.getElementById('mapper-field-label');
+    if (labelEl) labelEl.focus();
+    showToast('Field position selected — now add the field details');
   }
 
   function buildSimulatedDocumentPreview(filename, detected) {
@@ -1766,9 +1852,11 @@
       required: true,
       source: 'detected',
       section: inferSection(clean),
-      placeholder: '{{' + clean + '}}'
+      placeholder: '{{' + clean + '}}',
+      position: pendingMapperPosition ? { ...pendingMapperPosition } : null
     });
-    renderMappedFields();
+    pendingMapperPosition = null;
+    renderMapperWorkspace();
     showToast('Mapped field: ' + formatLabel(clean));
   }
 
@@ -1789,10 +1877,12 @@
       required: reqEl.checked,
       source: 'manual',
       section: sectionEl.value.trim() || inferSection(id),
-      placeholder: '{{' + id + '}}'
+      placeholder: '{{' + id + '}}',
+      position: pendingMapperPosition ? { ...pendingMapperPosition } : null
     });
+    pendingMapperPosition = null;
     labelEl.value = ''; idEl.value = ''; sectionEl.value = '';
-    renderMappedFields();
+    renderMapperWorkspace();
     showToast('Manual field added');
   }
 
@@ -1818,7 +1908,46 @@
 
   function removeMappedField(i) {
     mappedFields.splice(i,1);
-    renderMappedFields();
+    renderMapperWorkspace();
+  }
+
+  function saveMapperToActiveTemplate() {
+    if (!mapperDocument.name && !mappedFields.length) { showToast('Nothing to save yet'); return; }
+    let name = mapperDocument.name ? mapperDocument.name.replace(/\.[^.]+$/, '').replace(/[-_]/g,' ') : 'Mapped Template';
+    const category = document.getElementById('template-category')?.value || inferTemplateCategory(mapperDocument.name || name);
+    if (activeTemplateId) {
+      const idx = templates.findIndex(t => String(t.id) === String(activeTemplateId));
+      if (idx > -1) {
+        templates[idx] = { ...templates[idx], fields: deepClone(mappedFields), mappings: deepClone(mappedFields), document: deepClone(mapperDocument), desc: `${mappedFields.length} mapped field${mappedFields.length===1?'':'s'} · ${mapperDocument.name || 'document'}` };
+        saveDevState(); renderTemplates(); renderWorkflows();
+        showToast('Template mapping updated');
+        return;
+      }
+    }
+    const newTemplate = {
+      id: 't' + Date.now(),
+      name,
+      category,
+      fields: deepClone(mappedFields),
+      mappings: deepClone(mappedFields),
+      document: deepClone(mapperDocument),
+      icon: categoryIcon(category),
+      desc: `${mappedFields.length} mapped field${mappedFields.length===1?'':'s'} · ${mapperDocument.name || 'document'}`
+    };
+    templates.unshift(newTemplate);
+    activeTemplateId = newTemplate.id;
+    saveDevState(); renderTemplates(); renderWorkflows();
+    showToast('Saved as template: ' + name);
+  }
+
+  function inferTemplateCategory(name) {
+    const n = (name || '').toLowerCase();
+    if (n.includes('otp') || n.includes('offer') || n.includes('purchase')) return 'otp';
+    if (n.includes('lease') || n.includes('rental')) return 'lease';
+    if (n.includes('employ')) return 'employment';
+    if (n.includes('mandate')) return 'mandate';
+    if (n.includes('invoice')) return 'other';
+    return 'other';
   }
 
   function useMapperFieldsInBuilder() {
