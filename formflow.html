@@ -124,6 +124,10 @@
     .docx-preview td,.docx-preview th{border:1px solid #ddd;padding:4px}
     .generated-custom-chip{display:flex;align-items:center;justify-content:space-between;gap:6px;border:1px solid var(--border);border-radius:8px;background:white;padding:7px 8px;margin-bottom:6px;font-size:11px;font-weight:800}
     .generated-custom-chip button{border:none;background:#fef2f2;color:#dc2626;border-radius:6px;padding:2px 6px;cursor:pointer;font-weight:900}
+    .simple-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+    .simple-link{font-family:monospace;font-size:10px;color:var(--ff-dark);word-break:break-all;background:var(--ff-light);border:1px solid #99f6e4;border-radius:7px;padding:7px;margin-top:7px}
+    .choice-preview{display:flex;gap:4px;align-items:center;justify-content:center}
+    .choice-preview span{font-size:10px}
     @media(max-width:1000px){
       .app{grid-template-columns:1fr}.sidebar{display:none}
       .builder{grid-template-columns:1fr}.right-tools{min-height:360px}
@@ -221,13 +225,19 @@
                   <option value="phone">Phone</option>
                   <option value="id_number">ID number</option>
                   <option value="tax_number">Income tax number</option>
-                  <option value="checkbox">Checkbox</option>
+                  <option value="checkbox">Single checkbox</option>
+                  <option value="choice">Choice group / checkboxes</option>
                   <option value="dropdown">Dropdown</option>
                   <option value="signature">Signature</option>
                   <option value="initials">Initials</option>
                   <option value="upload">Upload requirement</option>
                 </select>
-                <input class="tool-input" id="custom-options" placeholder="Dropdown options e.g. Single, Married ANC, Married COP">
+                <input class="tool-input" id="custom-options" placeholder="Options e.g. Single, Married ANC, Married COP">
+                <select class="tool-select" id="custom-display">
+                  <option value="dropdown">Show as dropdown in form</option>
+                  <option value="checkboxes">Show as checkbox options in form</option>
+                  <option value="radio">Show as single-choice buttons in form</option>
+                </select>
                 <button class="tool-btn primary wide" onclick="addCustomFieldToPalette()">Add custom field to place box</button>
                 <div id="custom-generated-fields" style="margin-top:8px"></div>
               </div>
@@ -496,11 +506,13 @@ function addCustomFieldToPalette(){
   const type=document.getElementById("custom-type").value;
   const customKey=document.getElementById("custom-key").value.trim();
   const options=document.getElementById("custom-options").value.split(",").map(x=>x.trim()).filter(Boolean);
+  const displayMode=document.getElementById("custom-display")?.value || "dropdown";
   customFieldPalette.push({
     label,
     type,
     key: makeKey(customKey || label),
     options,
+    displayMode,
     custom:true
   });
   document.getElementById("custom-label").value="";
@@ -554,7 +566,7 @@ function onOverlayMouseDown(e){
   const field={id:uid("field"),...pendingField,page:Number(overlay.dataset.page),x:e.clientX-rect.left,y:e.clientY-rect.top,w:defaultSize(pendingField.type).w,h:defaultSize(pendingField.type).h,required:true};
   wf.fields.push(field);pendingField=null;saveState();renderPdfFields();document.getElementById("hint").textContent="Field placed. Choose another preset or custom field.";
 }
-function defaultSize(t){if(t==="checkbox")return{w:24,h:24};if(t==="textbox")return{w:190,h:70};if(t==="signature")return{w:180,h:42};if(t==="initials")return{w:80,h:32};return{w:150,h:34}}
+function defaultSize(t){if(t==="checkbox")return{w:24,h:24};if(t==="choice")return{w:180,h:42};if(t==="textbox")return{w:190,h:70};if(t==="signature")return{w:180,h:42};if(t==="initials")return{w:80,h:32};return{w:150,h:34}}
 
 function renderPdfFields(){
   const wf=currentWorkflow(); if(!wf)return;
@@ -562,9 +574,15 @@ function renderPdfFields(){
   wf.fields.forEach(f=>{
     const overlay=document.querySelector(`.page-overlay[data-page="${f.page}"]`); if(!overlay)return;
     const d=document.createElement("div");
-    d.className=`placed ${f.type} ${f.id===state.selectedFieldId?"selected-field":""}`;
+    d.className=`placed ${f.type} ${f.displayMode||""} ${f.id===state.selectedFieldId?"selected-field":""}`;
     d.style.left=f.x+"px";d.style.top=f.y+"px";d.style.width=f.w+"px";d.style.height=f.h+"px";
-    d.innerHTML=(f.type==="checkbox"?"":`${esc(f.partyName)}: ${esc(f.label)}<small>{{${esc(f.key)}}}</small>`) + `<button class="delete-x" title="Delete" onclick="event.stopPropagation();deleteField('${f.id}')">×</button><span class="resize-handle"></span>`;
+    if(f.type==="checkbox"){
+      d.innerHTML=`<button class="delete-x" title="Delete" onclick="event.stopPropagation();deleteField('${f.id}')">×</button><span class="resize-handle"></span>`;
+    } else if(f.type==="choice"){
+      d.innerHTML=`${esc(f.partyName)}: ${esc(f.label)}<small>${esc(f.displayMode||"dropdown")} · {{${esc(f.key)}}}</small><button class="delete-x" title="Delete" onclick="event.stopPropagation();deleteField('${f.id}')">×</button><span class="resize-handle"></span>`;
+    } else {
+      d.innerHTML=`${esc(f.partyName)}: ${esc(f.label)}<small>{{${esc(f.key)}}}</small><button class="delete-x" title="Delete" onclick="event.stopPropagation();deleteField('${f.id}')">×</button><span class="resize-handle"></span>`;
+    }
     d.addEventListener("mousedown",ev=>startDrag(ev,f.id));
     d.addEventListener("dblclick",ev=>{ev.stopPropagation();editField(f.id)});
     d.querySelector(".resize-handle").addEventListener("mousedown",ev=>startResize(ev,f.id));
@@ -644,6 +662,54 @@ function copyText(text){
   navigator.clipboard?.writeText(text).then(()=>showToast("Link copied"));
 }
 
+
+function renderSimpleFormFromToken(token){
+  const form=state.simpleForms.find(f=>f.token===token);
+  if(!form)return false;
+  document.body.innerHTML=`
+    <div style="min-height:100vh;background:#f5f4f1;padding:28px;font-family:'Instrument Sans',sans-serif">
+      <div style="max-width:680px;margin:0 auto;background:white;border:1px solid #e5e3de;border-radius:16px;padding:24px;box-shadow:0 2px 14px rgba(0,0,0,.08)">
+        <div style="font-family:'Instrument Serif',serif;font-size:28px;margin-bottom:4px">form<span style="color:#0d9488">flow</span></div>
+        <h2 style="font-family:'Instrument Serif',serif;font-size:24px;margin:20px 0 4px">${esc(form.name)}</h2>
+        <p style="color:#6b7280;font-size:14px;margin-bottom:22px">Please complete the form below.</p>
+        <form id="simple-live-form">
+          ${form.questions.map(q=>renderStandaloneSimpleField(q)).join("")}
+          <button type="submit" style="width:100%;margin-top:12px;padding:13px;border:none;border-radius:10px;background:#0d9488;color:white;font-weight:800;cursor:pointer">Submit</button>
+        </form>
+        <div id="done" style="display:none;margin-top:14px;background:#f0fdf4;border:1px solid #86efac;color:#166534;border-radius:10px;padding:12px;font-size:13px">Submitted in developer mode. This would route to the Marketing Hub.</div>
+      </div>
+    </div>`;
+  document.getElementById("simple-live-form").addEventListener("submit",function(e){
+    e.preventDefault();
+    const answers={};
+    form.questions.forEach(q=>{
+      const els=[...document.querySelectorAll(`[name="${q.id}"]`)];
+      if(q.displayMode==="checkboxes") answers[q.id]=els.filter(x=>x.checked).map(x=>x.value);
+      else answers[q.id]=els[0]?.value || "";
+    });
+    form.responses=form.responses||[];
+    form.responses.push({answers,createdAt:new Date().toISOString(),route:form.route});
+    localStorage.setItem(LS_KEY,JSON.stringify(state));
+    document.getElementById("done").style.display="block";
+    this.querySelector("button").disabled=true;
+  });
+  return true;
+}
+
+function renderStandaloneSimpleField(q){
+  const label=`<label style="display:block;font-size:12px;font-weight:800;color:#374151;margin-bottom:6px">${esc(q.label)} ${q.required?"*":""}</label>`;
+  const wrapStart=`<div style="margin-bottom:14px">`;
+  const wrapEnd=`</div>`;
+  if(q.type==="textbox")return `${wrapStart}${label}<textarea name="${esc(q.id)}" rows="3" style="width:100%;padding:10px;border:1px solid #e5e3de;border-radius:8px"></textarea>${wrapEnd}`;
+  if(q.type==="choice"){
+    const opts=q.options&&q.options.length?q.options:["Yes","No"];
+    if(q.displayMode==="checkboxes")return `${wrapStart}${label}${opts.map(o=>`<label style="display:block;font-size:13px;margin:5px 0"><input type="checkbox" name="${esc(q.id)}" value="${esc(o)}"> ${esc(o)}</label>`).join("")}${wrapEnd}`;
+    return `${wrapStart}${label}<select name="${esc(q.id)}" style="width:100%;padding:10px;border:1px solid #e5e3de;border-radius:8px">${opts.map(o=>`<option>${esc(o)}</option>`).join("")}</select>${wrapEnd}`;
+  }
+  const type=q.type==="email"?"email":q.type==="phone"?"tel":"text";
+  return `${wrapStart}${label}<input name="${esc(q.id)}" type="${type}" style="width:100%;padding:10px;border:1px solid #e5e3de;border-radius:8px">${wrapEnd}`;
+}
+
 function renderPartyCollectionFromToken(token){
   const wf=state.workflows.find(w => (w.partyLinks||[]).some(l=>l.token===token));
   if(!wf)return false;
@@ -670,6 +736,12 @@ function renderStandalonePartyField(f){
   const wrapEnd=`</div>`;
   if(f.type==="textbox")return `${wrapStart}${label}<textarea rows="3" style="width:100%;padding:10px;border:1px solid #e5e3de;border-radius:8px"></textarea>${wrapEnd}`;
   if(f.type==="dropdown")return `${wrapStart}${label}<select style="width:100%;padding:10px;border:1px solid #e5e3de;border-radius:8px">${(f.options||["Single","Married ANC","Married COP","Divorced","Widowed"]).map(o=>`<option>${esc(o)}</option>`).join("")}</select>${wrapEnd}`;
+  if(f.type==="choice"){
+    const opts=f.options&&f.options.length?f.options:["Yes","No"];
+    if(f.displayMode==="checkboxes")return `${wrapStart}${label}${opts.map(o=>`<label style="display:block;font-size:13px;margin:5px 0"><input type="checkbox"> ${esc(o)}</label>`).join("")}${wrapEnd}`;
+    if(f.displayMode==="radio")return `${wrapStart}${label}${opts.map(o=>`<label style="display:block;font-size:13px;margin:5px 0"><input type="radio" name="${esc(f.key)}"> ${esc(o)}</label>`).join("")}${wrapEnd}`;
+    return `${wrapStart}${label}<select style="width:100%;padding:10px;border:1px solid #e5e3de;border-radius:8px">${opts.map(o=>`<option>${esc(o)}</option>`).join("")}</select>${wrapEnd}`;
+  }
   if(f.type==="checkbox")return `${wrapStart}<label style="font-size:13px"><input type="checkbox"> ${esc(f.label)}</label>${wrapEnd}`;
   if(f.type==="upload")return `${wrapStart}${label}<input type="file" style="width:100%;padding:10px;border:1px solid #e5e3de;border-radius:8px">${wrapEnd}`;
   const type=f.type==="email"?"email":f.type==="date"?"date":f.type==="amount"?"number":"text";
@@ -692,6 +764,12 @@ function renderPreviewField(f){
   const label=`<label class="label">${esc(f.label)} ${f.required?"*":""}</label>`;
   if(f.type==="textbox")return`<div class="form-row">${label}<textarea class="form-input" rows="3"></textarea></div>`;
   if(f.type==="dropdown")return`<div class="form-row">${label}<select class="form-input">${(f.options||["Single","Married ANC","Married COP","Divorced","Widowed"]).map(o=>`<option>${esc(o)}</option>`).join("")}</select></div>`;
+  if(f.type==="choice"){
+    const opts=f.options&&f.options.length?f.options:["Yes","No"];
+    if(f.displayMode==="checkboxes")return`<div class="form-row">${label}${opts.map(o=>`<label style="display:block;font-size:13px;margin:5px 0"><input type="checkbox"> ${esc(o)}</label>`).join("")}</div>`;
+    if(f.displayMode==="radio")return`<div class="form-row">${label}${opts.map(o=>`<label style="display:block;font-size:13px;margin:5px 0"><input type="radio" name="${esc(f.key)}"> ${esc(o)}</label>`).join("")}</div>`;
+    return`<div class="form-row">${label}<select class="form-input">${opts.map(o=>`<option>${esc(o)}</option>`).join("")}</select></div>`;
+  }
   if(f.type==="checkbox")return`<div class="form-row"><label style="font-size:13px"><input type="checkbox"> ${esc(f.label)}</label></div>`;
   if(f.type==="upload")return`<div class="form-row">${label}<input class="form-input" type="file"></div>`;
   const type=f.type==="email"?"email":f.type==="date"?"date":f.type==="amount"?"number":"text";
@@ -716,10 +794,57 @@ function renderEntities(){
   document.getElementById("entity-list").innerHTML=state.entities.map(e=>`
     <div class="row"><div class="row-main"><div class="row-title">${esc(e.name)}</div><div class="row-sub">${e.type} · ${e.status}</div></div><span class="pill">${e.completeness}% complete</span></div>`).join("")||`<div class="row"><div class="row-main">No reusable entities yet.</div></div>`;
 }
-function createSimpleForm(){state.simpleForms.unshift({id:uid("sf"),name:"Marketing Questionnaire",route:"Marketing Hub",questions:4,createdAt:new Date().toISOString()});saveState()}
+function createSimpleForm(){
+  const name=prompt("Simple form name:", "Marketing Questionnaire") || "Marketing Questionnaire";
+  const form={
+    id:uid("sf"),
+    token:uid("sflink"),
+    name,
+    route:"Marketing Hub",
+    questions:[
+      {id:"name",label:"Full name",type:"text",required:true},
+      {id:"email",label:"Email address",type:"email",required:true},
+      {id:"phone",label:"Phone number",type:"phone",required:false},
+      {id:"interest",label:"What service are you interested in?",type:"choice",displayMode:"dropdown",options:["Buying","Selling","Rentals","Property management"],required:true}
+    ],
+    responses:[],
+    createdAt:new Date().toISOString()
+  };
+  state.simpleForms.unshift(form);
+  saveState();
+  showToast("Simple form created");
+}
 function renderSimpleForms(){
-  document.getElementById("simple-list").innerHTML=state.simpleForms.map(f=>`
-    <div class="row"><div class="row-main"><div class="row-title">${esc(f.name)}</div><div class="row-sub">${f.questions} questions · routes to ${f.route}</div></div><button class="danger-btn" onclick="deleteSimpleForm('${f.id}')">Delete</button></div>`).join("")||`<div class="row"><div class="row-main">No simple forms yet.</div></div>`;
+  document.getElementById("simple-list").innerHTML=state.simpleForms.map(f=>{
+    const url=`${location.origin}${location.pathname}?simple=${f.token}`;
+    return `
+    <div class="row">
+      <div class="row-main">
+        <div class="row-title">${esc(f.name)}</div>
+        <div class="row-sub">${f.questions.length} questions · routes to ${f.route} · ${f.responses?.length||0} responses</div>
+        <div class="simple-link">${esc(url)}</div>
+        <div class="simple-actions">
+          <button class="small-btn" onclick="copyText('${escAttr(url)}')">Copy link</button>
+          <button class="small-btn" onclick="openSimpleFormBuilder('${f.id}')">Edit questions</button>
+          <button class="small-btn" onclick="openSimpleResponses('${f.id}')">View responses</button>
+          <button class="danger-btn" onclick="deleteSimpleForm('${f.id}')">Delete</button>
+        </div>
+      </div>
+    </div>`}).join("")||`<div class="row"><div class="row-main">No simple forms yet.</div></div>`;
+}
+function openSimpleFormBuilder(id){
+  const form=state.simpleForms.find(f=>f.id===id);if(!form)return;
+  const label=prompt("Add a question label, or leave blank to cancel:");
+  if(!label)return;
+  const type=prompt("Question type: text, email, phone, textbox, dropdown, checkboxes", "text") || "text";
+  const options = ["dropdown","checkboxes"].includes(type) ? (prompt("Options separated by commas:", "Option 1, Option 2")||"").split(",").map(x=>x.trim()).filter(Boolean) : [];
+  form.questions.push({id:makeKey(label),label,type:type==="checkboxes"?"choice":type,displayMode:type==="checkboxes"?"checkboxes":"dropdown",options,required:false});
+  saveState();
+}
+function openSimpleResponses(id){
+  const form=state.simpleForms.find(f=>f.id===id);if(!form)return;
+  const text=(form.responses||[]).map((r,i)=>`Response ${i+1}:\n`+JSON.stringify(r.answers,null,2)).join("\n\n") || "No responses yet.";
+  alert(text);
 }
 function deleteSimpleForm(id){state.simpleForms=state.simpleForms.filter(f=>f.id!==id);saveState()}
 
@@ -727,8 +852,16 @@ function resetDemo(){if(!confirm("Reset all FormFlow developer data?"))return;st
 function makeKey(s){return String(s||"field").toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"")}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]))}
 
-const partyToken = new URLSearchParams(location.search).get("party");
-if(!partyToken || !renderPartyCollectionFromToken(partyToken)) renderAll();
+const params = new URLSearchParams(location.search);
+const partyToken = params.get("party");
+const simpleToken = params.get("simple");
+if(simpleToken){
+  if(!renderSimpleFormFromToken(simpleToken)) renderAll();
+} else if(partyToken){
+  if(!renderPartyCollectionFromToken(partyToken)) renderAll();
+} else {
+  renderAll();
+}
 </script>
 </body>
 </html>
