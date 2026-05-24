@@ -2108,7 +2108,8 @@
   function devBypass() {
     // Demo mode — loads with demo data, no Supabase needed
     currentUser = { id: 'demo', email: 'demo@flow.com' };
-    enterApp({ fullName: 'Demo User', role: 'owner' }, null, true);
+    currentOrg  = null; // explicitly null so demo branch fires
+    enterApp({ full_name: 'Americo Menezes', role: 'owner' }, null, true);
   }
 
   // ── ORG SETUP ───────────────────────────────────────────────
@@ -2415,23 +2416,31 @@
         });
 
         await loadLiveData();
+        closeModal('new-workspace-modal');
+        document.getElementById('new-ws-name').value   = '';
+        document.getElementById('new-ws-client').value = '';
         showToast("Workspace created: " + name);
         showView("workspaces");
       } else {
         // Demo mode
+        const hubSel = document.getElementById('new-ws-hub');
+        const hubName = hubSel.options[hubSel.selectedIndex]?.text || hub;
         demoWorkspaces.unshift({
-          id: Date.now(), name, hub, type, client,
-          status:'progress', updated:'Just now', icon:'🗂', progress:0
+          id: Date.now(), name,
+          hub: hubName.replace(/^[^\s]+\s/, ''), // strip emoji
+          type, client_name: client,
+          status:'active', updated_at: new Date().toISOString(),
+          icon:'🗂', progress:0,
+          metadata: { hub: hubName }
         });
+        closeModal('new-workspace-modal');
+        document.getElementById('new-ws-name').value   = '';
+        document.getElementById('new-ws-client').value = '';
         renderRecent(demoWorkspaces);
         renderWSFull(demoWorkspaces);
         showToast('Workspace created: ' + name);
         showView('workspaces');
       }
-
-      closeModal('new-workspace-modal');
-      document.getElementById('new-ws-name').value   = '';
-      document.getElementById('new-ws-client').value = '';
     } catch(e) {
       showToast('Error: ' + e.message);
     } finally {
