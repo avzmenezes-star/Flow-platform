@@ -414,6 +414,16 @@
     .template-actions { display:flex; gap:6px; margin-top:12px; padding-top:12px; border-top:1px solid var(--border); }
     .template-mini-btn { flex:1; padding:6px 8px; border-radius:7px; border:1px solid var(--border); background:var(--surface-2); color:var(--ink-2); font-size:11px; font-weight:600; cursor:pointer; font-family:'Instrument Sans',sans-serif; }
     .template-mini-btn:hover { border-color:var(--ff); color:var(--ff); background:var(--ff-light); }
+    .danger-mini-btn { padding:6px 8px; border-radius:7px; border:1px solid #fecaca; background:var(--danger-light); color:var(--danger); font-size:11px; font-weight:700; cursor:pointer; font-family:'Instrument Sans',sans-serif; }
+    .danger-mini-btn:hover { border-color:var(--danger); background:#fee2e2; }
+    .transaction-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; box-shadow:var(--shadow); cursor:pointer; transition:all .15s; }
+    .transaction-card:hover { transform:translateY(-1px); box-shadow:var(--shadow-md); border-color:var(--ff); }
+    .transaction-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
+    .entity-health { height:6px; background:var(--border); border-radius:99px; overflow:hidden; margin-top:8px; }
+    .entity-health-fill { height:100%; background:var(--ff); border-radius:99px; }
+    .party-setup-row { display:grid; grid-template-columns: 92px 1fr 92px 72px 82px 32px; gap:8px; align-items:center; margin-bottom:8px; }
+    @media (max-width: 720px) { .party-setup-row { grid-template-columns:1fr; border:1px solid var(--border); padding:10px; border-radius:10px; } }
+
     .mapper-placeholder { display:inline-flex; padding:1px 6px; border-radius:5px; background:var(--ff-light); color:var(--ff-dark); font-family:monospace; font-size:12px; border:1px solid #99f6e4; cursor:pointer; }
     .mapper-side { display:flex; flex-direction:column; gap:14px; }
     .mapper-field-row { display:flex; align-items:center; gap:10px; padding:10px 12px; border-bottom:1px solid var(--border); }
@@ -544,6 +554,12 @@
         <div class="nav-section-label">Overview</div>
         <div class="nav-item active" onclick="showView('dashboard')">
           <div class="nav-icon">⊞</div> Dashboard
+        </div>
+        <div class="nav-item" onclick="showView('transactions')">
+          <div class="nav-icon">🏷️</div> Transactions
+        </div>
+        <div class="nav-item" onclick="showView('entities')">
+          <div class="nav-icon">👥</div> Entities
         </div>
         <div class="nav-item" onclick="showView('submissions')">
           <div class="nav-icon">📥</div> Submissions
@@ -858,6 +874,30 @@
         </div>
       </div>
 
+      <!-- ── TRANSACTIONS VIEW ───────────────────────────────────── -->
+      <div class="view" id="view-transactions">
+        <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <h2 style="font-family:'Instrument Serif',serif;font-size:22px;margin-bottom:3px">Transactions</h2>
+            <p style="font-size:13px;color:var(--ink-3)">Live deals/workspaces created from workflows. This is where collected information, parties, documents and SignFlow prep come together.</p>
+          </div>
+          <button class="btn-primary" onclick="openNewWorkflowModal()">+ New transaction workflow</button>
+        </div>
+        <div class="transaction-grid" id="transactions-grid"></div>
+      </div>
+
+      <!-- ── ENTITIES VIEW ──────────────────────────────────────── -->
+      <div class="view" id="view-entities">
+        <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <h2 style="font-family:'Instrument Serif',serif;font-size:22px;margin-bottom:3px">Entities</h2>
+            <p style="font-size:13px;color:var(--ink-3)">Reusable people, companies and trusts created from collected form data. Use this to confirm completeness before reusing an entity in another transaction.</p>
+          </div>
+          <button class="btn-ghost" onclick="renderEntities()">Refresh</button>
+        </div>
+        <div class="transaction-grid" id="entities-grid"></div>
+      </div>
+
       <!-- ── SUBMISSIONS VIEW ───────────────────────────────────── -->
       <div class="view" id="view-submissions">
         <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
@@ -1054,6 +1094,29 @@
           <option value="hr_record">HR employee record</option>
           <option value="compliance_vault">Transaction vault / compliance archive</option>
         </select>
+      </div>
+      <div class="form-row" id="wf-party-setup-row">
+        <label class="form-label">Parties involved / signers</label>
+        <div style="padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2)">
+          <div style="display:grid;grid-template-columns:1fr 120px;gap:10px;margin-bottom:10px;align-items:end">
+            <div>
+              <div style="font-size:12px;color:var(--ink-3);line-height:1.5">Start simple: Party 1, Party 2, Party 3. Rename them to Purchaser, Seller, Agent, etc. These parties become form links and SignFlow roles.</div>
+            </div>
+            <div>
+              <label class="form-label">How many?</label>
+              <select class="form-input" id="wf-party-count" onchange="renderWorkflowPartySetup()">
+                <option value="1">1 party</option>
+                <option value="2" selected>2 parties</option>
+                <option value="3">3 parties</option>
+                <option value="4">4 parties</option>
+                <option value="5">5 parties</option>
+                <option value="6">6 parties</option>
+              </select>
+            </div>
+          </div>
+          <div id="wf-party-list"></div>
+          <button class="btn-ghost" type="button" style="font-size:12px;padding:6px 10px;margin-top:4px" onclick="applyOTPPartyPreset()">Use OTP preset</button>
+        </div>
       </div>
       <div class="form-row" id="wf-template-row">
         <label class="form-label">Template</label>
@@ -1260,6 +1323,8 @@
     renderWorkflows();
     renderTemplates();
     renderSubmissions();
+    renderTransactions();
+    renderEntities();
     renderBuilderFields(generateDefaultFields());
     updateStats();
     showToast('Developer mode reset');
@@ -1292,7 +1357,11 @@
       desc: w.description || w.desc || '',
       purpose: w.purpose || w.workflow_purpose || 'document',
       output: w.output_target || w.output || 'document_mapper',
-      fields: Array.isArray(w.fields) ? w.fields : generateDefaultFields()
+      fields: Array.isArray(w.fields) ? w.fields : generateDefaultFields(),
+      parties: Array.isArray(w.parties) ? w.parties : [],
+      document: w.document || null,
+      workflow_mode: w.workflow_mode || (Array.isArray(w.parties) && w.parties.length ? 'transaction' : 'simple'),
+      template_id: w.template_id || null
     };
   }
 
@@ -1348,6 +1417,8 @@
       renderWorkflows();
       renderTemplates();
       renderSubmissions();
+      renderTransactions();
+      renderEntities();
       updateStats();
     } catch (e) {
       console.error('Failed to load app data', e);
@@ -1511,7 +1582,7 @@
     document.querySelectorAll('.nav-item').forEach(n => {
       if (n.textContent.trim().toLowerCase().includes(id.replace('-',' '))) n.classList.add('active');
     });
-    const titles = { dashboard:'Dashboard', workflows:'Workflows', templates:'Templates', builder:'Form Builder', mapper:'Document Mapper', submissions:'Submissions', 'sub-detail':'Submission detail', documents:'Generated Documents', signflow:'Send to SignFlow', settings:'Settings' };
+    const titles = { dashboard:'Dashboard', workflows:'Workflows', templates:'Templates', builder:'Form Builder', mapper:'Document Mapper', transactions:'Transactions', entities:'Entities', submissions:'Submissions', 'sub-detail':'Submission detail', documents:'Generated Documents', signflow:'Send to SignFlow', settings:'Settings' };
     document.getElementById('topbar-title').textContent = titles[id] || id;
   }
 
@@ -1565,7 +1636,10 @@
       </div>
       <span class="status-badge ${statusMap[w.status]||'s-draft'}">${w.status}</span>
       ${pendingCount>0 ? `<span class="nav-badge alert" style="font-size:10px">${pendingCount} pending</span>` : ''}
-      <div class="wf-menu" onclick="event.stopPropagation()">⋯</div>
+      <div style="display:flex;gap:6px" onclick="event.stopPropagation()">
+        <button class="template-mini-btn" style="flex:unset" onclick="openWorkflow('${w.id}')">Open</button>
+        <button class="danger-mini-btn" onclick="deleteWorkflow('${w.id}')">Delete</button>
+      </div>
     </div>`;
   }
 
@@ -1613,8 +1687,9 @@
           <div class="template-cat">${t.category}</div>
         </div>
         <div class="template-actions" onclick="event.stopPropagation()">
-          <button class="template-mini-btn" onclick="openTemplateMapper('${t.id}')">Map document</button>
-          <button class="template-mini-btn" onclick="useTemplate('${t.id}')">Use fields</button>
+          <button class="template-mini-btn" onclick="openTemplateMapper('${t.id}')">Map</button>
+          <button class="template-mini-btn" onclick="useTemplate('${t.id}')">Use</button>
+          <button class="danger-mini-btn" onclick="deleteTemplate('${t.id}')">Delete</button>
         </div>
       </div>
     `).join('') + `
@@ -2533,6 +2608,8 @@
       saveDevState();
       renderDashboard();
       renderSubmissions();
+      renderTransactions();
+      renderEntities();
       updateStats();
       closeModal('send-link-modal');
       showToast(`Client link created for ${email}`);
@@ -2972,6 +3049,7 @@
   function openNewWorkflowModal() {
     const sel = document.getElementById('wf-template');
     if (sel) sel.innerHTML = '<option value="">— Start from scratch —</option>' + templates.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+    renderWorkflowPartySetup();
     document.getElementById('new-workflow-modal').classList.add('open');
   }
 
@@ -2985,9 +3063,12 @@
     if (!name) { showToast('Please enter a workflow name'); return; }
 
     const template = templates.find(t=>String(t.id)===String(templateId));
-    const fields = template?.fields?.length
+    const parties = getWorkflowPartiesFromModal();
+    const baseFields = template?.fields?.length
       ? template.fields.map(f => typeof f === 'string' ? { id:f, label:formatLabel(f), placeholder:'{{'+f+'}}', type:guessFieldType(f), required:true } : f)
       : purposeDefaultFields(purpose);
+    const partyFields = parties.length ? generateFieldsForWorkflowParties(parties) : [];
+    const fields = mergeUniqueFields([...partyFields, ...baseFields]);
 
     const workflowPayload = {
       name,
@@ -2998,7 +3079,11 @@
       output,
       output_target: output,
       icon: purposeIcon(purpose) || categoryIcon(category),
-      fields
+      fields,
+      parties,
+      document: template?.document || null,
+      template_id: template?.id || null,
+      workflow_mode: parties.length ? 'transaction' : 'simple'
     };
 
     try {
@@ -3026,6 +3111,8 @@
       workflows.unshift(newWF);
       saveDevState();
       renderWorkflows();
+      renderTransactions();
+      renderEntities();
       renderDashboard();
       updateStats();
       closeModal('new-workflow-modal');
@@ -3038,6 +3125,253 @@
       console.error('Create workflow failed', e);
       showToast('Workflow creation failed: ' + (e.message || e));
     }
+  }
+
+
+
+  // ── TRANSACTION / ENTITY LAYER ──────────────────────────────
+  function renderWorkflowPartySetup() {
+    const countEl = document.getElementById('wf-party-count');
+    const container = document.getElementById('wf-party-list');
+    if (!countEl || !container) return;
+    const count = Number(countEl.value || 2);
+    const existing = getWorkflowPartiesFromModal(false);
+    const defaults = existing.length ? existing : Array.from({ length: count }, (_, i) => ({
+      label: `Party ${i + 1}`,
+      role: `Party ${i + 1}`,
+      needsForm: true,
+      needsSign: true,
+      needsUploads: i < 2
+    }));
+    const rows = Array.from({ length: count }, (_, i) => {
+      const p = defaults[i] || { label:`Party ${i+1}`, role:`Party ${i+1}`, needsForm:true, needsSign:true, needsUploads:false };
+      return `<div class="party-setup-row" data-party-index="${i}">
+        <div style="font-size:12px;font-weight:700;color:var(--ink-3)">Party ${i+1}</div>
+        <input class="form-input wf-party-label" value="${escapeHtml(p.label || p.role || ('Party '+(i+1)))}" placeholder="e.g. Purchaser">
+        <select class="form-input wf-party-type">
+          ${['Individual','Company','Trust','Organisation'].map(t => `<option value="${t}" ${p.type===t?'selected':''}>${t}</option>`).join('')}
+        </select>
+        <label style="font-size:11px;color:var(--ink-3);display:flex;gap:4px;align-items:center"><input type="checkbox" class="wf-party-form" ${p.needsForm!==false?'checked':''}> Form</label>
+        <label style="font-size:11px;color:var(--ink-3);display:flex;gap:4px;align-items:center"><input type="checkbox" class="wf-party-sign" ${p.needsSign!==false?'checked':''}> Sign</label>
+        <label style="font-size:11px;color:var(--ink-3);display:flex;gap:4px;align-items:center"><input type="checkbox" class="wf-party-upload" ${p.needsUploads?'checked':''}> Docs</label>
+      </div>`;
+    }).join('');
+    container.innerHTML = rows;
+  }
+
+  function applyOTPPartyPreset() {
+    const countEl = document.getElementById('wf-party-count');
+    if (countEl) countEl.value = '3';
+    renderWorkflowPartySetup();
+    const labels = ['Purchaser', 'Seller', 'Estate Agent'];
+    const rows = document.querySelectorAll('#wf-party-list .party-setup-row');
+    rows.forEach((row, i) => {
+      const label = row.querySelector('.wf-party-label');
+      const form = row.querySelector('.wf-party-form');
+      const sign = row.querySelector('.wf-party-sign');
+      const upload = row.querySelector('.wf-party-upload');
+      if (label) label.value = labels[i] || `Party ${i+1}`;
+      if (form) form.checked = i < 2;
+      if (sign) sign.checked = i < 2;
+      if (upload) upload.checked = i < 2;
+    });
+    showToast('OTP party preset loaded');
+  }
+
+  function getWorkflowPartiesFromModal(requireDom = true) {
+    const rows = Array.from(document.querySelectorAll('#wf-party-list .party-setup-row'));
+    if (!rows.length && requireDom) return [];
+    return rows.map((row, i) => {
+      const label = row.querySelector('.wf-party-label')?.value?.trim() || `Party ${i+1}`;
+      const type = row.querySelector('.wf-party-type')?.value || 'Individual';
+      return {
+        id: `party_${normaliseFieldId(label)}_${i+1}`,
+        label,
+        role: label,
+        name: label,
+        type,
+        needsForm: !!row.querySelector('.wf-party-form')?.checked,
+        needsSign: !!row.querySelector('.wf-party-sign')?.checked,
+        needsUploads: !!row.querySelector('.wf-party-upload')?.checked,
+        status: 'not_sent'
+      };
+    });
+  }
+
+  function generateFieldsForWorkflowParties(parties) {
+    const output = [];
+    parties.forEach((party, index) => {
+      const prefix = normaliseFieldId(party.label || party.role || `party_${index+1}`);
+      const section = `${party.label || party.role}`;
+      if (party.needsForm) {
+        output.push({ id:`${prefix}_name`, label:`${party.label} name`, type:'text', required:true, section, placeholder:`{{${prefix}_name}}`, partyId:party.id, role:party.role, source:'party' });
+        output.push({ id:`${prefix}_email`, label:`${party.label} email`, type:'email', required:true, section, placeholder:`{{${prefix}_email}}`, partyId:party.id, role:party.role, source:'party' });
+        output.push({ id:`${prefix}_phone`, label:`${party.label} phone`, type:'phone', required:false, section, placeholder:`{{${prefix}_phone}}`, partyId:party.id, role:party.role, source:'party' });
+        if (party.type === 'Individual') output.push({ id:`${prefix}_id_number`, label:`${party.label} ID number`, type:'id', required:true, section, placeholder:`{{${prefix}_id_number}}`, partyId:party.id, role:party.role, source:'party' });
+        if (party.type === 'Company') output.push({ id:`${prefix}_company_reg`, label:`${party.label} company registration number`, type:'text', required:true, section, placeholder:`{{${prefix}_company_reg}}`, partyId:party.id, role:party.role, source:'party' });
+        if (party.type === 'Trust') output.push({ id:`${prefix}_trust_number`, label:`${party.label} trust number`, type:'text', required:true, section, placeholder:`{{${prefix}_trust_number}}`, partyId:party.id, role:party.role, source:'party' });
+      }
+      if (party.needsUploads) {
+        output.push({ id:`${prefix}_id_document`, label:`${party.label} ID / registration document`, type:'file', required:true, section:`${section} uploads`, placeholder:'', partyId:party.id, role:party.role, source:'party' });
+        output.push({ id:`${prefix}_proof_of_address`, label:`${party.label} proof of address`, type:'file', required:true, section:`${section} uploads`, placeholder:'', partyId:party.id, role:party.role, source:'party' });
+      }
+      if (party.needsSign) {
+        output.push({ id:`${prefix}_signature`, label:`${party.label} signature`, type:'signature', required:true, section:'SignFlow preparation', placeholder:`{{${prefix}_signature}}`, partyId:party.id, role:party.role, source:'signflow' });
+      }
+    });
+    return output;
+  }
+
+  function mergeUniqueFields(fields) {
+    const seen = new Set();
+    return fields.filter(f => {
+      const key = f.id || f.label;
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  async function deleteWorkflow(id) {
+    const wf = workflows.find(w => String(w.id) === String(id));
+    if (!wf) return;
+    if (!confirm(`Delete workflow "${wf.name}"? This only affects developer/local data unless Supabase is connected.`)) return;
+    if (!isDemo && currentOrg?.id) {
+      const { error } = await sb.from('ff_workflows').delete().eq('id', id);
+      if (error) { showToast('Delete failed: ' + error.message); return; }
+    }
+    workflows = workflows.filter(w => String(w.id) !== String(id));
+    submissions = submissions.filter(s => String(s.workflow_id) !== String(id) && s.wf !== wf.name);
+    saveDevState();
+    renderWorkflows(); renderTransactions(); renderEntities(); renderSubmissions(); renderDashboard(); updateStats();
+    showToast('Workflow deleted');
+  }
+
+  async function deleteTemplate(id) {
+    const tpl = templates.find(t => String(t.id) === String(id));
+    if (!tpl) return;
+    if (!confirm(`Delete template "${tpl.name}"?`)) return;
+    if (!isDemo && currentOrg?.id) {
+      const { error } = await sb.from('ff_templates').delete().eq('id', id);
+      if (error) { showToast('Delete failed: ' + error.message); return; }
+    }
+    templates = templates.filter(t => String(t.id) !== String(id));
+    saveDevState();
+    renderTemplates(); renderWorkflows();
+    showToast('Template deleted');
+  }
+
+  function renderTransactions() {
+    const grid = document.getElementById('transactions-grid');
+    if (!grid) return;
+    const txWorkflows = workflows.filter(w => (w.workflow_mode === 'transaction') || (Array.isArray(w.parties) && w.parties.length) || ['document','kyc'].includes(w.purpose));
+    if (!txWorkflows.length) {
+      grid.innerHTML = '<div style="grid-column:1/-1;padding:48px;text-align:center;color:var(--ink-4);background:var(--surface);border:1px solid var(--border);border-radius:14px">No transactions yet. Create a document workflow with parties to start.</div>';
+      return;
+    }
+    grid.innerHTML = txWorkflows.map(w => {
+      const related = submissions.filter(s => String(s.workflow_id) === String(w.id) || s.wf === w.name || String(s.wf||'').startsWith(w.name));
+      const complete = related.filter(s => ['completed','approved','submitted'].includes(s.status)).length;
+      const parties = Array.isArray(w.parties) ? w.parties : [];
+      const status = related.length ? `${complete}/${related.length} responses` : `${parties.length || 0} parties set`;
+      return `<div class="transaction-card" onclick="openTransactionWorkspace('${w.id}')">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:8px">
+          <div style="font-size:15px;font-weight:800;color:var(--ink)">${escapeHtml(w.name)}</div>
+          <span class="status-badge s-active">${escapeHtml(purposeLabel(w.purpose || 'document'))}</span>
+        </div>
+        <div style="font-size:12px;color:var(--ink-3);line-height:1.5;margin-bottom:10px">${escapeHtml(w.desc || 'Transaction workspace')}</div>
+        <div style="font-size:11px;color:var(--ink-4);display:flex;gap:8px;flex-wrap:wrap">
+          <span>👥 ${parties.length || 'No'} parties</span><span>📥 ${status}</span><span>📄 ${w.document?.name ? escapeHtml(w.document.name) : 'No document'}</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function openTransactionWorkspace(id) {
+    const wf = workflows.find(w => String(w.id) === String(id));
+    if (!wf) return;
+    currentWF = wf;
+    if (wf.document) mapperDocument = deepClone(wf.document);
+    if (Array.isArray(wf.parties)) transactionParties = deepClone(wf.parties);
+    mappedFields = Array.isArray(wf.fields) ? deepClone(wf.fields) : [];
+    renderMapperWorkspace();
+    showView('mapper');
+    showToast('Transaction workspace opened');
+  }
+
+  function renderEntities() {
+    const grid = document.getElementById('entities-grid');
+    if (!grid) return;
+    const entities = buildEntitiesFromCurrentData();
+    if (!entities.length) {
+      grid.innerHTML = '<div style="grid-column:1/-1;padding:48px;text-align:center;color:var(--ink-4);background:var(--surface);border:1px solid var(--border);border-radius:14px">No reusable entities yet. Entities will appear as parties complete forms.</div>';
+      return;
+    }
+    grid.innerHTML = entities.map(e => {
+      const score = computeEntityCompleteness(e);
+      const fill = Math.max(0, Math.min(100, score.percent));
+      const colour = fill === 100 ? 'var(--success)' : fill < 60 ? 'var(--danger)' : 'var(--ff)';
+      return `<div class="transaction-card">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:8px">
+          <div><div style="font-size:15px;font-weight:800;color:var(--ink)">${escapeHtml(e.name)}</div><div style="font-size:11px;color:var(--ink-4)">${escapeHtml(e.type)} · ${escapeHtml(e.role || 'Entity')}</div></div>
+          <span class="status-badge ${fill===100?'s-complete':fill<60?'s-pending':'s-review'}">${fill}%</span>
+        </div>
+        <div class="entity-health"><div class="entity-health-fill" style="width:${fill}%;background:${colour}"></div></div>
+        <div style="font-size:12px;color:var(--ink-3);line-height:1.5;margin-top:10px">${score.missing.length ? 'Missing: ' + score.missing.map(escapeHtml).join(', ') : 'All required data collected.'}</div>
+        <div style="font-size:11px;color:var(--ink-4);margin-top:8px">Source: ${escapeHtml(e.source || 'FormFlow')}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function buildEntitiesFromCurrentData() {
+    const entities = [];
+    workflows.forEach(w => (w.parties || []).forEach(p => entities.push({
+      id: `${w.id}_${p.id}`,
+      name: p.name || p.label || p.role,
+      role: p.role || p.label,
+      type: p.type || 'Individual',
+      source: w.name,
+      data: {},
+      requiredFlags: { needsUploads:p.needsUploads, needsSign:p.needsSign }
+    })));
+    submissions.forEach(s => {
+      if (!s.name) return;
+      entities.push({
+        id: `sub_${s.id}`,
+        name: s.name,
+        role: s.data?.partyRole || 'Submitted party',
+        type: s.data?.partyType || 'Individual',
+        source: s.wf || 'Submission',
+        data: s.data || {},
+        missing: s.missing || [],
+        completeness: s.completeness || 0
+      });
+    });
+    const byName = new Map();
+    entities.forEach(e => {
+      const key = `${(e.name||'').toLowerCase()}_${e.type}`;
+      if (!byName.has(key) || (e.completeness||0) > (byName.get(key).completeness||0)) byName.set(key, e);
+    });
+    return Array.from(byName.values());
+  }
+
+  function computeEntityCompleteness(entity) {
+    if (typeof entity.completeness === 'number' && entity.completeness > 0) {
+      return { percent: entity.completeness, missing: entity.missing || [] };
+    }
+    const required = entity.type === 'Company'
+      ? ['Name', 'Email/contact', 'Registration number', 'CIPC docs', 'Resolution']
+      : entity.type === 'Trust'
+      ? ['Name', 'Trust number', 'Trust deed', 'Letters of authority', 'Trustee IDs']
+      : ['Name', 'Email/contact', 'ID number', 'ID document', 'Proof of address'];
+    const data = entity.data || {};
+    const missing = required.filter(r => {
+      const k = normaliseFieldId(r);
+      return !Object.keys(data).some(dk => dk.toLowerCase().includes(k.split('_')[0]) && data[dk]);
+    });
+    const present = required.length - missing.length;
+    const percent = Math.round((present / required.length) * 100);
+    return { percent, missing };
   }
 
   // ── MODALS ──────────────────────────────────────────────────
