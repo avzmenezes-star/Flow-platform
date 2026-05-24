@@ -441,7 +441,7 @@
       <button class="auth-btn" onclick="sendOTP()">Continue →</button>
       <div class="auth-msg error" id="email-error"></div>
       <div class="auth-divider">or</div>
-      <button class="auth-bypass" onclick="devBypass()">Continue in demo mode</button>
+      <button class="auth-bypass" onclick="devBypass()">Continue in developer mode</button>
     </div>
 
     <div class="auth-step" id="step-otp">
@@ -570,6 +570,7 @@
     </nav>
 
     <div class="sidebar-footer">
+      <button onclick="resetDevState()" style="width:100%;margin-bottom:8px;padding:7px 10px;border-radius:8px;border:1px solid var(--chrome-border);background:transparent;color:var(--chrome-muted);font-size:11px;cursor:pointer;font-family:'Instrument Sans',sans-serif">Reset developer data</button>
       <div class="user-tile" onclick="signOut()">
         <div class="user-avatar" id="sidebar-avatar">JS</div>
         <div>
@@ -1123,7 +1124,7 @@
     <div class="modal-footer">
       <button class="btn-ghost" onclick="closeModal('send-link-modal')">Cancel</button>
       <button class="btn-ghost" onclick="copyLinkOnly()">Copy link</button>
-      <button class="btn-primary" onclick="sendClientLink()">Send via email</button>
+      <button class="btn-primary" onclick="sendClientLink()">Create test link</button>
     </div>
   </div>
 </div>
@@ -1151,6 +1152,61 @@
   let currentClientConfig = null;
   let clientEntityCounters = {};
   let isDemo         = false;
+  const DEV_STORAGE_KEY = 'formflow_developer_mode_state_v1';
+
+  function deepClone(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function getDefaultDevState() {
+    return {
+      workflows: deepClone(demoWorkflows),
+      templates: deepClone(demoTemplates),
+      submissions: deepClone(demoSubmissions),
+      generatedDocuments: []
+    };
+  }
+
+  function loadDevState() {
+    try {
+      const raw = localStorage.getItem(DEV_STORAGE_KEY);
+      if (!raw) return getDefaultDevState();
+      const parsed = JSON.parse(raw);
+      return {
+        workflows: Array.isArray(parsed.workflows) ? parsed.workflows : deepClone(demoWorkflows),
+        templates: Array.isArray(parsed.templates) ? parsed.templates : deepClone(demoTemplates),
+        submissions: Array.isArray(parsed.submissions) ? parsed.submissions : deepClone(demoSubmissions),
+        generatedDocuments: Array.isArray(parsed.generatedDocuments) ? parsed.generatedDocuments : []
+      };
+    } catch (e) {
+      console.warn('Developer state could not be loaded; using defaults', e);
+      return getDefaultDevState();
+    }
+  }
+
+  function saveDevState() {
+    if (!isDemo) return;
+    try {
+      localStorage.setItem(DEV_STORAGE_KEY, JSON.stringify({ workflows, templates, submissions }));
+    } catch (e) {
+      console.warn('Developer state could not be saved', e);
+    }
+  }
+
+  function resetDevState() {
+    localStorage.removeItem(DEV_STORAGE_KEY);
+    const state = getDefaultDevState();
+    workflows = state.workflows;
+    templates = state.templates;
+    submissions = state.submissions;
+    renderDashboard();
+    renderWorkflows();
+    renderTemplates();
+    renderSubmissions();
+    renderBuilderFields(generateDefaultFields());
+    updateStats();
+    showToast('Developer mode reset');
+  }
 
   // ── DATABASE LOAD / NORMALISATION ───────────────────────────
   function normaliseTemplateRow(t) {
@@ -1301,8 +1357,12 @@
 
   function devBypass() {
     isDemo = true;
-    currentUser = { id:'demo', email:'demo@formflow.com' };
-    enterApp({ full_name:'Americo Menezes', role:'owner' }, { name:'Elegante Estates', industry:'Real Estate' }, true);
+    currentUser = { id:'developer', email:'developer@formflow.local' };
+    enterApp(
+      { full_name:'Developer Mode', role:'owner', email:'developer@formflow.local' },
+      { id:'dev-org', name:'FormFlow Test Organisation', industry:'Developer Testing' },
+      true
+    );
   }
 
   async function loadOrCreateOrg() {
@@ -1333,6 +1393,8 @@
 
   async function enterApp(profile, org, demo) {
     isDemo = demo;
+    currentProfile = profile;
+    currentOrg = org;
     const name = profile.full_name || 'User';
     const firstName = name.split(' ')[0];
     const initials  = name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
@@ -1351,9 +1413,10 @@
     document.getElementById('app').classList.add('visible');
 
     if (demo) {
-      workflows   = demoWorkflows;
-      templates   = demoTemplates;
-      submissions = demoSubmissions;
+      const devState = loadDevState();
+      workflows   = devState.workflows;
+      templates   = devState.templates;
+      submissions = devState.submissions;
 
       renderDashboard();
       renderWorkflows();
@@ -1368,8 +1431,9 @@
   }
 
   async function signOut() {
-    await sb.auth.signOut();
-    currentUser = null; currentOrg = null;
+    if (!isDemo) await sb.auth.signOut();
+    isDemo = false;
+    currentUser = null; currentOrg = null; currentProfile = null;
     document.getElementById('app').classList.remove('visible');
     document.getElementById('auth-screen').style.display = 'flex';
     showStep('step-email');
@@ -1623,6 +1687,7 @@
       }
 
       templates.unshift(newTemplate);
+      saveDevState();
       renderTemplates();
 
       const sel = document.getElementById('wf-template');
@@ -2030,6 +2095,17 @@
           workflows[idx].desc = message;
           workflows[idx].fields = builderFields;
         }
+      } else if (isDemo && currentWF?.id) {
+        const idx = workflows.findIndex(w => String(w.id) === String(currentWF.id));
+        if (idx > -1) {
+          workflows[idx].name = title;
+          workflows[idx].desc = message;
+          workflows[idx].fields = builderFields;
+          currentWF = workflows[idx];
+          renderWorkflows();
+          renderDashboard();
+          saveDevState();
+        }
       }
 
       const token = generateToken();
@@ -2104,6 +2180,7 @@
       }
 
       submissions.unshift(newSub);
+      saveDevState();
       renderDashboard();
       renderSubmissions();
       updateStats();
@@ -2117,7 +2194,11 @@
 
   function copyLinkOnly() {
     const link = document.getElementById('preview-link').textContent;
-    navigator.clipboard.writeText(link).then(()=>showToast('Link copied ✓'));
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(link).then(()=>showToast('Link copied ✓')).catch(()=>showToast(link));
+    } else {
+      showToast(link);
+    }
   }
 
   // ── SUBMISSIONS ─────────────────────────────────────────────
@@ -2442,13 +2523,22 @@
     const token = params.get('token');
 
     if (token && token !== 'preview') {
-      try {
-        await sb
-          .from('ff_submissions')
-          .update({ status:'submitted', completeness:100, submitted_at:new Date().toISOString() })
-          .eq('token', token);
-      } catch (e) {
-        console.warn('Submission status update failed', e);
+      const localState = loadDevState();
+      const localIndex = localState.submissions.findIndex(s => s.token === token);
+      if (localIndex > -1) {
+        localState.submissions[localIndex].status = 'submitted';
+        localState.submissions[localIndex].completeness = 100;
+        localState.submissions[localIndex].submitted = 'Just now';
+        localStorage.setItem(DEV_STORAGE_KEY, JSON.stringify(localState));
+      } else {
+        try {
+          await sb
+            .from('ff_submissions')
+            .update({ status:'submitted', completeness:100, submitted_at:new Date().toISOString() })
+            .eq('token', token);
+        } catch (e) {
+          console.warn('Submission status update failed', e);
+        }
       }
     }
 
@@ -2469,6 +2559,19 @@
       document.getElementById('app').style.display          = 'none';
       document.getElementById('client-view').classList.add('visible');
       const backBtn = document.getElementById('preview-back-btn'); if (backBtn) backBtn.style.display = 'none';
+
+      const devState = loadDevState();
+      const localSub = devState.submissions.find(s => s.token === token);
+      if (localSub) {
+        const wf = devState.workflows.find(w => String(w.id) === String(localSub.workflow_id)) || devState.workflows.find(w => w.name === localSub.wf) || {};
+        const fields = Array.isArray(wf.fields) && wf.fields.length ? wf.fields : generateDefaultFields();
+        renderClientView({
+          title: wf.name || localSub.wf || 'Client Form',
+          message: wf.desc || wf.description || 'Developer mode client link. Complete the test form below.',
+          fields
+        });
+        return;
+      }
 
       try {
         const { data: sub, error: subErr } = await sb
@@ -2499,9 +2602,13 @@
       return;
     }
 
-    // Check for existing session
-    const { data: { session } } = await sb.auth.getSession();
-    if (session?.user) { currentUser = session.user; await loadOrCreateOrg(); return; }
+    // Check for existing session. Developer mode can bypass this entirely.
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session?.user) { currentUser = session.user; await loadOrCreateOrg(); return; }
+    } catch (e) {
+      console.warn('Supabase session check failed; use Developer Mode for local testing', e);
+    }
   });
 
   sb.auth.onAuthStateChange(async (event, session) => {
@@ -2567,6 +2674,7 @@
       }
 
       workflows.unshift(newWF);
+      saveDevState();
       renderWorkflows();
       renderDashboard();
       updateStats();
