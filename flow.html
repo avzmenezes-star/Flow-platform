@@ -1247,6 +1247,38 @@
     .fade-up:nth-child(4) { animation-delay: 0.20s; }
     .fade-up:nth-child(5) { animation-delay: 0.25s; }
     .fade-up:nth-child(6) { animation-delay: 0.30s; }
+    /* ── CONTEXT MENU ──────────────────────────────────────────── */
+    .ctx-menu {
+      position: fixed; z-index: 900;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      box-shadow: var(--shadow-lg);
+      padding: 6px;
+      min-width: 180px;
+      animation: ctx-in 0.12s ease both;
+    }
+
+    @keyframes ctx-in {
+      from { opacity:0; transform:scale(0.95) translateY(-4px); }
+      to   { opacity:1; transform:scale(1) translateY(0); }
+    }
+
+    .ctx-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px; border-radius: 7px;
+      font-size: 13px; color: var(--ink-2);
+      cursor: pointer; transition: background 0.12s;
+    }
+
+    .ctx-item:hover { background: var(--surface-2); }
+    .ctx-item.danger { color: var(--danger); }
+    .ctx-item.danger:hover { background: var(--danger-light); }
+
+    .ctx-divider {
+      height: 1px; background: var(--border);
+      margin: 4px 0;
+    }
   </style>
 </head>
 <body>
@@ -2656,11 +2688,14 @@
       };
     });
 
-    grid.innerHTML = formatted.map(h => `
-      <div class="hub-full-card" onclick="filterByHub('${h.name}')">
+    grid.innerHTML = formatted.map((h, i) => `
+      <div class="hub-full-card">
         <div style="position:absolute;top:0;left:0;right:0;height:4px;background:${h.color};border-radius:14px 14px 0 0"></div>
-        <div class="hub-full-icon" style="background:${h.color}18">${h.icon}</div>
-        <div class="hub-full-name">${h.name}</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div class="hub-full-icon" style="background:${h.color}18;margin-bottom:14px">${h.icon}</div>
+          <div class="ws-menu" onclick="event.stopPropagation();showHubMenu(event,${i},'${h.name}')">⋯</div>
+        </div>
+        <div class="hub-full-name" onclick="filterByHub('${h.name}')" style="cursor:pointer">${h.name}</div>
         <div class="hub-full-desc">${h.desc}</div>
         <div class="hub-full-stats">
           <div class="hub-stat">
@@ -2699,25 +2734,28 @@
       return;
     }
 
-    grid.innerHTML = data.map(ws => `
-      <div class="ws-full-card" onclick="openWorkspace('${ws.id}')">
+    grid.innerHTML = data.map((ws, i) => `
+      <div class="ws-full-card">
         <div class="ws-card-top">
-          <div style="display:flex;align-items:flex-start;gap:12px;flex:1;min-width:0">
+          <div style="display:flex;align-items:flex-start;gap:12px;flex:1;min-width:0" onclick="openWorkspace('${ws.id}')" style="cursor:pointer">
             <div class="ws-card-icon" style="background:${hubBg(wsHub(ws))}">${wsIcon(ws)}</div>
             <div style="flex:1;min-width:0">
               <div class="ws-card-name">${ws.name}</div>
               <div class="ws-card-meta">${wsHub(ws)} · ${ws.type || 'workspace'}${ws.client_name || ws.client ? ' · ' + (ws.client_name || ws.client) : ''}</div>
             </div>
           </div>
-          <span class="status-badge ${statusClass(ws.status)}">${statusLabel(ws.status)}</span>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+            <span class="status-badge ${statusClass(ws.status)}">${statusLabel(ws.status)}</span>
+            <div class="ws-menu" onclick="event.stopPropagation();showWSMenu(event,'${ws.id}','${ws.name.replace(/'/g,"\\'")}')">⋯</div>
+          </div>
         </div>
-        <div class="progress-wrap">
+        <div class="progress-wrap" onclick="openWorkspace('${ws.id}')" style="cursor:pointer">
           <div class="progress-label"><span>Progress</span><span>${ws.progress || 0}%</span></div>
           <div class="progress-bar"><div class="progress-fill" style="width:${ws.progress||0}%;background:${progressColor(ws.status)}"></div></div>
         </div>
         <div class="ws-card-footer">
           <span style="font-size:11px;color:var(--ink-4)">Updated ${ws.updated || timeAgo(ws.updated_at)}</span>
-          <span style="font-size:11px;color:var(--indigo);font-weight:600;cursor:pointer">Open →</span>
+          <span style="font-size:11px;color:var(--indigo);font-weight:600;cursor:pointer" onclick="openWorkspace('${ws.id}')">Open →</span>
         </div>
       </div>
     `).join('');
@@ -2847,7 +2885,122 @@
     setTimeout(() => t.classList.remove('show'), 3000);
   }
 
-  // ── CLOSE MODAL ON BACKDROP ─────────────────────────────────
+  // ── CONTEXT MENUS ───────────────────────────────────────────
+  function closeCtxMenu() {
+    const existing = document.getElementById('ctx-menu');
+    if (existing) existing.remove();
+  }
+
+  document.addEventListener('click', closeCtxMenu);
+
+  function showWSMenu(e, wsId, wsName) {
+    closeCtxMenu();
+    const ws = liveWorkspaces.find(w => String(w.id) === String(wsId))
+            || demoWorkspaces.find(w => String(w.id) === String(wsId));
+    const isArchived = ws?.archived;
+
+    const menu = document.createElement('div');
+    menu.id = 'ctx-menu';
+    menu.className = 'ctx-menu';
+    menu.innerHTML = `
+      <div class="ctx-item" onclick="openWorkspace('${wsId}')">📂 Open workspace</div>
+      <div class="ctx-divider"></div>
+      ${!isArchived ? `<div class="ctx-item" onclick="archiveWorkspace('${wsId}','${wsName}')">📦 Archive</div>` : `<div class="ctx-item" onclick="restoreWorkspace('${wsId}','${wsName}')">↩ Restore</div>`}
+      ${isArchived ? `<div class="ctx-divider"></div><div class="ctx-item danger" onclick="deleteWorkspace('${wsId}','${wsName}')">🗑 Delete permanently</div>` : ''}
+    `;
+
+    positionMenu(menu, e);
+  }
+
+  function showHubMenu(e, index, hubName) {
+    closeCtxMenu();
+    const menu = document.createElement('div');
+    menu.id = 'ctx-menu';
+    menu.className = 'ctx-menu';
+    menu.innerHTML = `
+      <div class="ctx-item" onclick="filterByHub('${hubName}')">📂 Open hub</div>
+      <div class="ctx-divider"></div>
+      <div class="ctx-item danger" onclick="deleteHub(${index},'${hubName}')">🗑 Delete hub</div>
+    `;
+    positionMenu(menu, e);
+  }
+
+  function positionMenu(menu, e) {
+    document.body.appendChild(menu);
+    const rect = e.target.getBoundingClientRect();
+    let top  = rect.bottom + 4;
+    let left = rect.left;
+    // Keep on screen
+    if (left + 200 > window.innerWidth) left = window.innerWidth - 210;
+    if (top + 160  > window.innerHeight) top = rect.top - 160;
+    menu.style.top  = top  + 'px';
+    menu.style.left = left + 'px';
+  }
+
+  // ── ARCHIVE / DELETE WORKSPACES ─────────────────────────────
+  async function archiveWorkspace(wsId, wsName) {
+    if (!confirm(`Archive "${wsName}"? It will be hidden but not deleted.`)) return;
+    try {
+      if (currentOrg) {
+        await sb.from('ff_workspaces')
+          .update({ archived: true, archived_at: new Date().toISOString() })
+          .eq('id', wsId);
+        await loadLiveData();
+      } else {
+        const i = demoWorkspaces.findIndex(w => String(w.id) === String(wsId));
+        if (i > -1) demoWorkspaces.splice(i, 1);
+        renderRecent(demoWorkspaces);
+        renderWSFull(demoWorkspaces);
+      }
+      showToast(`"${wsName}" archived`);
+    } catch(e) { showToast('Error: ' + e.message); }
+  }
+
+  async function restoreWorkspace(wsId, wsName) {
+    try {
+      await sb.from('ff_workspaces')
+        .update({ archived: false, archived_at: null })
+        .eq('id', wsId);
+      await loadLiveData();
+      showToast(`"${wsName}" restored`);
+    } catch(e) { showToast('Error: ' + e.message); }
+  }
+
+  async function deleteWorkspace(wsId, wsName) {
+    if (!confirm(`Permanently delete "${wsName}"? This cannot be undone.`)) return;
+    try {
+      if (currentOrg) {
+        await sb.from('ff_tasks').delete().eq('workspace_id', wsId);
+        await sb.from('ff_messages').delete().eq('workspace_id', wsId);
+        await sb.from('ff_workspaces').delete().eq('id', wsId);
+        await loadLiveData();
+      } else {
+        const i = demoWorkspaces.findIndex(w => String(w.id) === String(wsId));
+        if (i > -1) demoWorkspaces.splice(i, 1);
+        renderRecent(demoWorkspaces);
+        renderWSFull(demoWorkspaces);
+      }
+      showToast(`"${wsName}" deleted`);
+    } catch(e) { showToast('Error: ' + e.message); }
+  }
+
+  // ── DELETE HUBS ─────────────────────────────────────────────
+  async function deleteHub(index, hubName) {
+    if (!confirm(`Delete hub "${hubName}"? Workspaces inside will not be deleted — they will just lose their hub assignment.`)) return;
+    try {
+      if (currentOrg && liveHubs[index]) {
+        await sb.from('ff_workspaces')
+          .delete()
+          .eq('id', liveHubs[index].id);
+        await loadLiveData();
+      } else {
+        demoHubs.splice(index, 1);
+        renderDashboardHubs(demoHubs);
+        renderHubsFull(demoHubs);
+      }
+      showToast(`Hub "${hubName}" deleted`);
+    } catch(e) { showToast('Error: ' + e.message); }
+  }
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
     overlay.addEventListener('click', e => {
       if (e.target === overlay) overlay.classList.remove('open');
