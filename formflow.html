@@ -1028,6 +1028,92 @@
   let builderFields  = [];
   let isDemo         = false;
 
+  // ── DATABASE LOAD / NORMALISATION ───────────────────────────
+  function normaliseTemplateRow(t) {
+    return {
+      id: t.id,
+      name: t.name,
+      category: t.category || 'other',
+      fields: Array.isArray(t.fields) ? t.fields : [],
+      icon: t.icon || categoryIcon(t.category || 'other'),
+      desc: t.description || t.desc || ''
+    };
+  }
+
+  function normaliseWorkflowRow(w) {
+    return {
+      id: w.id,
+      name: w.name,
+      category: w.category || 'other',
+      status: w.status || 'active',
+      submissions: w.submissions || 0,
+      pending: w.pending || 0,
+      icon: w.icon || categoryIcon(w.category || 'other'),
+      desc: w.description || w.desc || '',
+      fields: Array.isArray(w.fields) ? w.fields : generateDefaultFields()
+    };
+  }
+
+  function normaliseSubmissionRow(s) {
+    const wf = workflows.find(w => String(w.id) === String(s.workflow_id));
+    const submittedLabel = s.submitted_at
+      ? new Date(s.submitted_at).toLocaleString()
+      : new Date(s.created_at || Date.now()).toLocaleString();
+
+    return {
+      id: s.id,
+      workflow_id: s.workflow_id,
+      wf: wf?.name || 'Workflow',
+      name: s.client_name || 'Unnamed client',
+      email: s.client_email || '',
+      status: s.status || 'pending',
+      completeness: s.completeness || 0,
+      submitted: submittedLabel,
+      missing: Array.isArray(s.missing) ? s.missing : [],
+      data: s.data || {},
+      token: s.token
+    };
+  }
+
+  async function loadAppData() {
+    if (!currentOrg?.id) return;
+
+    try {
+      const orgId = currentOrg.id;
+
+      const [{ data: wf, error: wfErr }, { data: tpl, error: tplErr }] = await Promise.all([
+        sb.from('ff_workflows').select('*').eq('organisation_id', orgId).order('created_at', { ascending:false }),
+        sb.from('ff_templates').select('*').eq('organisation_id', orgId).order('created_at', { ascending:false })
+      ]);
+
+      if (wfErr) throw wfErr;
+      if (tplErr) throw tplErr;
+
+      workflows = (wf || []).map(normaliseWorkflowRow);
+      templates = (tpl || []).map(normaliseTemplateRow);
+
+      const { data: sub, error: subErr } = await sb
+        .from('ff_submissions')
+        .select('*')
+        .eq('organisation_id', orgId)
+        .order('created_at', { ascending:false });
+
+      if (subErr) throw subErr;
+
+      submissions = (sub || []).map(normaliseSubmissionRow);
+
+      renderDashboard();
+      renderWorkflows();
+      renderTemplates();
+      renderSubmissions();
+      updateStats();
+    } catch (e) {
+      console.error('Failed to load app data', e);
+      showToast('Could not load Supabase data: ' + (e.message || e));
+    }
+  }
+
+
   // ── DEMO DATA ───────────────────────────────────────────────
   const demoWorkflows = [
     { id:'wf1', name:'Buyer Onboarding', category:'onboarding', status:'active', submissions:12, pending:3, icon:'🏠', desc:'Full buyer FICA and compliance pack', fields:8 },
@@ -1098,7 +1184,7 @@
       const { data: profile } = await sb.from('ff_profiles').select('*, ff_organisations(*)').eq('user_id', currentUser.id).single();
       if (profile?.ff_organisations) {
         currentProfile = profile; currentOrg = profile.ff_organisations;
-        enterApp(profile, currentOrg, false); return;
+        await enterApp(profile, currentOrg, false); return;
       }
       showStep('step-setup');
     } catch(e) { showStep('step-setup'); }
@@ -1115,11 +1201,11 @@
       const { data: org } = await sb.from('ff_organisations').insert({ name:orgName, industry, owner_id:currentUser.id }).select().single();
       const { data: profile } = await sb.from('ff_profiles').insert({ user_id:currentUser.id, organisation_id:org.id, full_name:fullName, email:currentUser.email, role:'owner' }).select().single();
       currentOrg = org; currentProfile = profile;
-      enterApp(profile, org, false);
+      await enterApp(profile, org, false);
     } catch(e) { showToast('Setup failed: ' + e.message); btn.disabled=false; btn.textContent='Get started →'; }
   }
 
-  function enterApp(profile, org, demo) {
+  async function enterApp(profile, org, demo) {
     isDemo = demo;
     const name = profile.full_name || 'User';
     const firstName = name.split(' ')[0];
@@ -1142,14 +1228,17 @@
       workflows   = demoWorkflows;
       templates   = demoTemplates;
       submissions = demoSubmissions;
-    }
 
-    renderDashboard();
-    renderWorkflows();
-    renderTemplates();
-    renderSubmissions();
-    renderBuilderFields(generateDefaultFields());
-    updateStats();
+      renderDashboard();
+      renderWorkflows();
+      renderTemplates();
+      renderSubmissions();
+      renderBuilderFields(generateDefaultFields());
+      updateStats();
+    } else {
+      await loadAppData();
+      renderBuilderFields(generateDefaultFields());
+    }
   }
 
   async function signOut() {
@@ -1213,15 +1302,19 @@
 
   // ── WORKFLOWS ───────────────────────────────────────────────
   function renderWFRow(w) {
-    const statusMap = { active:'s-active', draft:'s-draft', archived:'s-hold' };
+    const statusMap = { active:'s-active', draft:'s-draft', archived:'s-draft' };
+    const fieldCount = Array.isArray(w.fields) ? w.fields.length : (Number(w.fields) || 0);
+    const subCount = Number(w.submissions) || submissions.filter(s => String(s.workflow_id) === String(w.id) || s.wf === w.name).length;
+    const pendingCount = Number(w.pending) || submissions.filter(s => (String(s.workflow_id) === String(w.id) || s.wf === w.name) && ['pending','review'].includes(s.status)).length;
+
     return `<div class="wf-row" onclick="openWorkflow('${w.id}')">
       <div class="wf-icon">${w.icon||'⚡'}</div>
       <div class="wf-info">
         <div class="wf-name">${w.name}</div>
-        <div class="wf-meta"><span>${w.category}</span><div class="wf-dot"></div><span>${w.fields||0} fields</span><div class="wf-dot"></div><span>${w.submissions||0} submissions</span></div>
+        <div class="wf-meta"><span>${w.category}</span><div class="wf-dot"></div><span>${fieldCount} fields</span><div class="wf-dot"></div><span>${subCount} submissions</span></div>
       </div>
       <span class="status-badge ${statusMap[w.status]||'s-draft'}">${w.status}</span>
-      ${w.pending>0 ? `<span class="nav-badge alert" style="font-size:10px">${w.pending} pending</span>` : ''}
+      ${pendingCount>0 ? `<span class="nav-badge alert" style="font-size:10px">${pendingCount} pending</span>` : ''}
       <div class="wf-menu" onclick="event.stopPropagation()">⋯</div>
     </div>`;
   }
@@ -1239,15 +1332,19 @@
   function openWorkflow(id) {
     currentWF = workflows.find(w=>String(w.id)===String(id));
     if (!currentWF) return;
-    // Load form builder with this workflow's fields
-    const fields = currentWF.fields || generateDefaultFields();
-    if (Array.isArray(fields)) {
-      builderFields = typeof fields[0]==='string'
-        ? fields.map(f=>({ id:f, label:formatLabel(f), placeholder:'{{'+f+'}}', type:'text', required:true }))
-        : fields;
+
+    let fields = currentWF.fields;
+    if (!Array.isArray(fields) || fields.length === 0) {
+      fields = generateDefaultFields();
     }
+
+    builderFields = typeof fields[0] === 'string'
+      ? fields.map(f=>({ id:f, label:formatLabel(f), placeholder:'{{'+f+'}}', type:guessFieldType(f), required:true }))
+      : fields;
+
     renderBuilderFields(builderFields);
     document.getElementById('builder-title').value = currentWF.name || '';
+    document.getElementById('builder-message').value = currentWF.desc || '';
     showView('builder');
   }
 
@@ -1358,35 +1455,57 @@
     window._detectedFields = placeholders;
   }
 
-  function saveTemplate() {
+  async function saveTemplate() {
     const name     = document.getElementById('template-name').value.trim();
     const category = document.getElementById('template-category').value;
     if (!name) { showToast('Please enter a template name'); return; }
 
     const fields = window._detectedFields || [];
-    const newTemplate = {
-      id: 't' + Date.now(),
-      name, category,
+    const templatePayload = {
+      name,
+      category,
       fields,
       icon: categoryIcon(category),
-      desc: `${fields.length} merge fields detected`
+      description: `${fields.length} merge fields detected`
     };
 
-    templates.push(newTemplate);
-    renderTemplates();
+    try {
+      let newTemplate;
 
-    // Update workflow template select
-    const sel = document.getElementById('wf-template');
-    if (sel) sel.innerHTML = '<option value="">— Start from scratch —</option>' + templates.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+      if (!isDemo && currentOrg?.id) {
+        const { data, error } = await sb
+          .from('ff_templates')
+          .insert({ ...templatePayload, organisation_id: currentOrg.id })
+          .select()
+          .single();
 
-    closeModal('upload-modal');
-    showToast('Template saved: ' + name);
+        if (error) throw error;
+        newTemplate = normaliseTemplateRow(data);
+      } else {
+        newTemplate = {
+          id: 't' + Date.now(),
+          ...templatePayload,
+          desc: templatePayload.description
+        };
+      }
 
-    // Auto-load into builder
-    builderFields = fields.map(f=>({ id:f, label:formatLabel(f), placeholder:'{{'+f+'}}', type:guessFieldType(f), required:true }));
-    renderBuilderFields(builderFields);
-    document.getElementById('builder-title').value = name;
-    showView('builder');
+      templates.unshift(newTemplate);
+      renderTemplates();
+
+      const sel = document.getElementById('wf-template');
+      if (sel) sel.innerHTML = '<option value="">— Start from scratch —</option>' + templates.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+
+      closeModal('upload-modal');
+      showToast('Template saved: ' + name);
+
+      builderFields = fields.map(f=>({ id:f, label:formatLabel(f), placeholder:'{{'+f+'}}', type:guessFieldType(f), required:true }));
+      renderBuilderFields(builderFields);
+      document.getElementById('builder-title').value = name;
+      showView('builder');
+    } catch (e) {
+      console.error('Save template failed', e);
+      showToast('Template save failed: ' + (e.message || e));
+    }
   }
 
   // ── FORM BUILDER ────────────────────────────────────────────
@@ -1469,15 +1588,37 @@
     renderBuilderFields(builderFields);
   }
 
-  function saveFormBuilder() {
+  async function saveFormBuilder() {
     const title = document.getElementById('builder-title').value.trim() || 'Untitled workflow';
-    // Generate secure token for client link
-    const token = generateToken();
-    const link  = `${window.location.href.split('?')[0]}?token=${token}`;
-    showToast('Link generated — copy from Send Client Link');
-    // Open send link modal
-    populateSendLinkModal(title, link);
-    document.getElementById('send-link-modal').classList.add('open');
+    const message = document.getElementById('builder-message').value.trim();
+
+    try {
+      if (!isDemo && currentWF?.id) {
+        const { error } = await sb
+          .from('ff_workflows')
+          .update({ name:title, description:message, fields:builderFields })
+          .eq('id', currentWF.id)
+          .eq('organisation_id', currentOrg.id);
+
+        if (error) throw error;
+
+        const idx = workflows.findIndex(w => String(w.id) === String(currentWF.id));
+        if (idx > -1) {
+          workflows[idx].name = title;
+          workflows[idx].desc = message;
+          workflows[idx].fields = builderFields;
+        }
+      }
+
+      const token = generateToken();
+      const link  = `${window.location.href.split('?')[0]}?token=${token}`;
+      showToast('Form saved — client link ready');
+      populateSendLinkModal(title, link, token);
+      document.getElementById('send-link-modal').classList.add('open');
+    } catch (e) {
+      console.error('Save form failed', e);
+      showToast('Form save failed: ' + (e.message || e));
+    }
   }
 
   function previewForm() {
@@ -1494,24 +1635,59 @@
     document.getElementById('app').style.display = 'flex';
   }
 
-  function populateSendLinkModal(title, link) {
+  function populateSendLinkModal(title, link, token) {
     document.getElementById('preview-link').textContent = link;
+    document.getElementById('preview-link').dataset.token = token || '';
     const sel = document.getElementById('link-workflow');
     sel.innerHTML = workflows.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
   }
 
-  function sendClientLink() {
+  async function sendClientLink() {
     const name  = document.getElementById('client-name').value.trim();
     const email = document.getElementById('client-email').value.trim();
+    const workflowId = document.getElementById('link-workflow').value || currentWF?.id || workflows[0]?.id;
+    const workflow = workflows.find(w => String(w.id) === String(workflowId)) || currentWF || workflows[0];
+    const token = document.getElementById('preview-link').dataset.token || generateToken();
+
     if (!name || !email) { showToast('Please enter client name and email'); return; }
-    closeModal('send-link-modal');
-    showToast(`Link sent to ${email}`);
-    // Add to submissions
-    const newSub = { id:'s'+Date.now(), wf: workflows[0]?.name||'Workflow', name, email, status:'pending', completeness:0, submitted:'Just now', missing:[] };
-    submissions.unshift(newSub);
-    renderDashboard();
-    renderSubmissions();
-    updateStats();
+    if (!workflow) { showToast('Please create or select a workflow first'); return; }
+
+    try {
+      let newSub;
+
+      if (!isDemo && currentOrg?.id) {
+        const { data, error } = await sb
+          .from('ff_submissions')
+          .insert({
+            organisation_id: currentOrg.id,
+            workflow_id: workflow.id,
+            client_name: name,
+            client_email: email,
+            status: 'pending',
+            completeness: 0,
+            data: {},
+            missing: [],
+            token
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        newSub = normaliseSubmissionRow(data);
+      } else {
+        newSub = { id:'s'+Date.now(), workflow_id: workflow.id, wf: workflow.name, name, email, status:'pending', completeness:0, submitted:'Just now', missing:[], token };
+      }
+
+      submissions.unshift(newSub);
+      renderDashboard();
+      renderSubmissions();
+      updateStats();
+      closeModal('send-link-modal');
+      showToast(`Client link created for ${email}`);
+    } catch (e) {
+      console.error('Create client link failed', e);
+      showToast('Could not create client link: ' + (e.message || e));
+    }
   }
 
   function copyLinkOnly() {
@@ -1705,7 +1881,21 @@
       `<button class="client-submit" onclick="submitClientForm()">Submit →</button>`;
   }
 
-  function submitClientForm() {
+  async function submitClientForm() {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+
+    if (token && token !== 'preview') {
+      try {
+        await sb
+          .from('ff_submissions')
+          .update({ status:'submitted', completeness:100, submitted_at:new Date().toISOString() })
+          .eq('token', token);
+      } catch (e) {
+        console.warn('Submission status update failed', e);
+      }
+    }
+
     document.getElementById('cv-sections').style.display = 'none';
     document.querySelector('.client-submit')?.remove();
     document.getElementById('cv-success').style.display  = 'block';
@@ -1719,18 +1909,36 @@
     const token  = params.get('token');
 
     if (token && token !== 'preview') {
-      // Show client view
       document.getElementById('auth-screen').style.display  = 'none';
       document.getElementById('app').style.display          = 'none';
       document.getElementById('client-view').classList.add('visible');
 
-      // Load workflow from token (demo: show default form)
-      const config = {
-        title:   'Client Onboarding Form',
-        message: 'Please complete all required information below. Your data is secure and encrypted.',
-        fields:  generateDefaultFields()
-      };
-      renderClientView(config);
+      try {
+        const { data: sub, error: subErr } = await sb
+          .from('ff_submissions')
+          .select('*, ff_workflows(*)')
+          .eq('token', token)
+          .single();
+
+        if (subErr) throw subErr;
+
+        currentSub = normaliseSubmissionRow(sub);
+        const wf = sub.ff_workflows || {};
+        const fields = Array.isArray(wf.fields) && wf.fields.length ? wf.fields : generateDefaultFields();
+
+        renderClientView({
+          title: wf.name || 'Client Onboarding Form',
+          message: wf.description || 'Please complete all required information below. Your data is secure and encrypted.',
+          fields
+        });
+      } catch (e) {
+        console.warn('Token lookup failed, using default form', e);
+        renderClientView({
+          title: 'Client Onboarding Form',
+          message: 'Please complete all required information below. Your data is secure and encrypted.',
+          fields: generateDefaultFields()
+        });
+      }
       return;
     }
 
@@ -1753,35 +1961,63 @@
     document.getElementById('new-workflow-modal').classList.add('open');
   }
 
-  function createWorkflow() {
+  async function createWorkflow() {
     const name     = document.getElementById('wf-name').value.trim();
     const category = document.getElementById('wf-category').value;
     const desc     = document.getElementById('wf-desc').value.trim();
     const templateId = document.getElementById('wf-template').value;
     if (!name) { showToast('Please enter a workflow name'); return; }
 
-    const template = templates.find(t=>t.id===templateId);
-    const newWF = {
-      id:          'wf'+Date.now(),
-      name, category, desc,
-      status:      'active',
-      submissions: 0,
-      pending:     0,
-      icon:        categoryIcon(category),
-      fields:      template?.fields || generateDefaultFields()
+    const template = templates.find(t=>String(t.id)===String(templateId));
+    const fields = template?.fields?.length
+      ? template.fields.map(f => typeof f === 'string' ? { id:f, label:formatLabel(f), placeholder:'{{'+f+'}}', type:guessFieldType(f), required:true } : f)
+      : generateDefaultFields();
+
+    const workflowPayload = {
+      name,
+      category,
+      description: desc,
+      status: 'active',
+      icon: categoryIcon(category),
+      fields
     };
 
-    workflows.unshift(newWF);
-    renderWorkflows();
-    renderDashboard();
-    updateStats();
-    closeModal('new-workflow-modal');
-    document.getElementById('wf-name').value = '';
-    document.getElementById('wf-desc').value = '';
-    showToast('Workflow created: ' + name);
+    try {
+      let newWF;
 
-    // Auto-open builder
-    openWorkflow(newWF.id);
+      if (!isDemo && currentOrg?.id) {
+        const { data, error } = await sb
+          .from('ff_workflows')
+          .insert({ ...workflowPayload, organisation_id: currentOrg.id })
+          .select()
+          .single();
+
+        if (error) throw error;
+        newWF = normaliseWorkflowRow(data);
+      } else {
+        newWF = {
+          id: 'wf' + Date.now(),
+          ...workflowPayload,
+          desc,
+          submissions: 0,
+          pending: 0
+        };
+      }
+
+      workflows.unshift(newWF);
+      renderWorkflows();
+      renderDashboard();
+      updateStats();
+      closeModal('new-workflow-modal');
+      document.getElementById('wf-name').value = '';
+      document.getElementById('wf-desc').value = '';
+      showToast('Workflow created: ' + name);
+
+      openWorkflow(newWF.id);
+    } catch (e) {
+      console.error('Create workflow failed', e);
+      showToast('Workflow creation failed: ' + (e.message || e));
+    }
   }
 
   // ── MODALS ──────────────────────────────────────────────────
