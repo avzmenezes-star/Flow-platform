@@ -1247,6 +1247,139 @@
     .fade-up:nth-child(4) { animation-delay: 0.20s; }
     .fade-up:nth-child(5) { animation-delay: 0.25s; }
     .fade-up:nth-child(6) { animation-delay: 0.30s; }
+    /* ── WORKSPACE TABS ────────────────────────────────────────── */
+    .ws-tab {
+      padding: 7px 16px; border-radius: 7px;
+      border: none; background: transparent;
+      font-size: 13px; font-weight: 500;
+      color: var(--ink-3); cursor: pointer;
+      font-family: 'Instrument Sans', sans-serif;
+      transition: all 0.15s;
+    }
+
+    .ws-tab:hover { background: var(--surface-2); color: var(--ink); }
+    .ws-tab.active { background: var(--indigo); color: white; }
+
+    .detail-row {
+      display: flex; justify-content: space-between;
+      align-items: center; padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+
+    .detail-row:last-child { border-bottom: none; }
+    .detail-label { color: var(--ink-3); font-size: 12px; }
+    .detail-value { color: var(--ink); font-weight: 500; }
+
+    /* message rows */
+    .msg-row {
+      display: flex; gap: 10px; padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .msg-row:last-child { border-bottom: none; }
+
+    .msg-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--indigo); color: white;
+      font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .msg-body { flex: 1; }
+    .msg-author { font-size: 12px; font-weight: 600; color: var(--ink); }
+    .msg-time   { font-size: 10px; color: var(--ink-4); margin-left: 8px; }
+    .msg-text   { font-size: 13px; color: var(--ink-2); margin-top: 3px; line-height: 1.5; }
+
+    /* task rows in workspace */
+    .ws-task-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 20px; border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+
+    .ws-task-row:last-child { border-bottom: none; }
+
+    .ws-task-check {
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 1.5px solid var(--border-2);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0; transition: all 0.15s;
+      font-size: 10px;
+    }
+
+    .ws-task-check:hover { border-color: var(--indigo); }
+    .ws-task-check.done  { background: var(--success); border-color: var(--success); color: white; }
+
+    .ws-task-title { flex: 1; color: var(--ink); }
+    .ws-task-title.done { text-decoration: line-through; color: var(--ink-4); }
+
+    .priority-tag {
+      font-size: 10px; font-weight: 600; padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    .priority-urgent { background: #fef2f2; color: var(--danger); }
+    .priority-high   { background: #fff7ed; color: var(--hub-finance); }
+    .priority-normal { background: var(--indigo-light); color: var(--indigo); }
+    .priority-low    { background: var(--surface-2); color: var(--ink-4); }
+
+    /* ── NOTIFICATION PANEL ────────────────────────────────────── */
+    .notif-panel {
+      position: fixed; top: 56px; right: 16px;
+      width: 360px; max-height: 520px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow-lg);
+      z-index: 800;
+      display: none;
+      overflow: hidden;
+      animation: ctx-in 0.15s ease both;
+    }
+
+    .notif-panel.open { display: block; }
+
+    .notif-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .notif-title { font-size: 13px; font-weight: 700; color: var(--ink); }
+
+    .notif-clear {
+      font-size: 11px; color: var(--indigo);
+      cursor: pointer; background: none; border: none;
+      font-family: 'Instrument Sans', sans-serif;
+      font-weight: 600;
+    }
+
+    .notif-list { overflow-y: auto; max-height: 440px; }
+
+    .notif-item {
+      display: flex; gap: 11px; padding: 13px 18px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer; transition: background 0.12s;
+    }
+
+    .notif-item:hover { background: var(--surface-2); }
+    .notif-item:last-child { border-bottom: none; }
+    .notif-item.unread { background: var(--indigo-light); }
+    .notif-item.unread:hover { background: #e0e7ff; }
+
+    .notif-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+
+    .notif-body { flex: 1; min-width: 0; }
+    .notif-msg  { font-size: 12px; color: var(--ink); line-height: 1.4; margin-bottom: 3px; }
+    .notif-time { font-size: 10px; color: var(--ink-4); }
+    .notif-empty { padding: 40px; text-align: center; color: var(--ink-4); font-size: 13px; }
+
     /* ── CONTEXT MENU ──────────────────────────────────────────── */
     .ctx-menu {
       position: fixed; z-index: 900;
@@ -1440,8 +1573,8 @@
         <input class="search-input" placeholder="Search workspaces, documents, contacts...">
       </div>
       <div class="topbar-actions">
-        <div class="icon-btn" title="Notifications">
-          🔔 <div class="notif-dot"></div>
+        <div class="icon-btn" title="Notifications" onclick="toggleNotifications()" id="notif-btn">
+          🔔 <div class="notif-dot" id="notif-dot"></div>
         </div>
         <div class="icon-btn" title="Coming soon" onclick="showToast('Help centre coming soon')">?</div>
         <button class="btn-new" onclick="openNewWorkspaceModal()">+ New</button>
@@ -1677,11 +1810,154 @@
 
       <!-- ── TASKS VIEW ─────────────────────────────────────────── -->
       <div class="view" id="view-tasks">
-        <div style="margin-bottom:24px">
-          <h2 style="font-family:'Instrument Serif',serif;font-size:24px;margin-bottom:4px">Tasks</h2>
-          <p style="font-size:13px;color:var(--ink-3)">Everything that needs your attention.</p>
+        <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <h2 style="font-family:'Instrument Serif',serif;font-size:24px;margin-bottom:4px">Tasks</h2>
+            <p style="font-size:13px;color:var(--ink-3)">Everything that needs your attention.</p>
+          </div>
+          <button class="btn-primary" onclick="openNewTaskModal()">+ Add task</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+          <button class="filter-btn active" onclick="filterTasks(this,'all')">All</button>
+          <button class="filter-btn" onclick="filterTasks(this,'overdue')" style="color:var(--danger)">Overdue</button>
+          <button class="filter-btn" onclick="filterTasks(this,'today')">Due today</button>
+          <button class="filter-btn" onclick="filterTasks(this,'open')">Open</button>
+          <button class="filter-btn" onclick="filterTasks(this,'completed')">Completed</button>
         </div>
         <div class="panel" id="tasks-full-list"></div>
+      </div>
+
+      <!-- NEW TASK MODAL -->
+      <div class="modal-overlay" id="new-task-modal">
+        <div class="modal">
+          <div class="modal-header">
+            <div class="modal-title">Add task</div>
+            <div class="modal-close" onclick="closeModal('new-task-modal')">✕</div>
+          </div>
+          <div class="modal-body">
+            <div class="form-row">
+              <label class="form-label">Task title</label>
+              <input class="form-input" id="task-title" placeholder="e.g. Review FICA documents">
+            </div>
+            <div class="form-row">
+              <label class="form-label">Priority</label>
+              <select class="form-input" id="task-priority">
+                <option value="normal">Normal</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+                <option value="low">Low</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label class="form-label">Due date</label>
+              <input class="form-input" type="date" id="task-due">
+            </div>
+            <div class="form-row">
+              <label class="form-label">Link to workspace (optional)</label>
+              <select class="form-input" id="task-workspace">
+                <option value="">— None —</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-ghost" onclick="closeModal('new-task-modal')">Cancel</button>
+            <button class="btn-primary" onclick="saveTask()">Add task</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- WORKSPACE DETAIL VIEW -->
+      <div class="view" id="view-workspace-detail">
+        <div style="margin-bottom:20px;display:flex;align-items:center;gap:12px">
+          <button class="btn-ghost" onclick="closeWorkspaceDetail()" style="padding:7px 14px;font-size:13px">← Back</button>
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div id="ws-detail-icon" style="width:36px;height:36px;border-radius:9px;background:#e8f3ed;display:flex;align-items:center;justify-content:center;font-size:17px">🗂</div>
+              <div>
+                <h2 id="ws-detail-name" style="font-family:'Instrument Serif',serif;font-size:22px;color:var(--ink);margin:0"></h2>
+                <div id="ws-detail-meta" style="font-size:12px;color:var(--ink-4);margin-top:2px"></div>
+              </div>
+            </div>
+          </div>
+          <span id="ws-detail-status" class="status-badge status-progress"></span>
+          <div style="display:flex;gap:8px">
+            <button class="btn-ghost" style="font-size:12px" onclick="archiveCurrentWorkspace()">📦 Archive</button>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div style="display:flex;gap:2px;margin-bottom:20px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px;width:fit-content">
+          <button class="ws-tab active" id="tab-overview"  onclick="switchWSTab('overview')">Overview</button>
+          <button class="ws-tab" id="tab-tasks"     onclick="switchWSTab('tasks')">Tasks</button>
+          <button class="ws-tab" id="tab-messages"  onclick="switchWSTab('messages')">Messages</button>
+          <button class="ws-tab" id="tab-documents" onclick="switchWSTab('documents')">Documents</button>
+          <button class="ws-tab" id="tab-activity"  onclick="switchWSTab('activity')">Activity</button>
+        </div>
+
+        <!-- Overview tab -->
+        <div id="wstab-overview">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+            <div class="panel" style="padding:20px">
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4);margin-bottom:14px">Workspace details</div>
+              <div id="ws-detail-info"></div>
+            </div>
+            <div class="panel" style="padding:20px">
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4);margin-bottom:14px">Progress</div>
+              <div id="ws-detail-progress-wrap"></div>
+              <div style="margin-top:16px">
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4);margin-bottom:10px">Quick actions</div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <button class="btn-ghost" style="font-size:12px;justify-content:flex-start;text-align:left" onclick="switchWSTab('tasks')">+ Add task</button>
+                  <button class="btn-ghost" style="font-size:12px;justify-content:flex-start;text-align:left" onclick="switchWSTab('messages')">💬 Add note</button>
+                  <button class="btn-ghost" style="font-size:12px;justify-content:flex-start;text-align:left" onclick="showToast('SignFlow integration coming soon')">✍️ Send for signature</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div style="padding:16px 20px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600">Recent activity</div>
+            <div id="ws-detail-activity"></div>
+          </div>
+        </div>
+
+        <!-- Tasks tab -->
+        <div id="wstab-tasks" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+            <div style="font-size:13px;font-weight:600;color:var(--ink)">Tasks in this workspace</div>
+            <button class="btn-primary" style="font-size:12px;padding:7px 14px" onclick="openNewTaskModal(currentWorkspaceId)">+ Add task</button>
+          </div>
+          <div class="panel" id="ws-tasks-list"></div>
+        </div>
+
+        <!-- Messages tab -->
+        <div id="wstab-messages" style="display:none">
+          <div class="panel" style="margin-bottom:14px">
+            <div style="padding:16px 20px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600">Internal notes & messages</div>
+            <div id="ws-messages-list" style="max-height:400px;overflow-y:auto"></div>
+            <div style="padding:16px 20px;border-top:1px solid var(--border);display:flex;gap:10px">
+              <input class="form-input" id="ws-msg-input" placeholder="Add a note or comment..." style="flex:1" onkeydown="if(event.key==='Enter')postMessage()">
+              <button class="btn-primary" style="font-size:12px;padding:8px 16px;white-space:nowrap" onclick="postMessage()">Post note</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Documents tab -->
+        <div id="wstab-documents" style="display:none">
+          <div class="panel">
+            <div style="padding:16px 20px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600">Documents</div>
+            <div id="ws-documents-list" style="padding:40px;text-align:center;color:var(--ink-4);font-size:13px">
+              Document uploads coming with FormFlow integration.
+            </div>
+          </div>
+        </div>
+
+        <!-- Activity tab -->
+        <div id="wstab-activity" style="display:none">
+          <div class="panel">
+            <div style="padding:16px 20px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600">Audit trail</div>
+            <div id="ws-activity-list"></div>
+          </div>
+        </div>
       </div>
 
       <!-- ── FORMFLOW STUB ───────────────────────────────────────── -->
@@ -1995,6 +2271,17 @@
 
 <!-- TOAST -->
 <div id="toast"></div>
+
+<!-- NOTIFICATION PANEL -->
+<div class="notif-panel" id="notif-panel">
+  <div class="notif-header">
+    <div class="notif-title">Notifications</div>
+    <button class="notif-clear" onclick="clearNotifications()">Mark all read</button>
+  </div>
+  <div class="notif-list" id="notif-list">
+    <div class="notif-empty">Loading...</div>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -3043,11 +3330,378 @@
       showToast(`Hub "${hubName}" deleted`);
     } catch(e) { showToast('Error: ' + e.message); }
   }
+
+  // ── WORKSPACE DETAIL ────────────────────────────────────────
+  let currentWorkspaceId = null;
+  let currentWorkspace   = null;
+
+  async function openWorkspace(id) {
+    const ws = liveWorkspaces.find(w => String(w.id) === String(id))
+            || demoWorkspaces.find(w => String(w.id) === String(id));
+    if (!ws) { showToast('Workspace not found'); return; }
+
+    currentWorkspaceId = id;
+    currentWorkspace   = ws;
+
+    document.getElementById('ws-detail-icon').textContent        = wsIcon(ws);
+    document.getElementById('ws-detail-icon').style.background   = hubBg(wsHub(ws));
+    document.getElementById('ws-detail-name').textContent        = ws.name;
+    document.getElementById('ws-detail-meta').textContent        = `${wsHub(ws)} · ${ws.type || 'workspace'}${ws.client_name ? ' · ' + ws.client_name : ''}`;
+    const statusEl = document.getElementById('ws-detail-status');
+    statusEl.textContent = statusLabel(ws.status);
+    statusEl.className   = 'status-badge ' + statusClass(ws.status);
+
+    const pct = ws.progress || 0;
+    document.getElementById('ws-detail-info').innerHTML = `
+      <div class="detail-row"><span class="detail-label">Hub</span><span class="detail-value">${wsHub(ws)}</span></div>
+      <div class="detail-row"><span class="detail-label">Type</span><span class="detail-value">${ws.type || '—'}</span></div>
+      <div class="detail-row"><span class="detail-label">Client</span><span class="detail-value">${ws.client_name || ws.client || '—'}</span></div>
+      <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${ws.client_email || '—'}</span></div>
+      <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value">${statusLabel(ws.status)}</span></div>
+      <div class="detail-row"><span class="detail-label">Created</span><span class="detail-value">${ws.created_at ? new Date(ws.created_at).toLocaleDateString('en-ZA') : '—'}</span></div>
+      <div class="detail-row"><span class="detail-label">Last updated</span><span class="detail-value">${ws.updated_at ? timeAgo(ws.updated_at) : '—'}</span></div>
+    `;
+
+    document.getElementById('ws-detail-progress-wrap').innerHTML = `
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink-4);margin-bottom:6px"><span>Completion</span><span>${pct}%</span></div>
+      <div class="progress-bar" style="height:8px"><div class="progress-fill" style="width:${pct}%;background:${progressColor(ws.status)}"></div></div>
+      <div style="margin-top:14px;display:flex;gap:8px">
+        <button class="btn-ghost" style="font-size:11px;flex:1" onclick="updateWSProgress(-10)">− 10%</button>
+        <button class="btn-ghost" style="font-size:11px;flex:1" onclick="updateWSProgress(10)">+ 10%</button>
+        <button class="btn-primary" style="font-size:11px;flex:1" onclick="updateWSProgress(${100-pct})">Mark done</button>
+      </div>
+    `;
+
+    switchWSTab('overview');
+    showView('workspace-detail');
+    document.getElementById('topbar-title').textContent = ws.name;
+
+    if (currentOrg) {
+      await loadWSData(id);
+    } else {
+      renderWSActivity([]);
+      renderWSMessages([]);
+      renderWSTasks([]);
+      document.getElementById('ws-detail-activity').innerHTML = '<div style="padding:20px;text-align:center;color:var(--ink-4);font-size:13px">No activity yet in demo mode.</div>';
+    }
+  }
+
+  async function loadWSData(wsId) {
+    try {
+      const [{ data: tasks }, { data: messages }, { data: activity }] = await Promise.all([
+        sb.from('ff_tasks').select('*').eq('workspace_id', wsId).order('created_at', { ascending: false }),
+        sb.from('ff_messages').select('*').eq('workspace_id', wsId).order('created_at', { ascending: true }),
+        sb.from('ff_audit_log').select('*').eq('workspace_id', wsId).order('created_at', { ascending: false }).limit(20)
+      ]);
+      renderWSTasks(tasks || []);
+      renderWSMessages(messages || []);
+      renderWSActivity(activity || []);
+      const preview = (activity || []).slice(0,4);
+      document.getElementById('ws-detail-activity').innerHTML = preview.length
+        ? preview.map(a => `<div class="activity-row"><div class="activity-icon">${{'workspace.created':'🗂','task.completed':'✅','message.posted':'💬','signflow.triggered':'✍️'}[a.action]||'📋'}</div><div class="activity-body"><div class="activity-title">${a.action.replace('.',' — ')}</div><div class="activity-sub">${a.actor_name||'System'} · ${timeAgo(a.created_at)}</div></div></div>`).join('')
+        : '<div style="padding:20px;text-align:center;color:var(--ink-4);font-size:13px">No activity yet.</div>';
+    } catch(e) { console.error('WS data error:', e); }
+  }
+
+  function closeWorkspaceDetail() {
+    currentWorkspaceId = null; currentWorkspace = null;
+    showView('workspaces');
+  }
+
+  function archiveCurrentWorkspace() {
+    if (!currentWorkspace) return;
+    archiveWorkspace(currentWorkspace.id, currentWorkspace.name);
+    closeWorkspaceDetail();
+  }
+
+  async function updateWSProgress(delta) {
+    if (!currentWorkspace) return;
+    const newPct    = Math.min(100, Math.max(0, (currentWorkspace.progress || 0) + delta));
+    const newStatus = newPct === 100 ? 'completed' : currentWorkspace.status;
+    currentWorkspace.progress = newPct;
+    if (currentOrg) {
+      await sb.from('ff_workspaces')
+        .update({ metadata: { ...currentWorkspace.metadata, progress: newPct }, status: newStatus })
+        .eq('id', currentWorkspace.id);
+      const wsIdx = liveWorkspaces.findIndex(w => w.id === currentWorkspace.id);
+      if (wsIdx > -1) { liveWorkspaces[wsIdx].progress = newPct; liveWorkspaces[wsIdx].status = newStatus; }
+    }
+    openWorkspace(currentWorkspace.id);
+  }
+
+  function switchWSTab(tab) {
+    ['overview','tasks','messages','documents','activity'].forEach(t => {
+      const el = document.getElementById('wstab-' + t);
+      const btn = document.getElementById('tab-' + t);
+      if (el)  el.style.display = t === tab ? 'block' : 'none';
+      if (btn) btn.classList.toggle('active', t === tab);
+    });
+    if (tab === 'tasks' && currentWorkspaceId && currentOrg) loadWSData(currentWorkspaceId);
+  }
+
+  function renderWSTasks(tasks) {
+    const list = document.getElementById('ws-tasks-list');
+    if (!list) return;
+    if (!tasks || tasks.length === 0) {
+      list.innerHTML = '<div style="padding:32px;text-align:center;color:var(--ink-4);font-size:13px">No tasks yet.</div>';
+      return;
+    }
+    list.innerHTML = tasks.map(t => {
+      const done     = t.status === 'completed';
+      const due      = t.due_at ? new Date(t.due_at) : null;
+      const isOver   = due && due < new Date() && !done;
+      const dueLabel = due ? due.toLocaleDateString('en-ZA',{day:'numeric',month:'short'}) : '';
+      return `<div class="ws-task-row">
+        <div class="ws-task-check ${done?'done':''}" onclick="toggleTask('${t.id}',${!done})">${done?'✓':''}</div>
+        <div class="ws-task-title ${done?'done':''}">${t.title}</div>
+        ${t.priority && t.priority !== 'normal' ? `<span class="priority-tag priority-${t.priority}">${t.priority}</span>` : ''}
+        ${dueLabel ? `<span style="font-size:11px;color:${isOver?'var(--danger)':'var(--ink-4)'}">${isOver?'⚠ ':''}${dueLabel}</span>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  async function toggleTask(taskId, completed) {
+    try {
+      if (currentOrg) {
+        await sb.from('ff_tasks').update({ status: completed ? 'completed' : 'open', completed_at: completed ? new Date().toISOString() : null }).eq('id', taskId);
+        await loadWSData(currentWorkspaceId);
+        if (currentView === 'tasks') await renderGlobalTasks();
+      } else { showToast(completed ? 'Task completed ✓' : 'Task reopened'); }
+    } catch(e) { showToast('Error: ' + e.message); }
+  }
+
+  function renderWSMessages(messages) {
+    const list = document.getElementById('ws-messages-list');
+    if (!list) return;
+    if (!messages || messages.length === 0) {
+      list.innerHTML = '<div style="padding:32px;text-align:center;color:var(--ink-4);font-size:13px">No notes yet.</div>';
+      return;
+    }
+    list.innerHTML = messages.map(m => `
+      <div class="msg-row">
+        <div class="msg-avatar">${(m.author_name||'U').substring(0,2).toUpperCase()}</div>
+        <div class="msg-body">
+          <div><span class="msg-author">${m.author_name||'Unknown'}</span><span class="msg-time">${timeAgo(m.created_at)}</span></div>
+          <div class="msg-text">${m.body}</div>
+        </div>
+      </div>`).join('');
+    list.scrollTop = list.scrollHeight;
+  }
+
+  async function postMessage() {
+    const input = document.getElementById('ws-msg-input');
+    const body  = input.value.trim();
+    if (!body || !currentWorkspaceId) return;
+    const authorName = currentProfile?.full_name || currentUser?.email || 'User';
+    try {
+      if (currentOrg) {
+        await sb.from('ff_messages').insert({ workspace_id: currentWorkspaceId, organisation_id: currentOrg.id, author_id: currentUser.id, author_name: authorName, author_type: 'internal', body, visibility: 'internal' });
+        input.value = '';
+        await loadWSData(currentWorkspaceId);
+      } else {
+        const list = document.getElementById('ws-messages-list');
+        list.innerHTML += `<div class="msg-row"><div class="msg-avatar">${authorName.substring(0,2).toUpperCase()}</div><div class="msg-body"><div><span class="msg-author">${authorName}</span><span class="msg-time">Just now</span></div><div class="msg-text">${body}</div></div></div>`;
+        list.scrollTop = list.scrollHeight;
+        input.value = '';
+      }
+    } catch(e) { showToast('Error: ' + e.message); }
+  }
+
+  function renderWSActivity(activity) {
+    const list = document.getElementById('ws-activity-list');
+    if (!list) return;
+    if (!activity || activity.length === 0) {
+      list.innerHTML = '<div style="padding:32px;text-align:center;color:var(--ink-4);font-size:13px">No activity yet.</div>';
+      return;
+    }
+    const icons = {'workspace.created':'🗂','task.completed':'✅','message.posted':'💬','signflow.triggered':'✍️','document.uploaded':'📁'};
+    list.innerHTML = activity.map(a => `
+      <div class="activity-row">
+        <div class="activity-icon">${icons[a.action]||'📋'}</div>
+        <div class="activity-body">
+          <div class="activity-title">${a.action.replace('.',' — ')}</div>
+          <div class="activity-sub">${a.actor_name||'System'} · ${timeAgo(a.created_at)}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  // ── GLOBAL TASKS ────────────────────────────────────────────
+  let allTasks   = [];
+  let taskFilter = 'all';
+
+  function openNewTaskModal(wsId) {
+    const sel  = document.getElementById('task-workspace');
+    const data = liveWorkspaces.length > 0 ? liveWorkspaces : demoWorkspaces;
+    sel.innerHTML = '<option value="">— None —</option>' +
+      data.map(w => `<option value="${w.id}" ${String(w.id)===String(wsId)?'selected':''}>${w.name}</option>`).join('');
+    document.getElementById('new-task-modal').classList.add('open');
+  }
+
+  async function saveTask() {
+    const title    = document.getElementById('task-title').value.trim();
+    const priority = document.getElementById('task-priority').value;
+    const dueDate  = document.getElementById('task-due').value;
+    const wsId     = document.getElementById('task-workspace').value;
+    if (!title) { showToast('Please enter a task title'); return; }
+    const btn = document.querySelector('#new-task-modal .btn-primary');
+    btn.disabled = true; btn.textContent = 'Saving...';
+    try {
+      if (currentOrg) {
+        await sb.from('ff_tasks').insert({ organisation_id: currentOrg.id, workspace_id: wsId||null, title, priority, due_at: dueDate ? new Date(dueDate).toISOString() : null, status: 'open' });
+        await renderGlobalTasks();
+        if (currentWorkspaceId && wsId === String(currentWorkspaceId)) await loadWSData(currentWorkspaceId);
+      } else {
+        demoTasks.unshift({ title, due: dueDate ? new Date(dueDate).toLocaleDateString('en-ZA',{day:'numeric',month:'short'}) : 'No due date', type:'soon' });
+        renderTasks(demoTasks); renderTasksFull(demoTasks);
+      }
+      closeModal('new-task-modal');
+      document.getElementById('task-title').value = '';
+      document.getElementById('task-due').value   = '';
+      showToast('Task added: ' + title);
+      addNotification('task', `New task: ${title}`, 'Just now');
+    } catch(e) { showToast('Error: ' + e.message); }
+    finally { btn.disabled = false; btn.textContent = 'Add task'; }
+  }
+
+  async function renderGlobalTasks(filter) {
+    if (filter) taskFilter = filter;
+    const list = document.getElementById('tasks-full-list');
+    if (!list) return;
+    if (!currentOrg) { renderTasksFull(demoTasks); return; }
+    try {
+      let query = sb.from('ff_tasks').select('*, ff_workspaces(name)').eq('organisation_id', currentOrg.id).order('due_at', { ascending: true, nullsFirst: false });
+      if      (taskFilter === 'completed') query = query.eq('status','completed');
+      else if (taskFilter === 'open')      query = query.eq('status','open');
+      else if (taskFilter === 'overdue')   query = query.eq('status','open').lt('due_at', new Date().toISOString());
+      else if (taskFilter === 'today') {
+        const s = new Date(); s.setHours(0,0,0,0);
+        const e = new Date(s); e.setDate(e.getDate()+1);
+        query = query.gte('due_at', s.toISOString()).lt('due_at', e.toISOString());
+      } else { query = query.neq('status','completed'); }
+      const { data: tasks } = await query;
+      allTasks = tasks || [];
+      if (allTasks.length === 0) { list.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink-4);font-size:13px">No tasks found. Add your first task with the button above.</div>'; return; }
+      list.innerHTML = allTasks.map(t => {
+        const done    = t.status === 'completed';
+        const due     = t.due_at ? new Date(t.due_at) : null;
+        const isOver  = due && due < new Date() && !done;
+        const isToday = due && due.toDateString() === new Date().toDateString();
+        const dueLabel= due ? (isOver ? 'Overdue' : isToday ? 'Due today' : 'Due ' + due.toLocaleDateString('en-ZA',{day:'numeric',month:'short'})) : '';
+        const dueType = isOver ? 'overdue' : isToday ? 'today' : 'soon';
+        return `<div class="task-row" style="${done?'opacity:0.5':''}">
+          <div class="task-check ${done?'done':''}" onclick="toggleGlobalTask('${t.id}',${!done})">${done?'✓':''}</div>
+          <div class="task-body" style="flex:1">
+            <div class="task-title" style="${done?'text-decoration:line-through':''}">${t.title}</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
+              ${dueLabel ? `<div class="task-due ${dueType}">${dueLabel}</div>` : ''}
+              ${t.ff_workspaces?.name ? `<span style="font-size:10px;color:var(--ink-4)">· ${t.ff_workspaces.name}</span>` : ''}
+              ${t.priority&&t.priority!=='normal' ? `<span class="priority-tag priority-${t.priority}">${t.priority}</span>` : ''}
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+      const overdue = allTasks.filter(t => t.due_at && new Date(t.due_at) < new Date() && t.status !== 'completed').length;
+      const badge = document.querySelector('.nav-badge.urgent');
+      if (badge) badge.textContent = overdue || allTasks.filter(t=>t.status!=='completed').length || 0;
+    } catch(e) { console.error('Tasks error:', e); }
+  }
+
+  async function toggleGlobalTask(taskId, completed) {
+    try {
+      if (currentOrg) {
+        await sb.from('ff_tasks').update({ status: completed?'completed':'open', completed_at: completed?new Date().toISOString():null }).eq('id', taskId);
+        await renderGlobalTasks();
+      } else { showToast(completed ? 'Task completed ✓' : 'Task reopened'); }
+    } catch(e) { showToast('Error: ' + e.message); }
+  }
+
+  function filterTasks(btn, filter) {
+    document.querySelectorAll('#view-tasks .filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderGlobalTasks(filter);
+  }
+
+  // ── NOTIFICATIONS ───────────────────────────────────────────
+  let notifOpen = false;
+
+  function toggleNotifications() {
+    notifOpen = !notifOpen;
+    const panel = document.getElementById('notif-panel');
+    panel.classList.toggle('open', notifOpen);
+    if (notifOpen) {
+      loadNotifications();
+      const dot = document.getElementById('notif-dot');
+      if (dot) dot.style.display = 'none';
+    }
+  }
+
+  async function loadNotifications() {
+    const list = document.getElementById('notif-list');
+    const items = [];
+    if (currentOrg) {
+      try {
+        const [{ data: overdueTasks }, { data: recent }] = await Promise.all([
+          sb.from('ff_tasks').select('*, ff_workspaces(name)').eq('organisation_id', currentOrg.id).eq('status','open').lt('due_at', new Date().toISOString()).limit(5),
+          sb.from('ff_audit_log').select('*').eq('organisation_id', currentOrg.id).order('created_at',{ascending:false}).limit(5)
+        ]);
+        (overdueTasks||[]).forEach(t => items.push({ icon:'⚠️', bg:'#fef2f2', msg:`Overdue: ${t.title}${t.ff_workspaces?.name?' — '+t.ff_workspaces.name:''}`, time:timeAgo(t.due_at) }));
+        const ai = {'workspace.created':'🗂','task.completed':'✅','message.posted':'💬'};
+        (recent||[]).forEach(a => items.push({ icon:ai[a.action]||'📋', bg:'#f1f5f9', msg:`${a.actor_name||'System'}: ${a.action.replace('.',' ')}`, time:timeAgo(a.created_at) }));
+      } catch(e) { console.error(e); }
+    } else {
+      items.push(
+        { icon:'⚠️', bg:'#fef2f2', msg:'Overdue: Review FICA — John Smith', time:'2h ago' },
+        { icon:'⚠️', bg:'#fef2f2', msg:'Overdue: Upload ID — Mary Jacobs', time:'5h ago' },
+        { icon:'✍️', bg:'#f5f3ff', msg:'OTP signed — 12 Main Road', time:'2h ago' },
+        { icon:'📁', bg:'#eff6ff', msg:'FICA documents uploaded', time:'5h ago' },
+        { icon:'🗂', bg:'#f0fdf4', msg:'New workspace created — Sandy Close', time:'1d ago' }
+      );
+    }
+    if (items.length === 0) { list.innerHTML = '<div class="notif-empty">✓ All caught up</div>'; return; }
+    list.innerHTML = items.map((n,i) => `
+      <div class="notif-item ${i<2?'unread':''}">
+        <div class="notif-icon" style="background:${n.bg}">${n.icon}</div>
+        <div class="notif-body">
+          <div class="notif-msg">${n.msg}</div>
+          <div class="notif-time">${n.time}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  function addNotification(type, msg, time) {
+    const dot = document.getElementById('notif-dot');
+    if (dot) dot.style.display = 'block';
+  }
+
+  function clearNotifications() {
+    document.getElementById('notif-list').innerHTML = '<div class="notif-empty">✓ All caught up</div>';
+    const dot = document.getElementById('notif-dot');
+    if (dot) dot.style.display = 'none';
+    showToast('Notifications cleared');
+  }
+
+  // Override showView to trigger task load
+  const _origShowView = showView;
+  function showView(id) {
+    _origShowView(id);
+    if (id === 'tasks') renderGlobalTasks(taskFilter);
+  }
+
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
     overlay.addEventListener('click', e => {
       if (e.target === overlay) overlay.classList.remove('open');
     });
   });
+
+  // Close notification panel on outside click
+  document.addEventListener('click', (e) => {
+    const panel = document.getElementById('notif-panel');
+    const btn   = document.getElementById('notif-btn');
+    if (notifOpen && panel && !panel.contains(e.target) && btn && !btn.contains(e.target)) {
+      notifOpen = false;
+      panel.classList.remove('open');
+    }
+  }, true);
 
   // ── SESSION RESTORE ─────────────────────────────────────────
   window.addEventListener('load', async () => {
