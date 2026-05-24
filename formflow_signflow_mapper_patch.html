@@ -1,0 +1,245 @@
+
+<!-- ADD THIS HTML -->
+<div class="document-builder-layout">
+  <div class="pdf-work-area">
+    <div id="pdf-scroll-shell">
+      <div id="pdf-stage">
+        <iframe id="pdf-preview-frame"></iframe>
+        <div id="field-overlay"></div>
+      </div>
+    </div>
+  </div>
+
+  <aside class="field-toolbox">
+    <h3>Add fields</h3>
+
+    <button onclick="selectPlacementField('text')">Text field</button>
+    <button onclick="selectPlacementField('date')">Date field</button>
+    <button onclick="selectPlacementField('number')">Money / number</button>
+    <button onclick="selectPlacementField('email')">Email</button>
+    <button onclick="selectPlacementField('signature')">Signature</button>
+    <button onclick="selectPlacementField('initials')">Initials</button>
+
+    <div id="placement-hint">Select a field, then click the document.</div>
+  </aside>
+</div>
+
+<style>
+.document-builder-layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 16px;
+  height: calc(100vh - 120px);
+  overflow: hidden;
+}
+
+.pdf-work-area {
+  background: #f3f4f6;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+#pdf-scroll-shell {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: auto;
+  position: relative;
+}
+
+#pdf-stage {
+  position: relative;
+  min-height: 100%;
+  width: 100%;
+}
+
+#pdf-preview-frame {
+  width: 100%;
+  height: calc(100vh - 130px);
+  border: none;
+  display: block;
+}
+
+#field-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.placed-field {
+  position: absolute;
+  min-width: 120px;
+  min-height: 28px;
+  padding: 6px 28px 6px 8px;
+  border: 2px solid var(--ff);
+  background: rgba(240, 253, 250, 0.92);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ff-dark);
+  cursor: move;
+  pointer-events: auto;
+  user-select: none;
+  z-index: 10;
+}
+
+.placed-field-delete {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  border: none;
+  background: transparent;
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.field-toolbox {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  overflow-y: auto;
+}
+
+.field-toolbox button {
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: white;
+  cursor: pointer;
+  text-align: left;
+}
+</style>
+
+<script>
+let selectedPlacementType = null;
+let placedFields = [];
+let dragState = null;
+
+function selectPlacementField(type) {
+  selectedPlacementType = type;
+  document.getElementById('placement-hint').textContent =
+    `Click on the document to place a ${type} field.`;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const overlay = document.getElementById('field-overlay');
+
+  if (!overlay) return;
+
+  overlay.addEventListener('click', function (e) {
+    if (!selectedPlacementType) return;
+
+    const rect = overlay.getBoundingClientRect();
+
+    const field = {
+      id: 'field_' + Date.now(),
+      type: selectedPlacementType,
+      label: formatFieldLabel(selectedPlacementType),
+      key: selectedPlacementType + '_' + placedFields.length,
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+
+    placedFields.push(field);
+    renderPlacedFields();
+
+    selectedPlacementType = null;
+    document.getElementById('placement-hint').textContent =
+      'Select a field, then click the document.';
+  });
+});
+
+function formatFieldLabel(type) {
+  const labels = {
+    text: 'Text field',
+    date: 'Date',
+    number: 'Amount',
+    email: 'Email',
+    signature: 'Signature',
+    initials: 'Initials'
+  };
+  return labels[type] || 'Field';
+}
+
+function renderPlacedFields() {
+  const overlay = document.getElementById('field-overlay');
+  if (!overlay) return;
+
+  overlay.innerHTML = placedFields.map(f => `
+    <div 
+      class="placed-field"
+      data-id="${f.id}"
+      style="left:${f.x}px; top:${f.y}px;"
+      onmousedown="startFieldDrag(event, '${f.id}')"
+      ondblclick="renamePlacedField('${f.id}')"
+    >
+      ${f.label}
+      <button class="placed-field-delete" onclick="deletePlacedField(event, '${f.id}')">×</button>
+    </div>
+  `).join('');
+}
+
+function startFieldDrag(e, id) {
+  if (e.target.classList.contains('placed-field-delete')) return;
+
+  const field = placedFields.find(f => f.id === id);
+  if (!field) return;
+
+  dragState = {
+    id,
+    startX: e.clientX,
+    startY: e.clientY,
+    originalX: field.x,
+    originalY: field.y
+  };
+
+  document.addEventListener('mousemove', dragPlacedField);
+  document.addEventListener('mouseup', stopFieldDrag);
+}
+
+function dragPlacedField(e) {
+  if (!dragState) return;
+
+  const field = placedFields.find(f => f.id === dragState.id);
+  if (!field) return;
+
+  field.x = dragState.originalX + (e.clientX - dragState.startX);
+  field.y = dragState.originalY + (e.clientY - dragState.startY);
+
+  renderPlacedFields();
+}
+
+function stopFieldDrag() {
+  dragState = null;
+  document.removeEventListener('mousemove', dragPlacedField);
+  document.removeEventListener('mouseup', stopFieldDrag);
+}
+
+function deletePlacedField(e, id) {
+  e.stopPropagation();
+  placedFields = placedFields.filter(f => f.id !== id);
+  renderPlacedFields();
+}
+
+function renamePlacedField(id) {
+  const field = placedFields.find(f => f.id === id);
+  if (!field) return;
+
+  const newLabel = prompt('Rename field:', field.label);
+  if (!newLabel) return;
+
+  field.label = newLabel;
+  field.key = newLabel
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '');
+
+  renderPlacedFields();
+}
+</script>
