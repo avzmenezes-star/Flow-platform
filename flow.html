@@ -1460,48 +1460,7 @@
             <div class="section-title">Your Hubs</div>
             <button class="section-link" onclick="showView('hubs')">Manage hubs →</button>
           </div>
-          <div class="hubs-grid">
-            <div class="hub-card" onclick="showView('hubs')" style="--hub-color:var(--hub-deals)">
-              <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--hub-deals);border-radius:14px 14px 0 0"></div>
-              <div class="hub-icon" style="background:#e8f3ed">🏠</div>
-              <div class="hub-name">Deals</div>
-              <div class="hub-count">32 workspaces</div>
-              <div class="hub-open" style="color:var(--hub-deals)">Open →</div>
-            </div>
-            <div class="hub-card" onclick="showView('hubs')">
-              <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--hub-hr);border-radius:14px 14px 0 0"></div>
-              <div class="hub-icon" style="background:#eff6ff">👤</div>
-              <div class="hub-name">HR</div>
-              <div class="hub-count">24 workspaces</div>
-              <div class="hub-open" style="color:var(--hub-hr)">Open →</div>
-            </div>
-            <div class="hub-card" onclick="showView('hubs')">
-              <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--hub-legal);border-radius:14px 14px 0 0"></div>
-              <div class="hub-icon" style="background:#f5f3ff">⚖️</div>
-              <div class="hub-name">Legal</div>
-              <div class="hub-count">12 workspaces</div>
-              <div class="hub-open" style="color:var(--hub-legal)">Open →</div>
-            </div>
-            <div class="hub-card" onclick="showView('hubs')">
-              <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--hub-finance);border-radius:14px 14px 0 0"></div>
-              <div class="hub-icon" style="background:#fffbeb">💰</div>
-              <div class="hub-name">Finance</div>
-              <div class="hub-count">16 workspaces</div>
-              <div class="hub-open" style="color:var(--hub-finance)">Open →</div>
-            </div>
-            <div class="hub-card" onclick="showView('hubs')">
-              <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--hub-marketing);border-radius:14px 14px 0 0"></div>
-              <div class="hub-icon" style="background:#fff7ed">📣</div>
-              <div class="hub-name">Marketing</div>
-              <div class="hub-count">12 workspaces</div>
-              <div class="hub-open" style="color:var(--hub-marketing)">Open →</div>
-            </div>
-            <div class="hub-card hub-add" onclick="openNewHubModal()">
-              <div class="hub-add-icon">+</div>
-              <div>Add Hub</div>
-              <div style="font-size:10px">Create a new hub</div>
-            </div>
-          </div>
+          <div class="hubs-grid" id="dashboard-hubs-grid"></div>
         </div>
 
         <!-- Content grid -->
@@ -2218,6 +2177,7 @@
 
     if (isDemo) {
       // Use demo data
+      renderDashboardHubs(demoHubs);
       renderRecent(demoWorkspaces);
       renderTasks(demoTasks);
       renderActivity(demoActivity);
@@ -2280,6 +2240,7 @@
         .limit(10);
 
       // Render everything
+      renderDashboardHubs(liveHubs);
       renderHubsFull(liveHubs);
       renderRecent(liveWorkspaces);
       renderWSFull(liveWorkspaces);
@@ -2475,6 +2436,7 @@
 
         if (error) throw error;
         liveHubs.push(hub);
+        renderDashboardHubs(liveHubs);
         renderHubsFull(liveHubs);
         populateHubSelect(liveHubs);
         showToast('Hub created: ' + name);
@@ -2484,6 +2446,7 @@
           desc: desc || 'Custom hub',
           workspaces:0, active:0, completed:0
         });
+        renderDashboardHubs(demoHubs);
         renderHubsFull(demoHubs);
         showToast('Hub created: ' + name);
       }
@@ -2797,6 +2760,34 @@
   function hubBg(hub) {
     const m = { Deals:'#e8f3ed', HR:'#eff6ff', Legal:'#f5f3ff', Finance:'#fffbeb', Marketing:'#fff7ed', Other:'#f1f5f9' };
     return m[hub] || '#f1f5f9';
+  }
+
+  function renderDashboardHubs(hubs) {
+    const grid = document.getElementById('dashboard-hubs-grid');
+    if (!grid) return;
+    const data = hubs && hubs.length > 0 ? hubs : demoHubs;
+    const formatted = data.map(h => {
+      const isLive  = !!h.organisation_id;
+      const icon    = isLive ? (h.metadata?.icon  || '🗂') : h.icon;
+      const color   = isLive ? (h.metadata?.color || '#4f46e5') : h.color.replace('var(--hub-deals)','#1a5c3a').replace('var(--hub-hr)','#1d4ed8').replace('var(--hub-legal)','#6d28d9').replace('var(--hub-finance)','#b45309').replace('var(--hub-marketing)','#c2410c').replace('var(--hub-custom)','#374151');
+      const count   = isLive ? liveWorkspaces.filter(w => w.metadata?.hub === h.name).length : h.workspaces;
+      return { name: h.name, icon, color, count };
+    });
+    grid.innerHTML = formatted.map(h => `
+      <div class="hub-card" onclick="filterByHub('${h.name}')">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${h.color};border-radius:14px 14px 0 0"></div>
+        <div class="hub-icon" style="background:${h.color}18">${h.icon}</div>
+        <div class="hub-name">${h.name}</div>
+        <div class="hub-count">${h.count} workspaces</div>
+        <div class="hub-open" style="color:${h.color}">Open →</div>
+      </div>
+    `).join('') + `
+      <div class="hub-card hub-add" onclick="openNewHubModal()">
+        <div class="hub-add-icon">+</div>
+        <div>Add Hub</div>
+        <div style="font-size:10px">Create a new hub</div>
+      </div>
+    `;
   }
 
   function setGreeting(name) {
