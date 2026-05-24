@@ -2824,27 +2824,14 @@
   }
 
   function selectType(el) {
-    el.closest('.hub-type-grid, div').querySelectorAll('.hub-type-btn').forEach(b => b.classList.remove('selected'));
+    const container = el.parentElement;
+    if (container) {
+      container.querySelectorAll('.hub-type-btn').forEach(b => b.classList.remove('selected'));
+    }
     el.classList.add('selected');
   }
 
-  function createWorkspace() {
-    const name = document.getElementById('new-ws-name').value.trim();
-    if (!name) { showToast('Please enter a workspace name'); return; }
-    closeModal('new-workspace-modal');
-    showToast('Workspace created: ' + name);
-    document.getElementById('new-ws-name').value = '';
-  }
-
-  function createHub() {
-    const name = document.getElementById('new-hub-name').value.trim();
-    if (!name) { showToast('Please enter a hub name'); return; }
-    closeModal('new-hub-modal');
-    showToast('Hub created: ' + name);
-    document.getElementById('new-hub-name').value = '';
-  }
-
-  // ── FILTERS ─────────────────────────────────────────────────
+    // ── FILTERS ─────────────────────────────────────────────────
   function filterWS(btn, filter) {
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
