@@ -983,6 +983,30 @@
         </select>
       </div>
       <div class="form-row">
+        <label class="form-label">Workflow purpose</label>
+        <select class="form-input" id="wf-purpose" onchange="handleWorkflowPurposeChange()">
+          <option value="document">Complete / populate a document</option>
+          <option value="crm">Collect CRM / client profile information</option>
+          <option value="quote">Service estimate / quote intake</option>
+          <option value="invoice">Invoice / billing information</option>
+          <option value="marketing">Marketing questionnaire / lead qualification</option>
+          <option value="hr">HR / employee onboarding</option>
+          <option value="kyc">KYC / FICA compliance pack</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Output / destination</label>
+        <select class="form-input" id="wf-output">
+          <option value="document_mapper">Document Mapper / generated document</option>
+          <option value="crm_record">CRM contact / deal record</option>
+          <option value="quote_record">Quote / estimate record</option>
+          <option value="invoice_record">Invoice draft</option>
+          <option value="marketing_record">Marketing / survey response</option>
+          <option value="hr_record">HR employee record</option>
+          <option value="compliance_vault">Transaction vault / compliance archive</option>
+        </select>
+      </div>
+      <div class="form-row" id="wf-template-row">
         <label class="form-label">Template</label>
         <select class="form-input" id="wf-template">
           <option value="">— Start from scratch —</option>
@@ -1150,6 +1174,8 @@
       pending: w.pending || 0,
       icon: w.icon || categoryIcon(w.category || 'other'),
       desc: w.description || w.desc || '',
+      purpose: w.purpose || w.workflow_purpose || 'document',
+      output: w.output_target || w.output || 'document_mapper',
       fields: Array.isArray(w.fields) ? w.fields : generateDefaultFields()
     };
   }
@@ -1216,11 +1242,11 @@
 
   // ── DEMO DATA ───────────────────────────────────────────────
   const demoWorkflows = [
-    { id:'wf1', name:'Buyer Onboarding', category:'onboarding', status:'active', submissions:12, pending:3, icon:'🏠', desc:'Full buyer FICA and compliance pack', fields:8 },
-    { id:'wf2', name:'Employee Intake',  category:'employment', status:'active', submissions:7,  pending:1, icon:'👔', desc:'HR onboarding with contract generation', fields:12 },
-    { id:'wf3', name:'Client FICA Pack', category:'fica',       status:'active', submissions:18, pending:5, icon:'📋', desc:'FICA/KYC compliance for all clients', fields:9 },
-    { id:'wf4', name:'Rental Mandate',   category:'mandate',    status:'draft',  submissions:0,  pending:0, icon:'📝', desc:'Landlord mandate and lease agreement', fields:6 },
-    { id:'wf5', name:'Bond Application', category:'finance',    status:'active', submissions:4,  pending:2, icon:'💰', desc:'Finance application with supporting docs', fields:15 },
+    { id:'wf1', name:'Buyer Onboarding', category:'onboarding', purpose:'document', output:'document_mapper', status:'active', submissions:12, pending:3, icon:'🏠', desc:'Full buyer FICA and compliance pack', fields:8 },
+    { id:'wf2', name:'Employee Intake',  category:'employment', purpose:'hr', output:'hr_record', status:'active', submissions:7,  pending:1, icon:'👔', desc:'HR onboarding with contract generation', fields:12 },
+    { id:'wf3', name:'Client FICA Pack', category:'fica', purpose:'kyc', output:'compliance_vault', status:'active', submissions:18, pending:5, icon:'📋', desc:'FICA/KYC compliance for all clients', fields:9 },
+    { id:'wf4', name:'Rental Mandate',   category:'mandate', purpose:'document', output:'document_mapper', status:'draft',  submissions:0,  pending:0, icon:'📝', desc:'Landlord mandate and lease agreement', fields:6 },
+    { id:'wf5', name:'Bond Application', category:'finance', purpose:'quote', output:'quote_record', status:'active', submissions:4,  pending:2, icon:'💰', desc:'Finance application with supporting docs', fields:15 },
   ];
 
   const demoTemplates = [
@@ -1246,7 +1272,7 @@
     const btn = document.querySelector('#step-email .auth-btn');
     btn.disabled = true; btn.textContent = 'Sending...';
     try {
-      const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href, shouldCreateUser: true } });
+      const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
       if (error) throw error;
       document.getElementById('otp-sub').textContent = `We sent a code to ${email}`;
       showStep('step-otp');
@@ -1411,7 +1437,7 @@
       <div class="wf-icon">${w.icon||'⚡'}</div>
       <div class="wf-info">
         <div class="wf-name">${w.name}</div>
-        <div class="wf-meta"><span>${w.category}</span><div class="wf-dot"></div><span>${fieldCount} fields</span><div class="wf-dot"></div><span>${subCount} submissions</span></div>
+        <div class="wf-meta"><span>${purposeLabel(w.purpose || 'document')}</span><div class="wf-dot"></div><span>${w.category}</span><div class="wf-dot"></div><span>${fieldCount} fields</span><div class="wf-dot"></div><span>${subCount} submissions</span></div>
       </div>
       <span class="status-badge ${statusMap[w.status]||'s-draft'}">${w.status}</span>
       ${pendingCount>0 ? `<span class="nav-badge alert" style="font-size:10px">${pendingCount} pending</span>` : ''}
@@ -1445,6 +1471,8 @@
     renderBuilderFields(builderFields);
     document.getElementById('builder-title').value = currentWF.name || '';
     document.getElementById('builder-message').value = currentWF.desc || '';
+    if (document.getElementById('wf-purpose')) document.getElementById('wf-purpose').value = currentWF.purpose || 'document';
+    if (document.getElementById('wf-output')) document.getElementById('wf-output').value = currentWF.output || 'document_mapper';
     showView('builder');
   }
 
@@ -2495,19 +2523,24 @@
     const category = document.getElementById('wf-category').value;
     const desc     = document.getElementById('wf-desc').value.trim();
     const templateId = document.getElementById('wf-template').value;
+    const purpose = document.getElementById('wf-purpose')?.value || 'document';
+    const output = document.getElementById('wf-output')?.value || defaultOutputForPurpose(purpose);
     if (!name) { showToast('Please enter a workflow name'); return; }
 
     const template = templates.find(t=>String(t.id)===String(templateId));
     const fields = template?.fields?.length
       ? template.fields.map(f => typeof f === 'string' ? { id:f, label:formatLabel(f), placeholder:'{{'+f+'}}', type:guessFieldType(f), required:true } : f)
-      : generateDefaultFields();
+      : purposeDefaultFields(purpose);
 
     const workflowPayload = {
       name,
       category,
       description: desc,
       status: 'active',
-      icon: categoryIcon(category),
+      purpose,
+      output,
+      output_target: output,
+      icon: purposeIcon(purpose) || categoryIcon(category),
       fields
     };
 
@@ -2571,6 +2604,88 @@
     if (n.includes('document')||n.includes('upload')||n.includes('statement')||n.includes('certificate')) return 'file';
     if (n.includes('id_')||n.includes('id_number')) return 'id';
     return 'text';
+  }
+
+  function purposeLabel(purpose) {
+    const m = {
+      document: 'Document',
+      crm: 'CRM',
+      quote: 'Quote',
+      invoice: 'Invoice',
+      marketing: 'Questionnaire',
+      hr: 'HR',
+      kyc: 'KYC'
+    };
+    return m[purpose] || 'Document';
+  }
+
+  function defaultOutputForPurpose(purpose) {
+    const m = {
+      document: 'document_mapper',
+      crm: 'crm_record',
+      quote: 'quote_record',
+      invoice: 'invoice_record',
+      marketing: 'marketing_record',
+      hr: 'hr_record',
+      kyc: 'compliance_vault'
+    };
+    return m[purpose] || 'document_mapper';
+  }
+
+  function purposeIcon(purpose) {
+    const m = { document:'📄', crm:'👤', quote:'💰', invoice:'🧾', marketing:'📣', hr:'👔', kyc:'🛡️' };
+    return m[purpose] || '⚡';
+  }
+
+  function handleWorkflowPurposeChange() {
+    const purpose = document.getElementById('wf-purpose')?.value || 'document';
+    const output = document.getElementById('wf-output');
+    if (output) output.value = defaultOutputForPurpose(purpose);
+    const templateRow = document.getElementById('wf-template-row');
+    if (templateRow) templateRow.style.opacity = purpose === 'document' ? '1' : '0.65';
+  }
+
+  function purposeDefaultFields(purpose) {
+    if (purpose === 'crm') return [
+      { id:'client_name', label:'Client / contact name', placeholder:'{{client_name}}', type:'text', required:true },
+      { id:'email_address', label:'Email address', placeholder:'{{email_address}}', type:'email', required:true },
+      { id:'phone_number', label:'Phone number', placeholder:'{{phone_number}}', type:'phone', required:true },
+      { id:'company_name', label:'Company / organisation', placeholder:'{{company_name}}', type:'text', required:false },
+      { id:'lead_source', label:'Lead source', placeholder:'{{lead_source}}', type:'select', required:false },
+      { id:'notes', label:'Notes / requirements', placeholder:'{{notes}}', type:'textarea', required:false }
+    ];
+    if (purpose === 'quote') return [
+      { id:'client_name', label:'Client name', placeholder:'{{client_name}}', type:'text', required:true },
+      { id:'email_address', label:'Email address', placeholder:'{{email_address}}', type:'email', required:true },
+      { id:'service_required', label:'Service required', placeholder:'{{service_required}}', type:'textarea', required:true },
+      { id:'budget', label:'Budget / estimated value', placeholder:'{{budget}}', type:'number', required:false },
+      { id:'timeline', label:'Timeline', placeholder:'{{timeline}}', type:'text', required:false },
+      { id:'supporting_documents', label:'Supporting documents', placeholder:'', type:'file', required:false }
+    ];
+    if (purpose === 'invoice') return [
+      { id:'billing_name', label:'Billing name', placeholder:'{{billing_name}}', type:'text', required:true },
+      { id:'billing_email', label:'Billing email', placeholder:'{{billing_email}}', type:'email', required:true },
+      { id:'billing_address', label:'Billing address', placeholder:'{{billing_address}}', type:'textarea', required:true },
+      { id:'vat_number', label:'VAT number', placeholder:'{{vat_number}}', type:'text', required:false },
+      { id:'service_description', label:'Service / item description', placeholder:'{{service_description}}', type:'textarea', required:true },
+      { id:'amount', label:'Amount', placeholder:'{{amount}}', type:'number', required:true }
+    ];
+    if (purpose === 'marketing') return [
+      { id:'full_name', label:'Full name', placeholder:'{{full_name}}', type:'text', required:true },
+      { id:'email_address', label:'Email address', placeholder:'{{email_address}}', type:'email', required:true },
+      { id:'interest_area', label:'What are you interested in?', placeholder:'{{interest_area}}', type:'textarea', required:true },
+      { id:'consent_marketing', label:'I consent to being contacted about relevant services', placeholder:'', type:'checkbox', required:true }
+    ];
+    if (purpose === 'hr') return [
+      { id:'employee_name', label:'Employee full name', placeholder:'{{employee_name}}', type:'text', required:true },
+      { id:'id_number', label:'ID number', placeholder:'{{id_number}}', type:'id', required:true },
+      { id:'email_address', label:'Email address', placeholder:'{{email_address}}', type:'email', required:true },
+      { id:'position', label:'Position', placeholder:'{{position}}', type:'text', required:true },
+      { id:'start_date', label:'Start date', placeholder:'{{start_date}}', type:'date', required:true },
+      { id:'bank_confirmation', label:'Bank confirmation', placeholder:'', type:'file', required:true }
+    ];
+    if (purpose === 'kyc') return generateDefaultFields();
+    return generateDefaultFields();
   }
 
   function categoryIcon(cat) {
