@@ -1849,6 +1849,10 @@
               </select>
             </div>
             <div class="form-row">
+              <label class="form-label">Assign to</label>
+              <input class="form-input" id="task-assignee" placeholder="Employee name or email, e.g. Karen">
+            </div>
+            <div class="form-row">
               <label class="form-label">Due date</label>
               <input class="form-input" type="date" id="task-due">
             </div>
@@ -2616,13 +2620,15 @@
     const formatted = tasks.map(t => {
       const due    = t.due_at ? new Date(t.due_at) : null;
       const now    = new Date();
-      const isOver = due && due < now;
+      const isDone = t.status === 'completed';
+      const isOver = due && due < now && !isDone;
       const isToday= due && due.toDateString() === now.toDateString();
       return {
-        id:    t.id,
+        ...t,
+        id: t.id,
         title: t.title,
-        due:   isOver ? 'Overdue' : isToday ? 'Due today' : due ? `Due ${due.toLocaleDateString('en-ZA', {day:'numeric',month:'short'})}` : 'No due date',
-        type:  isOver ? 'overdue' : isToday ? 'today' : 'soon',
+        due:   isDone ? 'Completed' : isOver ? 'Overdue' : isToday ? 'Due today' : due ? `Due ${due.toLocaleDateString('en-ZA', {day:'numeric',month:'short'})}` : 'No due date',
+        type:  isDone ? 'soon' : isOver ? 'overdue' : isToday ? 'today' : 'soon',
         status: t.status || 'open'
       };
     });
@@ -2847,7 +2853,9 @@
   // ── NAVIGATION ──────────────────────────────────────────────
   function showView(id) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById('view-' + id).classList.add('active');
+    const targetView = document.getElementById('view-' + id);
+    if (!targetView) { showToast('View not found: ' + id); return; }
+    targetView.classList.add('active');
 
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     const map = { dashboard:'⊞ Dashboard', hubs:'◫ Hubs', workspaces:'🗂 Workspaces', tasks:'✓ Tasks', documents:'📄 Documents', formflow:'📋 FormFlow', signflow:'✍️ SignFlow', contacts:'👥 Contacts', flowmail:'✉ FlowMail', reports:'↗ Reports', settings:'⚙ Settings', plugins:'🔌 Apps & Plugins' };
@@ -2866,6 +2874,9 @@
     });
 
     currentView = id;
+    if (id === 'tasks' && typeof renderGlobalTasks === 'function') {
+      renderGlobalTasks(taskFilter || 'all');
+    }
   }
 
   // ── RENDER ──────────────────────────────────────────────────
@@ -3092,15 +3103,25 @@
       list.innerHTML = '<div style="padding:32px;text-align:center;color:var(--ink-4);font-size:13px">No open tasks. You\'re all caught up!</div>';
       return;
     }
-    list.innerHTML = data.map(t => `
-      <div class="task-row">
-        <div class="task-check" onclick="this.classList.toggle('done');this.textContent=this.classList.contains('done')?'✓':''"></div>
-        <div class="task-body">
-          <div class="task-title">${t.title}</div>
-          <div class="task-due ${t.type}">${t.due}</div>
+    list.innerHTML = data.map(t => {
+      const done = t.status === 'completed';
+      const assignee = t.assignee_name || t.metadata?.assignee_name || '';
+      const toggle = t.id
+        ? `toggleGlobalTask('${t.id}', ${!done})`
+        : `this.classList.toggle('done');this.textContent=this.classList.contains('done')?'✓':''`;
+      return `
+        <div class="task-row" style="${done?'opacity:0.55':''}">
+          <div class="task-check ${done?'done':''}" onclick="${toggle}">${done?'✓':''}</div>
+          <div class="task-body">
+            <div class="task-title" style="${done?'text-decoration:line-through;color:var(--ink-4)':''}">${escapeHTML(t.title)}</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
+              <div class="task-due ${t.type || 'soon'}">${t.due || ''}</div>
+              ${assignee ? `<span style="font-size:10px;color:var(--ink-4)">· Assigned to ${escapeHTML(assignee)}</span>` : ''}
+            </div>
+          </div>
         </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
   function filterByHub(hubName) {
@@ -3428,9 +3449,9 @@
     showView('workspaces');
   }
 
-  function archiveCurrentWorkspace() {
+  async function archiveCurrentWorkspace() {
     if (!currentWorkspace) return;
-    archiveWorkspace(currentWorkspace.id, currentWorkspace.name);
+    await archiveWorkspace(currentWorkspace.id, currentWorkspace.name);
     closeWorkspaceDetail();
   }
 
@@ -3485,24 +3506,8 @@
   }
 
   async function toggleTask(taskId, completed) {
-    try {
-      if (currentOrg) {
-        await sb.from('ff_tasks').update({ status: completed ? 'completed' : 'open', completed_at: completed ? new Date().toISOString() : null }).eq('id', taskId);
-        if (completed) {
-          await sb.from('ff_audit_log').insert({
-            organisation_id: currentOrg.id,
-            workspace_id: currentWorkspaceId,
-            actor_id: currentUser.id,
-            actor_name: currentProfile?.full_name || currentUser.email,
-            actor_type: 'user',
-            action: 'task.completed',
-            detail: { task_id: taskId }
-          });
-        }
-        await loadWSData(currentWorkspaceId);
-        if (currentView === 'tasks') await renderGlobalTasks();
-      } else { showToast(completed ? 'Task completed ✓' : 'Task reopened'); }
-    } catch(e) { showToast('Error: ' + e.message); }
+    // Workspace task checkboxes use the same Supabase update path as global tasks.
+    await toggleGlobalTask(taskId, completed);
   }
 
   function renderWSMessages(messages) {
@@ -3578,6 +3583,8 @@
     const data = liveWorkspaces.length > 0 ? liveWorkspaces : demoWorkspaces;
     sel.innerHTML = '<option value="">— None —</option>' +
       data.map(w => `<option value="${w.id}" ${String(w.id)===String(wsId)?'selected':''}>${w.name}</option>`).join('');
+    const assigneeInput = document.getElementById('task-assignee');
+    if (assigneeInput) assigneeInput.value = '';
     document.getElementById('new-task-modal').classList.add('open');
   }
 
@@ -3586,12 +3593,29 @@
     const priority = document.getElementById('task-priority').value;
     const dueDate  = document.getElementById('task-due').value;
     const wsId     = document.getElementById('task-workspace').value;
+    const assignee = (document.getElementById('task-assignee')?.value || '').trim();
     if (!title) { showToast('Please enter a task title'); return; }
     const btn = document.querySelector('#new-task-modal .btn-primary');
     btn.disabled = true; btn.textContent = 'Saving...';
     try {
       if (currentOrg) {
-        const { data: newTask } = await sb.from('ff_tasks').insert({ organisation_id: currentOrg.id, workspace_id: wsId||null, title, priority, due_at: dueDate ? new Date(dueDate).toISOString() : null, status: 'open' }).select().single();
+        const basePayload = {
+          organisation_id: currentOrg.id,
+          workspace_id: wsId || null,
+          title,
+          priority,
+          due_at: dueDate ? new Date(dueDate).toISOString() : null,
+          status: 'open'
+        };
+        let insertPayload = assignee ? { ...basePayload, metadata: { assignee_name: assignee } } : basePayload;
+        let { data: newTask, error } = await sb.from('ff_tasks').insert(insertPayload).select().single();
+        if (error && assignee && /metadata|column/i.test(error.message || '')) {
+          // Current database may not yet have a metadata column on ff_tasks.
+          // Retry with the safe base payload so task creation still works.
+          ({ data: newTask, error } = await sb.from('ff_tasks').insert(basePayload).select().single());
+        }
+        if (error) throw error;
+
         if (wsId) {
           await sb.from('ff_audit_log').insert({
             organisation_id: currentOrg.id,
@@ -3600,19 +3624,21 @@
             actor_name: currentProfile?.full_name || currentUser.email,
             actor_type: 'user',
             action: 'task.created',
-            detail: { task_id: newTask?.id, title }
+            detail: { task_id: newTask?.id, title, assignee }
           });
         }
         await renderGlobalTasks();
         await loadLiveData();
         if (currentWorkspaceId && wsId === String(currentWorkspaceId)) await loadWSData(currentWorkspaceId);
       } else {
-        demoTasks.unshift({ title, due: dueDate ? new Date(dueDate).toLocaleDateString('en-ZA',{day:'numeric',month:'short'}) : 'No due date', type:'soon' });
+        demoTasks.unshift({ id: Date.now(), title, assignee_name: assignee, status:'open', due: dueDate ? new Date(dueDate).toLocaleDateString('en-ZA',{day:'numeric',month:'short'}) : 'No due date', type:'soon' });
         renderTasks(demoTasks); renderTasksFull(demoTasks);
       }
       closeModal('new-task-modal');
       document.getElementById('task-title').value = '';
       document.getElementById('task-due').value   = '';
+      const assigneeInput = document.getElementById('task-assignee');
+      if (assigneeInput) assigneeInput.value = '';
       showToast('Task added: ' + title);
       addNotification('task', `New task: ${title}`, 'Just now');
     } catch(e) { showToast('Error: ' + e.message); }
@@ -3651,6 +3677,7 @@
             <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
               ${dueLabel ? `<div class="task-due ${dueType}">${dueLabel}</div>` : ''}
               ${t.ff_workspaces?.name ? `<span style="font-size:10px;color:var(--ink-4)">· ${t.ff_workspaces.name}</span>` : ''}
+              ${t.metadata?.assignee_name ? `<span style="font-size:10px;color:var(--ink-4)">· Assigned to ${escapeHTML(t.metadata.assignee_name)}</span>` : ''}
               ${t.priority&&t.priority!=='normal' ? `<span class="priority-tag priority-${t.priority}">${t.priority}</span>` : ''}
             </div>
           </div>
@@ -3665,9 +3692,28 @@
   async function toggleGlobalTask(taskId, completed) {
     try {
       if (currentOrg) {
-        await sb.from('ff_tasks').update({ status: completed?'completed':'open', completed_at: completed?new Date().toISOString():null }).eq('id', taskId);
+        const { data: taskBefore } = await sb.from('ff_tasks').select('*').eq('id', taskId).single();
+        const { error } = await sb.from('ff_tasks')
+          .update({ status: completed ? 'completed' : 'open', completed_at: completed ? new Date().toISOString() : null })
+          .eq('id', taskId);
+        if (error) throw error;
+
+        if (taskBefore?.workspace_id) {
+          await sb.from('ff_audit_log').insert({
+            organisation_id: currentOrg.id,
+            workspace_id: taskBefore.workspace_id,
+            actor_id: currentUser.id,
+            actor_name: currentProfile?.full_name || currentUser.email,
+            actor_type: 'user',
+            action: completed ? 'task.completed' : 'task.reopened',
+            detail: { task_id: taskId, title: taskBefore.title }
+          });
+        }
+
         await renderGlobalTasks();
         await loadLiveData();
+        if (currentWorkspaceId) await loadWSData(currentWorkspaceId);
+        showToast(completed ? 'Task completed ✓' : 'Task reopened');
       } else { showToast(completed ? 'Task completed ✓' : 'Task reopened'); }
     } catch(e) { showToast('Error: ' + e.message); }
   }
@@ -3701,28 +3747,48 @@
           sb.from('ff_tasks').select('*, ff_workspaces(name)').eq('organisation_id', currentOrg.id).eq('status','open').lt('due_at', new Date().toISOString()).limit(5),
           sb.from('ff_audit_log').select('*').eq('organisation_id', currentOrg.id).order('created_at',{ascending:false}).limit(5)
         ]);
-        (overdueTasks||[]).forEach(t => items.push({ icon:'⚠️', bg:'#fef2f2', msg:`Overdue: ${t.title}${t.ff_workspaces?.name?' — '+t.ff_workspaces.name:''}`, time:timeAgo(t.due_at) }));
-        const ai = {'workspace.created':'🗂','task.completed':'✅','task.created':'➕','message.posted':'💬'};
-        (recent||[]).forEach(a => items.push({ icon:ai[a.action]||'📋', bg:'#f1f5f9', msg:`${a.actor_name||'System'}: ${a.action.replace('.',' ')}`, time:timeAgo(a.created_at) }));
+        (overdueTasks||[]).forEach(t => items.push({
+          icon:'⚠️', bg:'#fef2f2',
+          msg:`Overdue: ${t.title}${t.ff_workspaces?.name?' — '+t.ff_workspaces.name:''}`,
+          time:timeAgo(t.due_at), taskId:t.id, workspaceId:t.workspace_id, kind:'task'
+        }));
+        const ai = {'workspace.created':'🗂','task.completed':'✅','task.created':'➕','task.reopened':'↩','message.posted':'💬'};
+        (recent||[]).forEach(a => items.push({
+          icon:ai[a.action]||'📋', bg:'#f1f5f9',
+          msg:`${a.actor_name||'System'}: ${a.action.replace('.',' ')}`,
+          time:timeAgo(a.created_at), workspaceId:a.workspace_id, kind:'activity'
+        }));
       } catch(e) { console.error(e); }
     } else {
       items.push(
-        { icon:'⚠️', bg:'#fef2f2', msg:'Overdue: Review FICA — John Smith', time:'2h ago' },
-        { icon:'⚠️', bg:'#fef2f2', msg:'Overdue: Upload ID — Mary Jacobs', time:'5h ago' },
-        { icon:'✍️', bg:'#f5f3ff', msg:'OTP signed — 12 Main Road', time:'2h ago' },
-        { icon:'📁', bg:'#eff6ff', msg:'FICA documents uploaded', time:'5h ago' },
-        { icon:'🗂', bg:'#f0fdf4', msg:'New workspace created — Sandy Close', time:'1d ago' }
+        { icon:'⚠️', bg:'#fef2f2', msg:'Overdue: Review FICA — John Smith', time:'2h ago', workspaceId:1, kind:'task' },
+        { icon:'⚠️', bg:'#fef2f2', msg:'Overdue: Upload ID — Mary Jacobs', time:'5h ago', workspaceId:2, kind:'task' },
+        { icon:'✍️', bg:'#f5f3ff', msg:'OTP signed — 12 Main Road', time:'2h ago', workspaceId:1, kind:'activity' },
+        { icon:'📁', bg:'#eff6ff', msg:'FICA documents uploaded', time:'5h ago', workspaceId:2, kind:'activity' },
+        { icon:'🗂', bg:'#f0fdf4', msg:'New workspace created — Sandy Close', time:'1d ago', workspaceId:2, kind:'activity' }
       );
     }
     if (items.length === 0) { list.innerHTML = '<div class="notif-empty">✓ All caught up</div>'; return; }
     list.innerHTML = items.map((n,i) => `
-      <div class="notif-item ${i<2?'unread':''}">
+      <div class="notif-item ${i<2?'unread':''}" onclick="openNotificationTarget('${n.workspaceId || ''}','${n.taskId || ''}','${n.kind || ''}')">
         <div class="notif-icon" style="background:${n.bg}">${n.icon}</div>
         <div class="notif-body">
-          <div class="notif-msg">${n.msg}</div>
+          <div class="notif-msg">${escapeHTML(n.msg)}</div>
           <div class="notif-time">${n.time}</div>
         </div>
       </div>`).join('');
+  }
+
+  async function openNotificationTarget(workspaceId, taskId, kind) {
+    notifOpen = false;
+    document.getElementById('notif-panel')?.classList.remove('open');
+    if (workspaceId) {
+      await openWorkspace(workspaceId);
+      if (kind === 'task') switchWSTab('tasks');
+      return;
+    }
+    showView('tasks');
+    if (kind === 'task') renderGlobalTasks('overdue');
   }
 
   function addNotification(type, msg, time) {
@@ -3735,13 +3801,6 @@
     const dot = document.getElementById('notif-dot');
     if (dot) dot.style.display = 'none';
     showToast('Notifications cleared');
-  }
-
-  // Override showView to trigger task load
-  const _origShowView = showView;
-  function showView(id) {
-    _origShowView(id);
-    if (id === 'tasks') renderGlobalTasks(taskFilter);
   }
 
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
