@@ -402,7 +402,12 @@
     .mapper-preview { padding:18px; min-height:520px; max-height:68vh; overflow:auto; background:#fbfaf8; }
     .mapper-paper { background:white; border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow); padding:26px; font-size:13px; line-height:1.7; white-space:pre-wrap; color:var(--ink-2); position:relative; min-height:620px; cursor:crosshair; }
     .mapper-paper.has-frame { padding:0; overflow:hidden; }
-    .mapper-frame { width:100%; min-height:720px; border:0; display:block; background:white; }
+    .mapper-frame { width:100%; min-height:720px; border:0; display:block; background:white; pointer-events:none; }
+    .mapper-image { width:100%; display:block; background:white; pointer-events:none; }
+    .party-row { display:flex; align-items:center; gap:8px; padding:10px 12px; border-bottom:1px solid var(--border); }
+    .party-row:last-child { border-bottom:none; }
+    .party-pill { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; background:var(--ff-light); color:var(--ff-dark); padding:3px 7px; border-radius:999px; white-space:nowrap; }
+    .party-link-box { font-size:11px; font-family:monospace; color:var(--ff); background:var(--surface-2); border:1px solid var(--border); border-radius:7px; padding:6px; word-break:break-all; margin-top:5px; }
     .mapper-click-note { font-size:11px; color:var(--ink-4); margin-top:4px; }
     .mapper-marker { position:absolute; transform:translate(-50%,-50%); z-index:5; background:var(--ff); color:white; border-radius:999px; font-size:10px; line-height:1; padding:5px 7px; box-shadow:0 4px 12px rgba(0,0,0,0.18); border:2px solid white; max-width:130px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .mapper-marker.pending { background:var(--warning); }
@@ -790,6 +795,40 @@
 
           <div class="mapper-side">
             <div class="panel">
+              <div class="panel-header"><div class="panel-title">Transaction parties</div><span class="nav-badge" id="party-count-badge">0</span></div>
+              <div style="padding:14px">
+                <div style="font-size:12px;color:var(--ink-3);line-height:1.5;margin-bottom:12px">Specify who is involved and who must complete information/sign. FormFlow can create separate links for each party.</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+                  <select class="form-input" id="party-role">
+                    <option value="Purchaser">Purchaser</option>
+                    <option value="Seller">Seller</option>
+                    <option value="Director">Director</option>
+                    <option value="Trustee">Trustee</option>
+                    <option value="Spouse">Spouse</option>
+                    <option value="Witness">Witness</option>
+                    <option value="Agent">Agent</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  <select class="form-input" id="party-type">
+                    <option value="Individual">Individual</option>
+                    <option value="Company">Company</option>
+                    <option value="Trust">Trust</option>
+                  </select>
+                </div>
+                <div class="form-row"><input class="form-input" id="party-name" placeholder="Party name / label, e.g. Purchaser 1"></div>
+                <div class="form-row"><input class="form-input" id="party-email" placeholder="Email for link, optional"></div>
+                <label style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:10px;color:var(--ink-2)"><input type="checkbox" id="party-signs" checked> This party must sign</label>
+                <button class="btn-primary" onclick="addTransactionParty()" style="width:100%;margin-bottom:8px">+ Add party</button>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                  <button class="btn-ghost" onclick="loadOTPPartyDefaults()" style="font-size:12px;padding:7px 8px">OTP defaults</button>
+                  <button class="btn-ghost" onclick="generatePartyDataLinks()" style="font-size:12px;padding:7px 8px">Create party links</button>
+                </div>
+              </div>
+              <div id="party-list"><div class="mapper-empty">No parties added yet.</div></div>
+              <div id="party-links-list"></div>
+            </div>
+
+            <div class="panel">
               <div class="panel-header"><div class="panel-title">Add field manually</div></div>
               <div style="padding:14px">
                 <div class="form-row"><label class="form-label">Field label</label><input class="form-input" id="mapper-field-label" placeholder="e.g. Purchase price"></div>
@@ -1165,6 +1204,8 @@
   let mappedFields = [];
   let pendingMapperPosition = null;
   let activeTemplateId = null;
+  let transactionParties = [];
+  let activePartyLinkTokens = [];
   const DEV_STORAGE_KEY = 'formflow_developer_mode_state_v1';
 
   function deepClone(value) {
@@ -1176,7 +1217,8 @@
       workflows: deepClone(demoWorkflows),
       templates: deepClone(demoTemplates),
       submissions: deepClone(demoSubmissions),
-      generatedDocuments: []
+      generatedDocuments: [],
+      transactionParties: []
     };
   }
 
@@ -1189,7 +1231,8 @@
         workflows: Array.isArray(parsed.workflows) ? parsed.workflows : deepClone(demoWorkflows),
         templates: Array.isArray(parsed.templates) ? parsed.templates : deepClone(demoTemplates),
         submissions: Array.isArray(parsed.submissions) ? parsed.submissions : deepClone(demoSubmissions),
-        generatedDocuments: Array.isArray(parsed.generatedDocuments) ? parsed.generatedDocuments : []
+        generatedDocuments: Array.isArray(parsed.generatedDocuments) ? parsed.generatedDocuments : [],
+        transactionParties: Array.isArray(parsed.transactionParties) ? parsed.transactionParties : []
       };
     } catch (e) {
       console.warn('Developer state could not be loaded; using defaults', e);
@@ -1200,7 +1243,7 @@
   function saveDevState() {
     if (!isDemo) return;
     try {
-      localStorage.setItem(DEV_STORAGE_KEY, JSON.stringify({ workflows, templates, submissions, generatedDocuments: [] }));
+      localStorage.setItem(DEV_STORAGE_KEY, JSON.stringify({ workflows, templates, submissions, generatedDocuments: [], transactionParties }));
     } catch (e) {
       console.warn('Developer state could not be saved', e);
     }
@@ -1212,6 +1255,7 @@
     workflows = state.workflows;
     templates = state.templates;
     submissions = state.submissions;
+    transactionParties = [];
     renderDashboard();
     renderWorkflows();
     renderTemplates();
@@ -1231,7 +1275,8 @@
       icon: t.icon || categoryIcon(t.category || 'other'),
       desc: t.description || t.desc || '',
       document: t.document || null,
-      mappings: Array.isArray(t.mappings) ? t.mappings : (Array.isArray(t.fields) ? t.fields : [])
+      mappings: Array.isArray(t.mappings) ? t.mappings : (Array.isArray(t.fields) ? t.fields : []),
+      parties: Array.isArray(t.parties) ? t.parties : []
     };
   }
 
@@ -1597,6 +1642,8 @@
     activeTemplateId = t.id;
     mappedFields = deepClone(Array.isArray(t.mappings) && t.mappings.length ? t.mappings : (t.fields || []));
     mapperDocument = t.document ? deepClone(t.document) : { name:t.name, text:'', detected:(t.fields||[]).map(f => typeof f === 'string' ? f : f.id).filter(Boolean), type:'', objectUrl:'', previewKind:'simulated' };
+    transactionParties = Array.isArray(t.parties) ? deepClone(t.parties) : [];
+    activePartyLinkTokens = [];
     renderMapperWorkspace();
     showView('mapper');
     showToast('Opened mapper for: ' + t.name);
@@ -1621,28 +1668,31 @@
     const objectUrl = URL.createObjectURL(file);
     const fallbackFields = inferFieldsFromFilename(file.name);
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const content = e.target.result || '';
+    const finishUpload = (content = '') => {
       const placeholders = detectPlaceholders(content) || fallbackFields;
+      const isImage = ['png','jpg','jpeg','webp','gif'].includes(ext);
       mapperDocument = {
         name: file.name,
         text: ext === 'txt' ? content : '',
         detected: placeholders || [],
         type: ext,
         objectUrl,
-        previewKind: ext === 'pdf' ? 'pdf' : (ext === 'txt' ? 'text' : 'simulated')
+        previewKind: ext === 'pdf' ? 'pdf' : (isImage ? 'image' : (ext === 'txt' ? 'text' : 'simulated'))
       };
       showUploadStep2(file.name, placeholders, content);
       autoSelectTemplateCategory(file.name);
+      renderMapperWorkspace();
     };
 
     if (ext === 'txt') {
+      const reader = new FileReader();
+      reader.onload = e => finishUpload(e.target.result || '');
       reader.readAsText(file);
     } else {
-      // For browser-only developer mode, PDFs are previewed with an iframe.
-      // DOCX needs server-side parsing later, so we show a simulated mapping sheet.
-      reader.readAsText(file);
+      // Developer mode: PDFs and images are previewed directly using a browser object URL.
+      // DOCX/DOC files cannot render natively in GitHub Pages, so we show a simulated mapping sheet
+      // until server-side parsing/rendering is added.
+      finishUpload('');
     }
   }
 
@@ -1722,6 +1772,7 @@
       fields,
       mappings: fields,
       document: mapperDocument?.name ? { ...mapperDocument, objectUrl: mapperDocument.objectUrl || '' } : null,
+      parties: deepClone(transactionParties),
       icon: categoryIcon(category),
       description: `${fields.length} mapped field${fields.length===1?'':'s'}${mapperDocument?.name ? ' · '+mapperDocument.name : ''}`
     };
@@ -1778,6 +1829,7 @@
     renderMapperDocument();
     renderMapperDetected();
     renderMappedFields();
+    renderTransactionParties();
   }
 
   function renderMapperDocument() {
@@ -1796,7 +1848,12 @@
     const pending = pendingMapperPosition ? `<span class="mapper-marker pending" style="left:${pendingMapperPosition.x}%;top:${pendingMapperPosition.y}%">new field</span>` : '';
 
     if (mapperDocument.previewKind === 'pdf' && mapperDocument.objectUrl) {
-      preview.innerHTML = `<div class="mapper-paper has-frame" onclick="handleMapperPaperClick(event)"><iframe class="mapper-frame" src="${mapperDocument.objectUrl}"></iframe>${markers}${pending}</div><div class="mapper-click-note">Click on the document area to indicate where a form field should sit. PDF preview is browser-based in developer mode.</div>`;
+      preview.innerHTML = `<div class="mapper-paper has-frame" onclick="handleMapperPaperClick(event)"><iframe class="mapper-frame" src="${mapperDocument.objectUrl}"></iframe>${markers}${pending}</div><div class="mapper-click-note">PDF preview is visible in developer mode. Click anywhere on the preview to place a field marker.</div>`;
+      return;
+    }
+
+    if (mapperDocument.previewKind === 'image' && mapperDocument.objectUrl) {
+      preview.innerHTML = `<div class="mapper-paper has-frame" onclick="handleMapperPaperClick(event)"><img class="mapper-image" src="${mapperDocument.objectUrl}" alt="Uploaded document preview">${markers}${pending}</div><div class="mapper-click-note">Image preview is visible in developer mode. Click anywhere on the preview to place a field marker.</div>`;
       return;
     }
 
@@ -1918,7 +1975,7 @@
     if (activeTemplateId) {
       const idx = templates.findIndex(t => String(t.id) === String(activeTemplateId));
       if (idx > -1) {
-        templates[idx] = { ...templates[idx], fields: deepClone(mappedFields), mappings: deepClone(mappedFields), document: deepClone(mapperDocument), desc: `${mappedFields.length} mapped field${mappedFields.length===1?'':'s'} · ${mapperDocument.name || 'document'}` };
+        templates[idx] = { ...templates[idx], fields: deepClone(mappedFields), mappings: deepClone(mappedFields), document: deepClone(mapperDocument), parties: deepClone(transactionParties), desc: `${mappedFields.length} mapped field${mappedFields.length===1?'':'s'} · ${mapperDocument.name || 'document'}` };
         saveDevState(); renderTemplates(); renderWorkflows();
         showToast('Template mapping updated');
         return;
@@ -1931,6 +1988,7 @@
       fields: deepClone(mappedFields),
       mappings: deepClone(mappedFields),
       document: deepClone(mapperDocument),
+      parties: deepClone(transactionParties),
       icon: categoryIcon(category),
       desc: `${mappedFields.length} mapped field${mappedFields.length===1?'':'s'} · ${mapperDocument.name || 'document'}`
     };
@@ -2008,8 +2066,171 @@
     ];
   }
 
+
+  function renderTransactionParties() {
+    const badge = document.getElementById('party-count-badge');
+    const list = document.getElementById('party-list');
+    const links = document.getElementById('party-links-list');
+    if (badge) badge.textContent = transactionParties.length;
+    if (!list) return;
+    if (!transactionParties.length) {
+      list.innerHTML = '<div class="mapper-empty">No parties added yet.</div>';
+    } else {
+      list.innerHTML = transactionParties.map((p, i) => `
+        <div class="party-row">
+          <span class="party-pill">${escapeHtml(p.role)}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(p.name || (p.role + ' ' + (i+1)))}</div>
+            <div style="font-size:10px;color:var(--ink-4)">${escapeHtml(p.type)} · ${p.signs ? 'Signer' : 'Info only'}${p.email ? ' · ' + escapeHtml(p.email) : ''}</div>
+          </div>
+          <button class="field-btn" onclick="mapPartyFields(${i})" title="Add fields for this party">+</button>
+          <button class="field-btn del" onclick="removeTransactionParty(${i})" title="Remove party">✕</button>
+        </div>`).join('');
+    }
+    if (links) {
+      links.innerHTML = activePartyLinkTokens.length ? `
+        <div style="padding:12px;border-top:1px solid var(--border)">
+          <div style="font-size:11px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Party data links</div>
+          ${activePartyLinkTokens.map(l => `
+            <div style="margin-bottom:10px">
+              <div style="font-size:12px;font-weight:700;color:var(--ink)">${escapeHtml(l.partyName)} <span style="color:var(--ink-4);font-weight:500">${escapeHtml(l.role)}</span></div>
+              <div class="party-link-box">${escapeHtml(l.url)}</div>
+              <button class="btn-ghost" style="font-size:11px;padding:5px 8px;margin-top:5px" onclick="copyText('${escapeJs(l.url)}')">Copy link</button>
+            </div>`).join('')}
+        </div>` : '';
+    }
+  }
+
+  function addTransactionParty() {
+    const role = document.getElementById('party-role')?.value || 'Party';
+    const type = document.getElementById('party-type')?.value || 'Individual';
+    const nameInput = document.getElementById('party-name');
+    const emailInput = document.getElementById('party-email');
+    const signs = !!document.getElementById('party-signs')?.checked;
+    const existingOfRole = transactionParties.filter(p => p.role === role).length;
+    const party = {
+      id: 'party_' + Date.now() + '_' + Math.random().toString(36).slice(2,5),
+      role,
+      type,
+      name: (nameInput?.value || '').trim() || `${role} ${existingOfRole + 1}`,
+      email: (emailInput?.value || '').trim(),
+      signs,
+      status: 'not_sent'
+    };
+    transactionParties.push(party);
+    if (nameInput) nameInput.value = '';
+    if (emailInput) emailInput.value = '';
+    mapPartyFields(transactionParties.length - 1, false);
+    renderMapperWorkspace();
+    showToast(`${party.name} added`);
+  }
+
+  function removeTransactionParty(i) {
+    const party = transactionParties[i];
+    if (!party) return;
+    transactionParties.splice(i, 1);
+    activePartyLinkTokens = activePartyLinkTokens.filter(l => l.partyId !== party.id);
+    renderMapperWorkspace();
+  }
+
+  function loadOTPPartyDefaults() {
+    transactionParties = [
+      { id:'party_purchaser_1', role:'Purchaser', type:'Individual', name:'Purchaser 1', email:'', signs:true, status:'not_sent' },
+      { id:'party_seller_1', role:'Seller', type:'Individual', name:'Seller 1', email:'', signs:true, status:'not_sent' },
+      { id:'party_agent_1', role:'Agent', type:'Individual', name:'Estate Agent', email:'', signs:false, status:'internal' }
+    ];
+    transactionParties.forEach((_, i) => mapPartyFields(i, false));
+    renderMapperWorkspace();
+    showToast('Default OTP parties added');
+  }
+
+  function mapPartyFields(index, rerender = true) {
+    const party = transactionParties[index];
+    if (!party) return;
+    const prefix = normaliseFieldId(party.name || party.role || ('party_' + (index+1))) || ('party_' + (index+1));
+    const section = `${party.role}: ${party.name || (index+1)}`;
+    const base = [
+      { id:`${prefix}_name`, label:`${party.name} name`, type:'text', required:true, section, placeholder:`{{${prefix}_name}}`, partyId:party.id, role:party.role, source:'party' },
+      { id:`${prefix}_email`, label:`${party.name} email`, type:'email', required:true, section, placeholder:`{{${prefix}_email}}`, partyId:party.id, role:party.role, source:'party' },
+      { id:`${prefix}_phone`, label:`${party.name} phone`, type:'phone', required:false, section, placeholder:`{{${prefix}_phone}}`, partyId:party.id, role:party.role, source:'party' }
+    ];
+    if (party.type === 'Individual') {
+      base.push({ id:`${prefix}_id_number`, label:`${party.name} ID number`, type:'id', required:true, section, placeholder:`{{${prefix}_id_number}}`, partyId:party.id, role:party.role, source:'party' });
+      base.push({ id:`${prefix}_id_document`, label:`${party.name} ID document`, type:'file', required:true, section, placeholder:'', partyId:party.id, role:party.role, source:'party' });
+      base.push({ id:`${prefix}_proof_of_address`, label:`${party.name} proof of address`, type:'file', required:true, section, placeholder:'', partyId:party.id, role:party.role, source:'party' });
+    }
+    if (party.type === 'Company') {
+      base.push({ id:`${prefix}_company_reg`, label:`${party.name} company registration number`, type:'text', required:true, section, placeholder:`{{${prefix}_company_reg}}`, partyId:party.id, role:party.role, source:'party' });
+      base.push({ id:`${prefix}_cipc_docs`, label:`${party.name} CIPC documents`, type:'file', required:true, section, placeholder:'', partyId:party.id, role:party.role, source:'party' });
+      base.push({ id:`${prefix}_resolution`, label:`${party.name} signing resolution`, type:'file', required:true, section, placeholder:'', partyId:party.id, role:party.role, source:'party' });
+      base.push({ id:`${prefix}_directors`, label:`${party.name} directors`, type:'entity_group', entityRole:'director', repeatable:true, required:true, section, partyId:party.id, role:party.role, source:'party' });
+    }
+    if (party.type === 'Trust') {
+      base.push({ id:`${prefix}_trust_number`, label:`${party.name} trust number`, type:'text', required:true, section, placeholder:`{{${prefix}_trust_number}}`, partyId:party.id, role:party.role, source:'party' });
+      base.push({ id:`${prefix}_trust_deed`, label:`${party.name} trust deed`, type:'file', required:true, section, placeholder:'', partyId:party.id, role:party.role, source:'party' });
+      base.push({ id:`${prefix}_loa`, label:`${party.name} letters of authority`, type:'file', required:true, section, placeholder:'', partyId:party.id, role:party.role, source:'party' });
+      base.push({ id:`${prefix}_trustees`, label:`${party.name} trustees`, type:'entity_group', entityRole:'trustee', repeatable:true, required:true, section, partyId:party.id, role:party.role, source:'party' });
+    }
+    if (party.signs) {
+      base.push({ id:`${prefix}_signature`, label:`${party.name} signature block`, type:'signature', required:true, section:'SignFlow preparation', placeholder:`{{${prefix}_signature}}`, partyId:party.id, role:party.role, source:'signflow' });
+    }
+    base.forEach(f => {
+      if (!mappedFields.some(existing => existing.id === f.id)) mappedFields.push(f);
+    });
+    if (rerender) {
+      renderMapperWorkspace();
+      showToast(`Fields added for ${party.name}`);
+    }
+  }
+
+  function generatePartyDataLinks() {
+    if (!transactionParties.length) { showToast('Add at least one party first'); return; }
+    const templateName = mapperDocument.name ? mapperDocument.name.replace(/\.[^.]+$/, '') : 'Transaction';
+    activePartyLinkTokens = transactionParties.map(p => {
+      const token = generateToken();
+      const partyFields = mappedFields.filter(f => f.partyId === p.id || !f.partyId && ['Property','Financial Terms','Dates','Consent'].includes(f.section));
+      const workflowName = `${templateName} — ${p.name}`;
+      const wf = {
+        id: 'wf_party_' + token,
+        name: workflowName,
+        category: inferTemplateCategory(mapperDocument.name || templateName),
+        purpose: 'document',
+        output: 'document_mapper',
+        status: 'active',
+        submissions: 0,
+        pending: 1,
+        icon: '👥',
+        desc: `Party-specific data collection for ${p.name}`,
+        fields: partyFields.length ? deepClone(partyFields) : generateDefaultFields(),
+        document: deepClone(mapperDocument),
+        parties: [deepClone(p)]
+      };
+      workflows.unshift(wf);
+      const url = `${window.location.href.split('?')[0]}?token=${token}`;
+      submissions.unshift({ id:'s'+Date.now()+Math.random().toString(36).slice(2,5), workflow_id:wf.id, wf:wf.name, name:p.name, email:p.email || '', status:'pending', completeness:0, submitted:'Link created', missing:[], token, data:{ partyRole:p.role, partyType:p.type } });
+      return { partyId:p.id, partyName:p.name, role:p.role, token, url };
+    });
+    saveDevState();
+    renderWorkflows();
+    renderSubmissions();
+    renderDashboard();
+    updateStats();
+    renderTransactionParties();
+    showToast('Party links created in Developer Mode');
+  }
+
+  function copyText(value) {
+    navigator.clipboard?.writeText(value).then(() => showToast('Copied ✓')).catch(() => showToast('Copy failed'));
+  }
+
+  function escapeJs(value) {
+    return String(value || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+  }
+
   function clearMapperDocument() {
-    mapperDocument = { name:'', text:'', detected:[], type:'' };
+    mapperDocument = { name:'', text:'', detected:[], type:'', objectUrl:'', previewKind:'text' };
+    transactionParties = [];
+    activePartyLinkTokens = [];
     window._detectedFields = [];
     renderMapperWorkspace();
   }
@@ -2030,7 +2251,7 @@
   }
 
   function fieldIcon(type) {
-    const icons = { text:'T', email:'@', phone:'📱', number:'#', date:'📅', select:'▾', textarea:'≡', file:'📎', checkbox:'☑', id:'🪪', entity_group:'👥' };
+    const icons = { text:'T', email:'@', phone:'📱', number:'#', date:'📅', select:'▾', textarea:'≡', file:'📎', checkbox:'☑', id:'🪪', entity_group:'👥', signature:'✍️' };
     return icons[type] || 'T';
   }
 
