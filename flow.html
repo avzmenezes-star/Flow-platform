@@ -2540,7 +2540,7 @@
         .eq('archived', false)
         .order('updated_at', { ascending: false });
 
-      liveWorkspaces = workspaces || [];
+      liveWorkspaces = (workspaces || []).map(normalizeWorkspace);
 
       // Load tasks
       const { data: tasks } = await sb
@@ -2619,9 +2619,11 @@
       const isOver = due && due < now;
       const isToday= due && due.toDateString() === now.toDateString();
       return {
+        id:    t.id,
         title: t.title,
         due:   isOver ? 'Overdue' : isToday ? 'Due today' : due ? `Due ${due.toLocaleDateString('en-ZA', {day:'numeric',month:'short'})}` : 'No due date',
-        type:  isOver ? 'overdue' : isToday ? 'today' : 'soon'
+        type:  isOver ? 'overdue' : isToday ? 'today' : 'soon',
+        status: t.status || 'open'
       };
     });
     renderTasks(formatted.slice(0,5));
@@ -2639,6 +2641,7 @@
       'document.approved': '✅',
       'signflow.triggered': '✍️',
       'task.completed': '✓',
+      'task.created': '+',
     };
     const formatted = activity.map(a => ({
       icon:  actionIcons[a.action] || '📋',
@@ -2675,7 +2678,7 @@
           client_name:  client || null,
           client_email: null,
           status:       'active',
-          metadata:     { hub: hubRecord ? hubRecord.name : hub }
+          metadata:     { hub: hubRecord ? hubRecord.name : hub, progress: 0 }
         };
 
         const { data: ws, error } = await sb
@@ -2892,6 +2895,23 @@
     return ws.hub || ws.metadata?.hub || ws.type || '—';
   }
 
+  function escapeHTML(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+    }[ch]));
+  }
+
+  function getWSProgress(ws) {
+    const raw = ws?.progress ?? ws?.metadata?.progress ?? 0;
+    const n = Number(raw);
+    return Number.isFinite(n) ? Math.min(100, Math.max(0, n)) : 0;
+  }
+
+  function normalizeWorkspace(ws) {
+    if (!ws) return ws;
+    return { ...ws, progress: getWSProgress(ws) };
+  }
+
   function timeAgo(dateStr) {
     if (!dateStr) return '';
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -2932,15 +2952,21 @@
   function renderTasks(tasks) {
     const list = document.getElementById('task-list');
     const data = tasks || demoTasks;
-    list.innerHTML = data.slice(0,5).map(t => `
-      <div class="task-row">
-        <div class="task-check" onclick="this.classList.toggle('done');this.textContent=this.classList.contains('done')?'✓':''"></div>
-        <div class="task-body">
-          <div class="task-title">${t.title}</div>
-          <div class="task-due ${t.type}">${t.due}</div>
+    list.innerHTML = data.slice(0,5).map(t => {
+      const done = t.status === 'completed';
+      const toggle = t.id
+        ? `toggleGlobalTask('${t.id}', ${!done})`
+        : `this.classList.toggle('done');this.textContent=this.classList.contains('done')?'✓':''`;
+      return `
+        <div class="task-row">
+          <div class="task-check ${done ? 'done' : ''}" onclick="${toggle}">${done ? '✓' : ''}</div>
+          <div class="task-body">
+            <div class="task-title" style="${done ? 'text-decoration:line-through;color:var(--ink-4)' : ''}">${escapeHTML(t.title)}</div>
+            <div class="task-due ${t.type}">${t.due}</div>
+          </div>
         </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
   function renderActivity(activity) {
@@ -3044,8 +3070,8 @@
           </div>
         </div>
         <div class="progress-wrap" onclick="openWorkspace('${ws.id}')" style="cursor:pointer">
-          <div class="progress-label"><span>Progress</span><span>${ws.progress || 0}%</span></div>
-          <div class="progress-bar"><div class="progress-fill" style="width:${ws.progress||0}%;background:${isArchivedView ? '#94a3b8' : progressColor(ws.status)}"></div></div>
+          <div class="progress-label"><span>Progress</span><span>${getWSProgress(ws)}%</span></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${getWSProgress(ws)}%;background:${isArchivedView ? '#94a3b8' : progressColor(ws.status)}"></div></div>
         </div>
         <div class="ws-card-footer">
           <span style="font-size:11px;color:var(--ink-4)">
@@ -3075,13 +3101,6 @@
         </div>
       </div>
     `).join('');
-  }
-
-  function openWorkspace(id) {
-    const ws = liveWorkspaces.find(w => String(w.id) === String(id))
-            || demoWorkspaces.find(w => String(w.id) === String(id));
-    if (ws) showToast('Opening: ' + ws.name);
-    // Full workspace view coming in next session
   }
 
   function filterByHub(hubName) {
@@ -3336,9 +3355,10 @@
   let currentWorkspace   = null;
 
   async function openWorkspace(id) {
-    const ws = liveWorkspaces.find(w => String(w.id) === String(id))
+    const found = liveWorkspaces.find(w => String(w.id) === String(id))
             || demoWorkspaces.find(w => String(w.id) === String(id));
-    if (!ws) { showToast('Workspace not found'); return; }
+    if (!found) { showToast('Workspace not found'); return; }
+    const ws = normalizeWorkspace(found);
 
     currentWorkspaceId = id;
     currentWorkspace   = ws;
@@ -3398,7 +3418,7 @@
       renderWSActivity(activity || []);
       const preview = (activity || []).slice(0,4);
       document.getElementById('ws-detail-activity').innerHTML = preview.length
-        ? preview.map(a => `<div class="activity-row"><div class="activity-icon">${{'workspace.created':'🗂','task.completed':'✅','message.posted':'💬','signflow.triggered':'✍️'}[a.action]||'📋'}</div><div class="activity-body"><div class="activity-title">${a.action.replace('.',' — ')}</div><div class="activity-sub">${a.actor_name||'System'} · ${timeAgo(a.created_at)}</div></div></div>`).join('')
+        ? preview.map(a => `<div class="activity-row"><div class="activity-icon">${{'workspace.created':'🗂','task.completed':'✅','task.created':'➕','message.posted':'💬','signflow.triggered':'✍️'}[a.action]||'📋'}</div><div class="activity-body"><div class="activity-title">${a.action.replace('.',' — ')}</div><div class="activity-sub">${a.actor_name||'System'} · ${timeAgo(a.created_at)}</div></div></div>`).join('')
         : '<div style="padding:20px;text-align:center;color:var(--ink-4);font-size:13px">No activity yet.</div>';
     } catch(e) { console.error('WS data error:', e); }
   }
@@ -3416,7 +3436,7 @@
 
   async function updateWSProgress(delta) {
     if (!currentWorkspace) return;
-    const newPct    = Math.min(100, Math.max(0, (currentWorkspace.progress || 0) + delta));
+    const newPct    = Math.min(100, Math.max(0, getWSProgress(currentWorkspace) + delta));
     const newStatus = newPct === 100 ? 'completed' : currentWorkspace.status;
     currentWorkspace.progress = newPct;
     if (currentOrg) {
@@ -3424,7 +3444,11 @@
         .update({ metadata: { ...currentWorkspace.metadata, progress: newPct }, status: newStatus })
         .eq('id', currentWorkspace.id);
       const wsIdx = liveWorkspaces.findIndex(w => w.id === currentWorkspace.id);
-      if (wsIdx > -1) { liveWorkspaces[wsIdx].progress = newPct; liveWorkspaces[wsIdx].status = newStatus; }
+      if (wsIdx > -1) {
+        liveWorkspaces[wsIdx].progress = newPct;
+        liveWorkspaces[wsIdx].metadata = { ...(liveWorkspaces[wsIdx].metadata || {}), progress: newPct };
+        liveWorkspaces[wsIdx].status = newStatus;
+      }
     }
     openWorkspace(currentWorkspace.id);
   }
@@ -3464,6 +3488,17 @@
     try {
       if (currentOrg) {
         await sb.from('ff_tasks').update({ status: completed ? 'completed' : 'open', completed_at: completed ? new Date().toISOString() : null }).eq('id', taskId);
+        if (completed) {
+          await sb.from('ff_audit_log').insert({
+            organisation_id: currentOrg.id,
+            workspace_id: currentWorkspaceId,
+            actor_id: currentUser.id,
+            actor_name: currentProfile?.full_name || currentUser.email,
+            actor_type: 'user',
+            action: 'task.completed',
+            detail: { task_id: taskId }
+          });
+        }
         await loadWSData(currentWorkspaceId);
         if (currentView === 'tasks') await renderGlobalTasks();
       } else { showToast(completed ? 'Task completed ✓' : 'Task reopened'); }
@@ -3482,7 +3517,7 @@
         <div class="msg-avatar">${(m.author_name||'U').substring(0,2).toUpperCase()}</div>
         <div class="msg-body">
           <div><span class="msg-author">${m.author_name||'Unknown'}</span><span class="msg-time">${timeAgo(m.created_at)}</span></div>
-          <div class="msg-text">${m.body}</div>
+          <div class="msg-text">${escapeHTML(m.body)}</div>
         </div>
       </div>`).join('');
     list.scrollTop = list.scrollHeight;
@@ -3496,11 +3531,20 @@
     try {
       if (currentOrg) {
         await sb.from('ff_messages').insert({ workspace_id: currentWorkspaceId, organisation_id: currentOrg.id, author_id: currentUser.id, author_name: authorName, author_type: 'internal', body, visibility: 'internal' });
+        await sb.from('ff_audit_log').insert({
+          organisation_id: currentOrg.id,
+          workspace_id: currentWorkspaceId,
+          actor_id: currentUser.id,
+          actor_name: authorName,
+          actor_type: 'user',
+          action: 'message.posted',
+          detail: { body }
+        });
         input.value = '';
         await loadWSData(currentWorkspaceId);
       } else {
         const list = document.getElementById('ws-messages-list');
-        list.innerHTML += `<div class="msg-row"><div class="msg-avatar">${authorName.substring(0,2).toUpperCase()}</div><div class="msg-body"><div><span class="msg-author">${authorName}</span><span class="msg-time">Just now</span></div><div class="msg-text">${body}</div></div></div>`;
+        list.innerHTML += `<div class="msg-row"><div class="msg-avatar">${authorName.substring(0,2).toUpperCase()}</div><div class="msg-body"><div><span class="msg-author">${authorName}</span><span class="msg-time">Just now</span></div><div class="msg-text">${escapeHTML(body)}</div></div></div>`;
         list.scrollTop = list.scrollHeight;
         input.value = '';
       }
@@ -3514,7 +3558,7 @@
       list.innerHTML = '<div style="padding:32px;text-align:center;color:var(--ink-4);font-size:13px">No activity yet.</div>';
       return;
     }
-    const icons = {'workspace.created':'🗂','task.completed':'✅','message.posted':'💬','signflow.triggered':'✍️','document.uploaded':'📁'};
+    const icons = {'workspace.created':'🗂','task.completed':'✅','task.created':'➕','message.posted':'💬','signflow.triggered':'✍️','document.uploaded':'📁'};
     list.innerHTML = activity.map(a => `
       <div class="activity-row">
         <div class="activity-icon">${icons[a.action]||'📋'}</div>
@@ -3547,8 +3591,20 @@
     btn.disabled = true; btn.textContent = 'Saving...';
     try {
       if (currentOrg) {
-        await sb.from('ff_tasks').insert({ organisation_id: currentOrg.id, workspace_id: wsId||null, title, priority, due_at: dueDate ? new Date(dueDate).toISOString() : null, status: 'open' });
+        const { data: newTask } = await sb.from('ff_tasks').insert({ organisation_id: currentOrg.id, workspace_id: wsId||null, title, priority, due_at: dueDate ? new Date(dueDate).toISOString() : null, status: 'open' }).select().single();
+        if (wsId) {
+          await sb.from('ff_audit_log').insert({
+            organisation_id: currentOrg.id,
+            workspace_id: wsId,
+            actor_id: currentUser.id,
+            actor_name: currentProfile?.full_name || currentUser.email,
+            actor_type: 'user',
+            action: 'task.created',
+            detail: { task_id: newTask?.id, title }
+          });
+        }
         await renderGlobalTasks();
+        await loadLiveData();
         if (currentWorkspaceId && wsId === String(currentWorkspaceId)) await loadWSData(currentWorkspaceId);
       } else {
         demoTasks.unshift({ title, due: dueDate ? new Date(dueDate).toLocaleDateString('en-ZA',{day:'numeric',month:'short'}) : 'No due date', type:'soon' });
@@ -3611,6 +3667,7 @@
       if (currentOrg) {
         await sb.from('ff_tasks').update({ status: completed?'completed':'open', completed_at: completed?new Date().toISOString():null }).eq('id', taskId);
         await renderGlobalTasks();
+        await loadLiveData();
       } else { showToast(completed ? 'Task completed ✓' : 'Task reopened'); }
     } catch(e) { showToast('Error: ' + e.message); }
   }
@@ -3645,7 +3702,7 @@
           sb.from('ff_audit_log').select('*').eq('organisation_id', currentOrg.id).order('created_at',{ascending:false}).limit(5)
         ]);
         (overdueTasks||[]).forEach(t => items.push({ icon:'⚠️', bg:'#fef2f2', msg:`Overdue: ${t.title}${t.ff_workspaces?.name?' — '+t.ff_workspaces.name:''}`, time:timeAgo(t.due_at) }));
-        const ai = {'workspace.created':'🗂','task.completed':'✅','message.posted':'💬'};
+        const ai = {'workspace.created':'🗂','task.completed':'✅','task.created':'➕','message.posted':'💬'};
         (recent||[]).forEach(a => items.push({ icon:ai[a.action]||'📋', bg:'#f1f5f9', msg:`${a.actor_name||'System'}: ${a.action.replace('.',' ')}`, time:timeAgo(a.created_at) }));
       } catch(e) { console.error(e); }
     } else {
