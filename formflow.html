@@ -673,6 +673,7 @@
             <p style="font-size:13px;color:var(--ink-3)">Customise field labels, types, order and validation rules.</p>
           </div>
           <div style="display:flex;gap:8px">
+            <button class="btn-ghost" onclick="loadEntityEnginePreset()">Use Entity Engine</button>
             <button class="btn-ghost" onclick="previewForm()">Preview form</button>
             <button class="btn-primary" onclick="saveFormBuilder()">Save & generate link</button>
           </div>
@@ -1026,6 +1027,8 @@
   let currentSub     = null;
   let currentWF      = null;
   let builderFields  = [];
+  let currentClientConfig = null;
+  let clientEntityCounters = {};
   let isDemo         = false;
 
   // ── DATABASE LOAD / NORMALISATION ───────────────────────────
@@ -1551,30 +1554,116 @@
     ];
   }
 
+
+  function loadEntityEnginePreset() {
+    builderFields = [
+      {
+        id: 'purchasers',
+        label: 'Purchasers',
+        type: 'entity_group',
+        entityRole: 'purchaser',
+        repeatable: true,
+        minInstances: 1,
+        allowedEntityTypes: ['Individual', 'Company', 'Trust'],
+        fields: [
+          { id: 'entity_type', label: 'Purchaser type', type: 'select', options: ['Individual', 'Company', 'Trust'], required: true },
+          { id: 'full_name', label: 'Full name / Entity name', type: 'text', required: true },
+          { id: 'id_number', label: 'ID / Registration number', type: 'text', required: true },
+          { id: 'email', label: 'Email address', type: 'email', required: true },
+          { id: 'phone', label: 'Cell number', type: 'phone', required: true },
+          { id: 'marital_status', label: 'Marital status', type: 'select', options: ['Single', 'Married ANC', 'Married in COP', 'Divorced', 'Widowed'], required: false, showIf: { field: 'entity_type', values: ['Individual'] } },
+          { id: 'spouse_name', label: 'Spouse full name', type: 'text', required: false, showIf: { field: 'marital_status', values: ['Married ANC', 'Married in COP'] } },
+          { id: 'company_reg_number', label: 'Company registration number', type: 'text', required: false, showIf: { field: 'entity_type', values: ['Company'] } },
+          { id: 'directors', label: 'Directors', type: 'entity_group', entityRole: 'director', repeatable: true, showIf: { field: 'entity_type', values: ['Company'] } },
+          { id: 'trust_number', label: 'Trust number', type: 'text', required: false, showIf: { field: 'entity_type', values: ['Trust'] } },
+          { id: 'trustees', label: 'Trustees', type: 'entity_group', entityRole: 'trustee', repeatable: true, showIf: { field: 'entity_type', values: ['Trust'] } },
+          { id: 'id_document', label: 'ID document', type: 'file', required: true },
+          { id: 'proof_of_address', label: 'Proof of address', type: 'file', required: true }
+        ]
+      },
+      {
+        id: 'sellers',
+        label: 'Sellers',
+        type: 'entity_group',
+        entityRole: 'seller',
+        repeatable: true,
+        minInstances: 1,
+        allowedEntityTypes: ['Individual', 'Company', 'Trust'],
+        fields: [
+          { id: 'entity_type', label: 'Seller type', type: 'select', options: ['Individual', 'Company', 'Trust'], required: true },
+          { id: 'full_name', label: 'Full name / Entity name', type: 'text', required: true },
+          { id: 'id_number', label: 'ID / Registration number', type: 'text', required: true },
+          { id: 'email', label: 'Email address', type: 'email', required: true },
+          { id: 'phone', label: 'Cell number', type: 'phone', required: true },
+          { id: 'marital_status', label: 'Marital status', type: 'select', options: ['Single', 'Married ANC', 'Married in COP', 'Divorced', 'Widowed'], required: false, showIf: { field: 'entity_type', values: ['Individual'] } },
+          { id: 'spouse_name', label: 'Spouse full name', type: 'text', required: false, showIf: { field: 'marital_status', values: ['Married ANC', 'Married in COP'] } },
+          { id: 'company_reg_number', label: 'Company registration number', type: 'text', required: false, showIf: { field: 'entity_type', values: ['Company'] } },
+          { id: 'directors', label: 'Directors', type: 'entity_group', entityRole: 'director', repeatable: true, showIf: { field: 'entity_type', values: ['Company'] } },
+          { id: 'trust_number', label: 'Trust number', type: 'text', required: false, showIf: { field: 'entity_type', values: ['Trust'] } },
+          { id: 'trustees', label: 'Trustees', type: 'entity_group', entityRole: 'trustee', repeatable: true, showIf: { field: 'entity_type', values: ['Trust'] } },
+          { id: 'id_document', label: 'ID document', type: 'file', required: true },
+          { id: 'proof_of_address', label: 'Proof of address', type: 'file', required: true }
+        ]
+      },
+      {
+        id: 'property',
+        label: 'Property Details',
+        type: 'section',
+        fields: [
+          { id: 'property_address', label: 'Property address', type: 'textarea', required: true },
+          { id: 'erf_number', label: 'Erf / stand number', type: 'text', required: false },
+          { id: 'purchase_price', label: 'Purchase price', type: 'number', required: true },
+          { id: 'deposit_amount', label: 'Deposit amount', type: 'number', required: false },
+          { id: 'bond_amount', label: 'Bond amount', type: 'number', required: false },
+          { id: 'occupation_date', label: 'Occupation date', type: 'date', required: false },
+          { id: 'transfer_date', label: 'Expected transfer date', type: 'date', required: false }
+        ]
+      }
+    ];
+
+    renderBuilderFields(builderFields);
+    document.getElementById('builder-title').value = 'Offer to Purchase Entity Workflow';
+    document.getElementById('builder-message').value = 'Please complete all purchaser, seller, property and compliance information.';
+    showToast('Entity Engine preset loaded');
+  }
+
   function renderBuilderFields(fields) {
-    builderFields = fields;
+    builderFields = Array.isArray(fields) ? fields : [];
     const container = document.getElementById('builder-fields');
     if (!container) return;
-    if (fields.length === 0) {
+    if (builderFields.length === 0) {
       container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink-4);border:2px dashed var(--border);border-radius:var(--radius-lg)">Add fields using the palette on the right, or upload a template to auto-generate.</div>';
+      initFieldPalette();
       return;
     }
     const ftMap = {};
     fieldTypes.forEach(ft => ftMap[ft.type] = ft.icon);
-    container.innerHTML = fields.map((f,i) => `
-      <div class="field-item" data-index="${i}">
-        <span class="field-drag">⠿</span>
+    ftMap.entity_group = '👥';
+    ftMap.section = '▦';
+
+    container.innerHTML = builderFields.map((f,i) => {
+      const isStructured = f.type === 'entity_group' || f.type === 'section';
+      const childCount = Array.isArray(f.fields) ? f.fields.length : 0;
+      const repeatText = f.repeatable ? ' · repeatable' : '';
+      const allowedText = f.allowedEntityTypes?.length ? ` · ${f.allowedEntityTypes.join(' / ')}` : '';
+      return `
+      <div class="field-item" data-index="${i}" style="align-items:flex-start">
+        <span class="field-drag" style="padding-top:7px">⠿</span>
         <div class="field-type-icon">${ftMap[f.type]||'T'}</div>
         <div class="field-info">
-          <div class="field-label-text">${f.label}${f.required?'<span class="field-required">*</span>':''}</div>
+          <div class="field-label-text">${f.label || formatLabel(f.id)}${f.required?'<span class="field-required">*</span>':''}</div>
           ${f.placeholder ? `<div class="field-placeholder">${f.placeholder}</div>` : ''}
-          <div style="font-size:10px;color:var(--ink-4)">${f.type}</div>
+          <div style="font-size:10px;color:var(--ink-4)">${f.type}${repeatText}${allowedText}</div>
+          ${isStructured ? `<div style="margin-top:8px;padding:9px 11px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);font-size:11px;color:var(--ink-3)">
+            <strong style="color:var(--ink-2)">${childCount}</strong> child fields ${f.type === 'entity_group' ? 'with dynamic add-more behaviour' : 'in this section'}
+          </div>` : ''}
         </div>
         <div class="field-actions">
-          <div class="field-btn" onclick="toggleRequired(${i})" title="${f.required?'Make optional':'Make required'}">${f.required?'*':'○'}</div>
+          ${!isStructured ? `<div class="field-btn" onclick="toggleRequired(${i})" title="${f.required?'Make optional':'Make required'}">${f.required?'*':'○'}</div>` : ''}
           <div class="field-btn del" onclick="removeField(${i})" title="Remove">✕</div>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
     initFieldPalette();
   }
 
@@ -1624,6 +1713,7 @@
   function previewForm() {
     const title   = document.getElementById('builder-title').value.trim() || 'Client Form';
     const message = document.getElementById('builder-message').value.trim() || 'Please complete all required fields below.';
+    clientEntityCounters = {};
     renderClientView({ title, message, fields: builderFields, token:'preview' });
     document.getElementById('app').style.display             = 'none';
     document.getElementById('auth-screen').style.display     = 'none';
@@ -1846,39 +1936,170 @@
 
   // ── CLIENT VIEW ─────────────────────────────────────────────
   function renderClientView(config) {
+    currentClientConfig = config;
     const { title, message, fields } = config;
     document.getElementById('cv-title').textContent = title || 'Complete your form';
     document.getElementById('cv-desc').textContent  = message || 'Please complete all required fields.';
+    document.getElementById('cv-success').style.display = 'none';
+    document.getElementById('cv-sections').style.display = 'block';
 
-    // Group fields into sections
-    const textFields   = fields.filter(f=>f.type!=='file');
-    const uploadFields = fields.filter(f=>f.type==='file');
+    const hasEntitySchema = Array.isArray(fields) && fields.some(f => f.type === 'entity_group' || f.type === 'section');
 
-    const sections = [];
-    if (textFields.length)   sections.push({ title:'📝 Your details',     fields: textFields });
-    if (uploadFields.length) sections.push({ title:'📎 Document uploads', fields: uploadFields });
+    if (!hasEntitySchema) {
+      const textFields   = fields.filter(f=>f.type!=='file');
+      const uploadFields = fields.filter(f=>f.type==='file');
+      const sections = [];
+      if (textFields.length)   sections.push({ title:'📝 Your details',     fields: textFields });
+      if (uploadFields.length) sections.push({ title:'📎 Document uploads', fields: uploadFields });
 
-    // Progress steps
-    document.getElementById('cv-steps').innerHTML = sections.map((s,i) => `<div class="progress-step ${i===0?'active':''}">${s.title.split(' ').slice(1).join(' ')}</div>`).join('');
+      document.getElementById('cv-steps').innerHTML = sections.map((s,i) => `<div class="progress-step ${i===0?'active':''}">${s.title.split(' ').slice(1).join(' ')}</div>`).join('');
+      document.getElementById('cv-sections').innerHTML = sections.map((s,i) => `
+        <div class="client-section">
+          <div class="client-section-title">${s.title}</div>
+          ${s.fields.map(f => renderClientField(f, `simple_${f.id}`)).join('')}
+        </div>`).join('') + `<button class="client-submit" onclick="submitClientForm()">Submit →</button>`;
+      refreshClientConditionals();
+      return;
+    }
 
-    // Sections
-    document.getElementById('cv-sections').innerHTML = sections.map((s,i) => `
-      <div class="client-section">
-        <div class="client-section-title">${s.title}</div>
-        ${s.fields.map(f => `
-          <div class="client-field">
-            <label class="client-field-label">${f.label}${f.required?'<span class="client-field-required">*</span>':''}</label>
-            ${f.type==='file'
-              ? `<div class="client-upload-box" onclick="this.classList.toggle('uploaded')"><div style="font-size:24px;margin-bottom:6px">📎</div><div style="font-size:13px;font-weight:500">${f.label}</div><div style="font-size:11px;color:var(--ink-4);margin-top:3px">Click to upload or drag and drop</div></div>`
-              : f.type==='textarea'
-              ? `<textarea class="client-input" placeholder="${f.label}" rows="3" style="resize:vertical"></textarea>`
-              : f.type==='select'
-              ? `<select class="client-input"><option value="">Select...</option></select>`
-              : `<input class="client-input" type="${f.type==='email'?'email':f.type==='date'?'date':f.type==='phone'?'tel':'text'}" placeholder="${f.label}">`
-            }
-          </div>`).join('')}
-      </div>`).join('') +
-      `<button class="client-submit" onclick="submitClientForm()">Submit →</button>`;
+    fields.forEach(section => {
+      if (section.type === 'entity_group' && !clientEntityCounters[section.id]) {
+        clientEntityCounters[section.id] = Math.max(section.minInstances || 1, 1);
+      }
+    });
+
+    const stepTitles = fields.map(f => f.label || formatLabel(f.id));
+    document.getElementById('cv-steps').innerHTML = stepTitles.map((t,i) => `<div class="progress-step ${i===0?'active':''}">${t}</div>`).join('');
+
+    document.getElementById('cv-sections').innerHTML = fields.map(section => {
+      if (section.type === 'entity_group') return renderEntityGroup(section);
+      if (section.type === 'section') return renderStaticSection(section);
+      return `<div class="client-section">${renderClientField(section, section.id)}</div>`;
+    }).join('') + renderCompliancePreview(fields) + `<button class="client-submit" onclick="submitClientForm()">Submit →</button>`;
+
+    refreshClientConditionals();
+  }
+
+  function renderStaticSection(section) {
+    return `<div class="client-section">
+      <div class="client-section-title">▦ ${section.label || formatLabel(section.id)}</div>
+      ${(section.fields || []).map(f => renderClientField(f, `${section.id}_${f.id}`)).join('')}
+    </div>`;
+  }
+
+  function renderEntityGroup(group) {
+    const count = clientEntityCounters[group.id] || Math.max(group.minInstances || 1, 1);
+    const singular = (group.entityRole || group.label || 'entity').replace(/s$/,'');
+    const blocks = Array.from({ length: count }, (_, idx) => renderEntityInstance(group, idx, singular)).join('');
+    return `<div class="client-section">
+      <div class="client-section-title">👥 ${group.label || formatLabel(group.id)}</div>
+      ${blocks}
+      ${group.repeatable ? `<button type="button" class="btn-ghost" onclick="addEntityInstance('${group.id}')" style="margin-top:8px">+ Add another ${singular}</button>` : ''}
+    </div>`;
+  }
+
+  function renderEntityInstance(group, idx, singular) {
+    const prefix = `${group.id}_${idx}`;
+    return `<div style="border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;background:var(--surface-2)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700;color:var(--ink)">${formatLabel(singular)} ${idx + 1}</div>
+        ${idx > 0 ? `<button type="button" class="btn-ghost" onclick="removeEntityInstance('${group.id}')" style="font-size:11px;padding:4px 9px">Remove</button>` : ''}
+      </div>
+      ${(group.fields || []).map(f => {
+        if (f.type === 'entity_group') return renderNestedEntityGroup(f, prefix);
+        return renderClientField(f, `${prefix}_${f.id}`, prefix);
+      }).join('')}
+    </div>`;
+  }
+
+  function renderNestedEntityGroup(group, parentPrefix) {
+    const key = `${parentPrefix}_${group.id}`;
+    if (!clientEntityCounters[key]) clientEntityCounters[key] = 1;
+    const count = clientEntityCounters[key];
+    const singular = group.entityRole || group.label || 'person';
+    const defaultFields = [
+      { id:'full_name', label:`${formatLabel(singular)} full name`, type:'text', required:true },
+      { id:'id_number', label:'ID number', type:'text', required:true },
+      { id:'email', label:'Email address', type:'email', required:false },
+      { id:'id_document', label:'ID document', type:'file', required:true }
+    ];
+    const conditionalAttrs = getConditionalAttrs(group, parentPrefix);
+    return `<div class="client-field conditional-block" ${conditionalAttrs} style="border:1px dashed var(--border-2);border-radius:10px;padding:12px;margin-top:10px;background:white">
+      <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:8px">${group.label || formatLabel(group.id)}</div>
+      ${Array.from({ length: count }, (_, idx) => `
+        <div style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:var(--surface-2)">
+          <div style="font-size:11px;font-weight:700;color:var(--ink-3);margin-bottom:8px">${formatLabel(singular)} ${idx + 1}</div>
+          ${defaultFields.map(f => renderClientField(f, `${key}_${idx}_${f.id}`)).join('')}
+        </div>`).join('')}
+      <button type="button" class="btn-ghost" onclick="addNestedEntityInstance('${key}')" style="font-size:11px;padding:5px 10px">+ Add another ${singular}</button>
+    </div>`;
+  }
+
+  function getConditionalAttrs(f, prefix) {
+    if (!f.showIf) return '';
+    const controllerKey = `${prefix}_${f.showIf.field}`;
+    const values = (f.showIf.values || []).join('|');
+    return `data-show-field="${controllerKey}" data-show-values="${values}"`;
+  }
+
+  function renderClientField(f, key, prefix) {
+    const required = f.required ? '<span class="client-field-required">*</span>' : '';
+    const conditionalAttrs = prefix ? getConditionalAttrs(f, prefix) : '';
+    const wrapperClass = conditionalAttrs ? 'client-field conditional-block' : 'client-field';
+    const options = f.options || [];
+    let input = '';
+
+    if (f.type === 'file') {
+      input = `<div class="client-upload-box" onclick="this.classList.toggle('uploaded')"><div style="font-size:24px;margin-bottom:6px">📎</div><div style="font-size:13px;font-weight:500">${f.label}</div><div style="font-size:11px;color:var(--ink-4);margin-top:3px">Click to mark uploaded</div></div>`;
+    } else if (f.type === 'textarea') {
+      input = `<textarea class="client-input" data-field-key="${key}" placeholder="${f.label}" rows="3" style="resize:vertical"></textarea>`;
+    } else if (f.type === 'select') {
+      input = `<select class="client-input" data-field-key="${key}" onchange="refreshClientConditionals()"><option value="">Select...</option>${options.map(o => `<option value="${o}">${o}</option>`).join('')}</select>`;
+    } else {
+      const type = f.type === 'email' ? 'email' : f.type === 'date' ? 'date' : f.type === 'phone' ? 'tel' : f.type === 'number' ? 'number' : 'text';
+      input = `<input class="client-input" data-field-key="${key}" type="${type}" placeholder="${f.label}">`;
+    }
+
+    return `<div class="${wrapperClass}" ${conditionalAttrs}>
+      <label class="client-field-label">${f.label}${required}</label>
+      ${input}
+    </div>`;
+  }
+
+  function addEntityInstance(groupId) {
+    clientEntityCounters[groupId] = (clientEntityCounters[groupId] || 1) + 1;
+    renderClientView(currentClientConfig);
+    showToast('Entity added');
+  }
+
+  function removeEntityInstance(groupId) {
+    clientEntityCounters[groupId] = Math.max((clientEntityCounters[groupId] || 1) - 1, 1);
+    renderClientView(currentClientConfig);
+  }
+
+  function addNestedEntityInstance(key) {
+    clientEntityCounters[key] = (clientEntityCounters[key] || 1) + 1;
+    renderClientView(currentClientConfig);
+  }
+
+  function refreshClientConditionals() {
+    document.querySelectorAll('.conditional-block[data-show-field]').forEach(block => {
+      const controllerKey = block.getAttribute('data-show-field');
+      const allowed = (block.getAttribute('data-show-values') || '').split('|');
+      const controller = document.querySelector(`[data-field-key="${controllerKey}"]`);
+      const value = controller ? controller.value : '';
+      block.style.display = allowed.includes(value) ? '' : 'none';
+    });
+  }
+
+  function renderCompliancePreview(fields) {
+    if (!Array.isArray(fields) || !fields.some(f => f.type === 'entity_group')) return '';
+    return `<div class="client-section">
+      <div class="client-section-title">✅ Live FICA / Compliance Mapping</div>
+      <div class="compliance-item"><div class="check-circle warn">?</div><div class="compliance-label">Individual parties require ID document and proof of address.</div><div class="compliance-status warn">Dynamic</div></div>
+      <div class="compliance-item"><div class="check-circle warn">?</div><div class="compliance-label">Company parties trigger CIPC documents, resolutions and director ID requirements.</div><div class="compliance-status warn">Dynamic</div></div>
+      <div class="compliance-item"><div class="check-circle warn">?</div><div class="compliance-label">Trust parties trigger trust deed, letters of authority and trustee ID requirements.</div><div class="compliance-status warn">Dynamic</div></div>
+    </div>`;
   }
 
   async function submitClientForm() {
