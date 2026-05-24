@@ -392,6 +392,28 @@
     .fade-up:nth-child(3) { animation-delay: 0.12s; }
     .fade-up:nth-child(4) { animation-delay: 0.16s; }
 
+
+
+    /* ── DOCUMENT MAPPER ────────────────────────────────────────── */
+    .mapper-layout { display: grid; grid-template-columns: minmax(0, 1.2fr) 360px; gap: 18px; align-items: start; }
+    .mapper-doc { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); overflow: hidden; }
+    .mapper-doc-toolbar { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid var(--border); background:var(--surface-2); }
+    .mapper-doc-title { font-size:13px; font-weight:700; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .mapper-preview { padding:18px; min-height:520px; max-height:68vh; overflow:auto; background:#fbfaf8; }
+    .mapper-paper { background:white; border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow); padding:26px; font-size:13px; line-height:1.7; white-space:pre-wrap; color:var(--ink-2); }
+    .mapper-placeholder { display:inline-flex; padding:1px 6px; border-radius:5px; background:var(--ff-light); color:var(--ff-dark); font-family:monospace; font-size:12px; border:1px solid #99f6e4; cursor:pointer; }
+    .mapper-side { display:flex; flex-direction:column; gap:14px; }
+    .mapper-field-row { display:flex; align-items:center; gap:10px; padding:10px 12px; border-bottom:1px solid var(--border); }
+    .mapper-field-row:last-child { border-bottom:none; }
+    .mapper-field-main { flex:1; min-width:0; }
+    .mapper-field-name { font-size:12px; font-weight:700; color:var(--ink); }
+    .mapper-field-meta { font-size:10px; color:var(--ink-4); margin-top:2px; }
+    .mapper-chip-row { display:flex; flex-wrap:wrap; gap:6px; padding:12px; }
+    .mapper-consent-card { padding:14px; background:var(--ff-light); border:1px solid #99f6e4; border-radius:var(--radius); font-size:12px; color:var(--ink-2); line-height:1.55; }
+    .mapper-empty { padding:24px; text-align:center; color:var(--ink-4); font-size:13px; }
+
+    @media (max-width: 1050px) { .mapper-layout { grid-template-columns: 1fr; } }
+
     @media (max-width: 900px) {
       .sidebar { display: none; }
       .builder-layout { grid-template-columns: 1fr; }
@@ -467,6 +489,9 @@
 <div id="client-view">
   <div class="client-wrap">
     <div class="client-header">
+      <div style="display:flex;justify-content:flex-start;margin-bottom:18px">
+        <button onclick="previewClose()" class="btn-ghost" id="preview-back-btn" style="display:none">← Back to builder</button>
+      </div>
       <div class="client-logo">form<span>flow</span></div>
       <h1 class="client-title" id="cv-title">Complete your onboarding</h1>
       <p class="client-desc" id="cv-desc">Please complete all sections below. Your information is secure.</p>
@@ -522,6 +547,9 @@
         </div>
         <div class="nav-item" onclick="showView('builder')">
           <div class="nav-icon">🔧</div> Form Builder
+        </div>
+        <div class="nav-item" onclick="showView('mapper')">
+          <div class="nav-icon">🗺️</div> Document Mapper
         </div>
       </div>
       <div class="nav-section">
@@ -673,6 +701,7 @@
             <p style="font-size:13px;color:var(--ink-3)">Customise field labels, types, order and validation rules.</p>
           </div>
           <div style="display:flex;gap:8px">
+            <button class="btn-ghost" onclick="showView('mapper')">Document Mapper</button>
             <button class="btn-ghost" onclick="loadEntityEnginePreset()">Use Entity Engine</button>
             <button class="btn-ghost" onclick="previewForm()">Preview form</button>
             <button class="btn-primary" onclick="saveFormBuilder()">Save & generate link</button>
@@ -711,6 +740,70 @@
                   </select>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ── DOCUMENT MAPPER VIEW ───────────────────────────────── -->
+      <div class="view" id="view-mapper">
+        <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+          <div>
+            <h2 style="font-family:'Instrument Serif',serif;font-size:22px;margin-bottom:3px">Document Mapper</h2>
+            <p style="font-size:13px;color:var(--ink-3)">Review the uploaded document, add fields manually, then use those fields to generate the client form.</p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-ghost" onclick="openUploadModal()">Upload/change document</button>
+            <button class="btn-ghost" onclick="mapperLoadEntityPreset()">Add OTP entity pack</button>
+            <button class="btn-primary" onclick="useMapperFieldsInBuilder()">Use mapped fields in form</button>
+          </div>
+        </div>
+
+        <div class="mapper-layout">
+          <div class="mapper-doc">
+            <div class="mapper-doc-toolbar">
+              <div>
+                <div class="mapper-doc-title" id="mapper-doc-title">No document loaded</div>
+                <div style="font-size:11px;color:var(--ink-4);margin-top:2px">Click detected placeholders in the preview or add your own fields on the right.</div>
+              </div>
+              <button class="btn-ghost" onclick="clearMapperDocument()" style="font-size:12px;padding:6px 10px">Clear</button>
+            </div>
+            <div class="mapper-preview" id="mapper-preview">
+              <div class="mapper-empty">
+                <div style="font-size:34px;margin-bottom:10px">📄</div>
+                <div style="font-weight:700;color:var(--ink);margin-bottom:6px">No document preview yet</div>
+                <div>Upload a document first. For now, TXT files show full text, while DOCX/PDF use a simulated preview until server-side parsing is added.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mapper-side">
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title">Add field manually</div></div>
+              <div style="padding:14px">
+                <div class="form-row"><label class="form-label">Field label</label><input class="form-input" id="mapper-field-label" placeholder="e.g. Purchase price"></div>
+                <div class="form-row"><label class="form-label">Field key / placeholder</label><input class="form-input" id="mapper-field-id" placeholder="purchase_price"></div>
+                <div class="form-row"><label class="form-label">Section</label><input class="form-input" id="mapper-field-section" placeholder="e.g. Financial Terms"></div>
+                <div class="form-row"><label class="form-label">Type</label><select class="form-input" id="mapper-field-type"><option value="text">Text</option><option value="number">Money / number</option><option value="date">Date</option><option value="email">Email</option><option value="phone">Phone</option><option value="textarea">Long text</option><option value="file">Upload requirement</option><option value="select">Dropdown</option><option value="checkbox">Checkbox</option></select></div>
+                <label style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:12px;color:var(--ink-2)"><input type="checkbox" id="mapper-field-required" checked> Required</label>
+                <button class="btn-primary" onclick="addManualMappedField()" style="width:100%">+ Add mapped field</button>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title">Detected placeholders</div></div>
+              <div id="mapper-detected" class="mapper-chip-row"><span style="font-size:12px;color:var(--ink-4)">None detected yet.</span></div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title">Mapped fields</div><span class="nav-badge" id="mapper-field-count">0</span></div>
+              <div id="mapper-fields-list"><div class="mapper-empty">No fields mapped yet.</div></div>
+            </div>
+
+            <div class="mapper-consent-card">
+              <strong>Consent layer v1:</strong><br>
+              Every generated client form should explain what information is collected, why it is needed, who may access it, and how long the transaction record will be retained for compliance.
             </div>
           </div>
         </div>
@@ -949,6 +1042,10 @@
         </div>
         <div style="font-size:12px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Detected merge fields</div>
         <div id="detected-placeholders" style="margin-bottom:18px"></div>
+        <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
+          <button class="btn-ghost" onclick="openDocumentMapperFromUpload()" type="button">Open document mapper</button>
+          <button class="btn-ghost" onclick="mapperLoadEntityPreset()" type="button">Add OTP entity pack</button>
+        </div>
         <div class="form-row">
           <label class="form-label">Template name</label>
           <input class="form-input" id="template-name" placeholder="e.g. Lease Agreement v3">
@@ -1264,7 +1361,7 @@
     document.querySelectorAll('.nav-item').forEach(n => {
       if (n.textContent.trim().toLowerCase().includes(id.replace('-',' '))) n.classList.add('active');
     });
-    const titles = { dashboard:'Dashboard', workflows:'Workflows', templates:'Templates', builder:'Form Builder', submissions:'Submissions', 'sub-detail':'Submission detail', documents:'Generated Documents', signflow:'Send to SignFlow', settings:'Settings' };
+    const titles = { dashboard:'Dashboard', workflows:'Workflows', templates:'Templates', builder:'Form Builder', mapper:'Document Mapper', submissions:'Submissions', 'sub-detail':'Submission detail', documents:'Generated Documents', signflow:'Send to SignFlow', settings:'Settings' };
     document.getElementById('topbar-title').textContent = titles[id] || id;
   }
 
@@ -1375,7 +1472,7 @@
   function useTemplate(id) {
     const t = templates.find(t=>String(t.id)===String(id));
     if (!t) return;
-    builderFields = (t.fields||[]).map(f=>({ id:f, label:formatLabel(f), placeholder:'{{'+f+'}}', type:guessFieldType(f), required:true }));
+    builderFields = (t.fields||[]).map(f=> typeof f === 'string' ? ({ id:f, label:formatLabel(f), placeholder:'{{'+f+'}}', type:guessFieldType(f), required:true }) : f);
     renderBuilderFields(builderFields);
     document.getElementById('builder-title').value = t.name;
     showView('builder');
@@ -1396,10 +1493,11 @@
 
     const reader = new FileReader();
     reader.onload = function(e) {
-      const content = e.target.result;
+      const content = e.target.result || '';
       // Detect {{placeholders}} in text content
       const placeholders = detectPlaceholders(content);
-      showUploadStep2(file.name, placeholders);
+      mapperDocument = { name:file.name, text:content, detected:placeholders || [], type:file.name.split('.').pop().toLowerCase() };
+      showUploadStep2(file.name, placeholders, content);
     };
 
     // Read as text for docx/txt, handle gracefully
@@ -1422,7 +1520,7 @@
         } else {
           fields = ['client_name','id_number','phone_number','email_address','physical_address','date_of_birth','company_name','tax_number'];
         }
-        if (fields.length > 0) showUploadStep2(file.name, fields);
+        if (fields.length > 0) { mapperDocument = { name:file.name, text:'', detected:fields, type:file.name.split('.').pop().toLowerCase() }; showUploadStep2(file.name, fields, ''); }
       }, 600);
     }
   }
@@ -1437,7 +1535,7 @@
     return matches.length > 0 ? matches : null;
   }
 
-  function showUploadStep2(filename, placeholders) {
+  function showUploadStep2(filename, placeholders, content='') {
     document.getElementById('upload-step-1').style.display = 'none';
     document.getElementById('upload-step-2').style.display = 'block';
     document.getElementById('upload-btn').style.display    = 'inline-flex';
@@ -1447,8 +1545,10 @@
     const container = document.getElementById('detected-placeholders');
     if (!placeholders || placeholders.length === 0) {
       container.innerHTML = `<div style="font-size:12px;color:var(--ink-3);padding:12px;background:var(--surface-2);border-radius:8px">
-        No {{placeholders}} detected. You can add fields manually in the Form Builder after saving.
+        No {{placeholders}} detected. You can add fields manually in the Document Mapper after saving.
       </div>`;
+      window._detectedFields = [];
+      renderMapperWorkspace();
       return;
     }
     container.innerHTML = `<div style="margin-bottom:8px;font-size:12px;color:var(--success);font-weight:600">✓ ${placeholders.length} field${placeholders.length>1?'s':''} detected</div>` +
@@ -1456,6 +1556,8 @@
 
     // Store for saving
     window._detectedFields = placeholders;
+    if (mapperDocument.name === filename) { mapperDocument.detected = placeholders; }
+    renderMapperWorkspace();
   }
 
   async function saveTemplate() {
@@ -1463,7 +1565,7 @@
     const category = document.getElementById('template-category').value;
     if (!name) { showToast('Please enter a template name'); return; }
 
-    const fields = window._detectedFields || [];
+    const fields = mappedFields.length ? mappedFields : (window._detectedFields || []);
     const templatePayload = {
       name,
       category,
@@ -1501,7 +1603,7 @@
       closeModal('upload-modal');
       showToast('Template saved: ' + name);
 
-      builderFields = fields.map(f=>({ id:f, label:formatLabel(f), placeholder:'{{'+f+'}}', type:guessFieldType(f), required:true }));
+      builderFields = fields.map(f => typeof f === 'string' ? ({ id:f, label:formatLabel(f), placeholder:'{{'+f+'}}', type:guessFieldType(f), required:true }) : f);
       renderBuilderFields(builderFields);
       document.getElementById('builder-title').value = name;
       showView('builder');
@@ -1509,6 +1611,209 @@
       console.error('Save template failed', e);
       showToast('Template save failed: ' + (e.message || e));
     }
+  }
+
+
+  // ── DOCUMENT MAPPER ─────────────────────────────────────────
+  function openDocumentMapperFromUpload() {
+    closeModal('upload-modal');
+    renderMapperWorkspace();
+    showView('mapper');
+  }
+
+  function renderMapperWorkspace() {
+    renderMapperDocument();
+    renderMapperDetected();
+    renderMappedFields();
+  }
+
+  function renderMapperDocument() {
+    const title = document.getElementById('mapper-doc-title');
+    const preview = document.getElementById('mapper-preview');
+    if (!title || !preview) return;
+
+    if (!mapperDocument.name) {
+      title.textContent = 'No document loaded';
+      preview.innerHTML = `<div class="mapper-empty"><div style="font-size:34px;margin-bottom:10px">📄</div><div style="font-weight:700;color:var(--ink);margin-bottom:6px">No document preview yet</div><div>Upload a document first. For now, TXT files show full text, while DOCX/PDF use a simulated preview until server-side parsing is added.</div></div>`;
+      return;
+    }
+
+    title.textContent = mapperDocument.name;
+    let text = mapperDocument.text || '';
+    if (!text.trim()) {
+      text = buildSimulatedDocumentPreview(mapperDocument.name, mapperDocument.detected || []);
+    }
+    const escaped = escapeHtml(text).replace(/\{\{([a-zA-Z0-9_]+)\}\}/g, (m, p) => `<span class="mapper-placeholder" onclick="addDetectedField('${p}')">{{${p}}}</span>`);
+    preview.innerHTML = `<div class="mapper-paper">${escaped}</div>`;
+  }
+
+  function buildSimulatedDocumentPreview(filename, detected) {
+    const fields = detected && detected.length ? detected : ['buyer_name','seller_name','property_address','purchase_price','deposit_amount','occupation_date'];
+    return `Document preview for: ${filename}\n\nFull DOCX/PDF rendering will be handled by the server-side parser later.\n\nFor now, use the mapper on the right to add fields manually or click these suggested placeholders:\n\n${fields.map(f => '{{'+f+'}}').join('\n')}\n\nTransaction vault note:\nInformation collected through this form may be retained by the organisation for compliance purposes and shared with authorised parties involved in the transaction.`;
+  }
+
+  function renderMapperDetected() {
+    const container = document.getElementById('mapper-detected');
+    if (!container) return;
+    const detected = mapperDocument.detected || window._detectedFields || [];
+    if (!detected.length) {
+      container.innerHTML = '<span style="font-size:12px;color:var(--ink-4)">None detected yet.</span>';
+      return;
+    }
+    container.innerHTML = detected.map(p => `<span class="placeholder-tag mapped" onclick="addDetectedField('${p}')">{{${p}}}</span>`).join('');
+  }
+
+  function addDetectedField(fieldId) {
+    const clean = normaliseFieldId(fieldId);
+    if (mappedFields.some(f => f.id === clean)) { showToast('Field already mapped'); return; }
+    mappedFields.push({
+      id: clean,
+      label: formatLabel(clean),
+      type: guessFieldType(clean),
+      required: true,
+      source: 'detected',
+      section: inferSection(clean),
+      placeholder: '{{' + clean + '}}'
+    });
+    renderMappedFields();
+    showToast('Mapped field: ' + formatLabel(clean));
+  }
+
+  function addManualMappedField() {
+    const labelEl = document.getElementById('mapper-field-label');
+    const idEl = document.getElementById('mapper-field-id');
+    const typeEl = document.getElementById('mapper-field-type');
+    const sectionEl = document.getElementById('mapper-field-section');
+    const reqEl = document.getElementById('mapper-field-required');
+    const label = labelEl.value.trim();
+    const id = normaliseFieldId(idEl.value.trim() || label);
+    if (!label || !id) { showToast('Add a field label first'); return; }
+    if (mappedFields.some(f => f.id === id)) { showToast('That field already exists'); return; }
+    mappedFields.push({
+      id,
+      label,
+      type: typeEl.value,
+      required: reqEl.checked,
+      source: 'manual',
+      section: sectionEl.value.trim() || inferSection(id),
+      placeholder: '{{' + id + '}}'
+    });
+    labelEl.value = ''; idEl.value = ''; sectionEl.value = '';
+    renderMappedFields();
+    showToast('Manual field added');
+  }
+
+  function renderMappedFields() {
+    const list = document.getElementById('mapper-fields-list');
+    const count = document.getElementById('mapper-field-count');
+    if (count) count.textContent = mappedFields.length;
+    if (!list) return;
+    if (!mappedFields.length) {
+      list.innerHTML = '<div class="mapper-empty">No fields mapped yet.</div>';
+      return;
+    }
+    list.innerHTML = mappedFields.map((f, i) => `
+      <div class="mapper-field-row">
+        <div style="width:28px;height:28px;border-radius:7px;background:var(--ff-light);display:flex;align-items:center;justify-content:center;font-size:12px">${fieldIcon(f.type)}</div>
+        <div class="mapper-field-main">
+          <div class="mapper-field-name">${escapeHtml(f.label)} ${f.required ? '<span style="color:var(--danger)">*</span>' : ''}</div>
+          <div class="mapper-field-meta">${escapeHtml(f.section || 'General')} · ${f.type} · ${escapeHtml(f.placeholder || '')}</div>
+        </div>
+        <button class="field-btn del" onclick="removeMappedField(${i})">✕</button>
+      </div>`).join('');
+  }
+
+  function removeMappedField(i) {
+    mappedFields.splice(i,1);
+    renderMappedFields();
+  }
+
+  function useMapperFieldsInBuilder() {
+    if (!mappedFields.length) { showToast('Map at least one field first'); return; }
+    builderFields = mappedFields.map(f => ({ ...f }));
+    renderBuilderFields(builderFields);
+    if (mapperDocument.name) document.getElementById('builder-title').value = mapperDocument.name.replace(/\.[^.]+$/, '') + ' Workflow';
+    const msg = 'Please complete the required information and consent to the secure processing of your personal information for this workflow.';
+    document.getElementById('builder-message').value = msg;
+    showView('builder');
+    showToast('Mapped fields loaded into Form Builder');
+  }
+
+  function mapperLoadEntityPreset() {
+    const preset = getOTPEntityPresetFields();
+    preset.forEach(f => { if (!mappedFields.some(existing => existing.id === f.id)) mappedFields.push(f); });
+    renderMappedFields();
+    showToast('OTP entity pack added to mapper');
+  }
+
+  function getOTPEntityPresetFields() {
+    const purchaserGroup = {
+      id:'purchasers', label:'Purchasers', type:'entity_group', entityRole:'purchaser', repeatable:true, required:true, source:'entity_engine', section:'Parties', placeholder:'', minInstances:1,
+      allowedEntityTypes:['Individual','Company','Trust'],
+      fields:[
+        { id:'entity_type', label:'Purchaser type', type:'select', options:['Individual','Company','Trust'], required:true },
+        { id:'full_name', label:'Full name / Entity name', type:'text', required:true },
+        { id:'id_number', label:'ID / Registration number', type:'text', required:true },
+        { id:'email', label:'Email address', type:'email', required:true },
+        { id:'phone', label:'Cell number', type:'phone', required:true },
+        { id:'marital_status', label:'Marital status', type:'select', options:['Single','Married ANC','Married in COP','Divorced','Widowed'], required:false, showIf:{ field:'entity_type', values:['Individual'] } },
+        { id:'spouse_name', label:'Spouse full name', type:'text', required:false, showIf:{ field:'marital_status', values:['Married ANC','Married in COP'] } },
+        { id:'company_reg_number', label:'Company registration number', type:'text', required:false, showIf:{ field:'entity_type', values:['Company'] } },
+        { id:'directors', label:'Directors', type:'entity_group', entityRole:'director', repeatable:true, showIf:{ field:'entity_type', values:['Company'] } },
+        { id:'trust_number', label:'Trust number', type:'text', required:false, showIf:{ field:'entity_type', values:['Trust'] } },
+        { id:'trustees', label:'Trustees', type:'entity_group', entityRole:'trustee', repeatable:true, showIf:{ field:'entity_type', values:['Trust'] } },
+        { id:'id_document', label:'ID document', type:'file', required:true },
+        { id:'proof_of_address', label:'Proof of address', type:'file', required:true }
+      ]
+    };
+    const sellerGroup = JSON.parse(JSON.stringify(purchaserGroup));
+    sellerGroup.id = 'sellers';
+    sellerGroup.label = 'Sellers';
+    sellerGroup.entityRole = 'seller';
+    sellerGroup.fields[0].label = 'Seller type';
+
+    return [
+      purchaserGroup,
+      sellerGroup,
+      { id:'property_address', label:'Property address', type:'textarea', required:true, source:'entity_engine', section:'Property', placeholder:'{{property_address}}' },
+      { id:'erf_number', label:'Erf / stand number', type:'text', required:false, source:'entity_engine', section:'Property', placeholder:'{{erf_number}}' },
+      { id:'purchase_price', label:'Purchase price', type:'number', required:true, source:'entity_engine', section:'Financial Terms', placeholder:'{{purchase_price}}' },
+      { id:'deposit_amount', label:'Deposit amount', type:'number', required:false, source:'entity_engine', section:'Financial Terms', placeholder:'{{deposit_amount}}' },
+      { id:'bond_amount', label:'Bond amount', type:'number', required:false, source:'entity_engine', section:'Financial Terms', placeholder:'{{bond_amount}}' },
+      { id:'occupation_date', label:'Occupation date', type:'date', required:false, source:'entity_engine', section:'Dates', placeholder:'{{occupation_date}}' },
+      { id:'transfer_date', label:'Expected transfer date', type:'date', required:false, source:'entity_engine', section:'Dates', placeholder:'{{transfer_date}}' },
+      { id:'consent_processing', label:'Consent to process personal information for this transaction', type:'checkbox', required:true, source:'consent', section:'Consent', placeholder:'' }
+    ];
+  }
+
+  function clearMapperDocument() {
+    mapperDocument = { name:'', text:'', detected:[], type:'' };
+    window._detectedFields = [];
+    renderMapperWorkspace();
+  }
+
+  function normaliseFieldId(value) {
+    return (value || '').toLowerCase().trim().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+  }
+
+  function inferSection(id) {
+    const n = (id || '').toLowerCase();
+    if (n.includes('buyer') || n.includes('purchaser') || n.includes('seller') || n.includes('director') || n.includes('trustee')) return 'Parties';
+    if (n.includes('property') || n.includes('erf') || n.includes('stand')) return 'Property';
+    if (n.includes('price') || n.includes('deposit') || n.includes('bond') || n.includes('amount') || n.includes('rent')) return 'Financial Terms';
+    if (n.includes('date')) return 'Dates';
+    if (n.includes('document') || n.includes('proof') || n.includes('statement')) return 'Uploads';
+    if (n.includes('consent') || n.includes('popia') || n.includes('gdpr')) return 'Consent';
+    return 'General';
+  }
+
+  function fieldIcon(type) {
+    const icons = { text:'T', email:'@', phone:'📱', number:'#', date:'📅', select:'▾', textarea:'≡', file:'📎', checkbox:'☑', id:'🪪', entity_group:'👥' };
+    return icons[type] || 'T';
+  }
+
+  function escapeHtml(str) {
+    return String(str || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   }
 
   // ── FORM BUILDER ────────────────────────────────────────────
@@ -1718,11 +2023,13 @@
     document.getElementById('app').style.display             = 'none';
     document.getElementById('auth-screen').style.display     = 'none';
     document.getElementById('client-view').classList.add('visible');
+    const backBtn = document.getElementById('preview-back-btn'); if (backBtn) backBtn.style.display = 'inline-flex';
   }
 
   function previewClose() {
     document.getElementById('client-view').classList.remove('visible');
     document.getElementById('app').style.display = 'flex';
+    const backBtn = document.getElementById('preview-back-btn'); if (backBtn) backBtn.style.display = 'none';
   }
 
   function populateSendLinkModal(title, link, token) {
@@ -2133,6 +2440,7 @@
       document.getElementById('auth-screen').style.display  = 'none';
       document.getElementById('app').style.display          = 'none';
       document.getElementById('client-view').classList.add('visible');
+      const backBtn = document.getElementById('preview-back-btn'); if (backBtn) backBtn.style.display = 'none';
 
       try {
         const { data: sub, error: subErr } = await sb
