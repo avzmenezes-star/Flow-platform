@@ -574,11 +574,8 @@
         <div class="nav-item" onclick="showView('workflows')">
           <div class="nav-icon">⚡</div> Workflows
         </div>
-        <div class="nav-item" onclick="showView('builder')">
-          <div class="nav-icon">🔧</div> Form Builder
-        </div>
         <div class="nav-item" onclick="showView('mapper')">
-          <div class="nav-icon">🗺️</div> Document Mapper
+          <div class="nav-icon">🗺️</div> Document Builder
         </div>
       </div>
       <div class="nav-section">
@@ -727,8 +724,8 @@
       <div class="view" id="view-builder">
         <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
           <div>
-            <h2 style="font-family:'Instrument Serif',serif;font-size:22px;margin-bottom:3px">Form Builder</h2>
-            <p style="font-size:13px;color:var(--ink-3)">Customise field labels, types, order and validation rules.</p>
+            <h2 style="font-family:'Instrument Serif',serif;font-size:22px;margin-bottom:3px">Advanced Form Fields</h2>
+            <p style="font-size:13px;color:var(--ink-3)">Advanced list view. Most users should add fields from the Document Builder.</p>
           </div>
           <div style="display:flex;gap:8px">
             <button class="btn-ghost" onclick="showView('mapper')">Document Mapper</button>
@@ -780,14 +777,15 @@
       <div class="view" id="view-mapper">
         <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
           <div>
-            <h2 style="font-family:'Instrument Serif',serif;font-size:22px;margin-bottom:3px">Document Mapper</h2>
-            <p style="font-size:13px;color:var(--ink-3)">Review the uploaded document, add fields manually, then use those fields to generate the client form.</p>
+            <h2 style="font-family:'Instrument Serif',serif;font-size:22px;margin-bottom:3px">Document Builder</h2>
+            <p style="font-size:13px;color:var(--ink-3)">Use the document as the reference point: add parties, place/define fields, preview each party form, then create links.</p>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn-ghost" onclick="openUploadModal()">Upload/change document</button>
-            <button class="btn-ghost" onclick="mapperLoadEntityPreset()">Add OTP entity pack</button>
-            <button class="btn-ghost" onclick="saveMapperToActiveTemplate()">Save mapping to template</button>
-            <button class="btn-primary" onclick="useMapperFieldsInBuilder()">Use mapped fields in form</button>
+            <button class="btn-ghost" onclick="mapperLoadEntityPreset()">Add OTP fields</button>
+            <button class="btn-ghost" onclick="saveMapperToActiveTemplate()">Save as template</button>
+            <button class="btn-ghost" onclick="previewMappedForm()">Preview data form</button>
+            <button class="btn-primary" onclick="generatePartyDataLinks()">Create party links</button>
           </div>
         </div>
 
@@ -813,7 +811,7 @@
             <div class="panel">
               <div class="panel-header"><div class="panel-title">Transaction parties</div><span class="nav-badge" id="party-count-badge">0</span></div>
               <div style="padding:14px">
-                <div style="font-size:12px;color:var(--ink-3);line-height:1.5;margin-bottom:12px">Specify who is involved and who must complete information/sign. FormFlow can create separate links for each party.</div>
+                <div style="font-size:12px;color:var(--ink-3);line-height:1.5;margin-bottom:12px">Set up Party 1, Party 2, Party 3 etc. Rename them to Purchaser, Seller, Agent or any role you need. Fields added below can be assigned to a party.</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
                   <select class="form-input" id="party-role">
                     <option value="Purchaser">Purchaser</option>
@@ -845,7 +843,7 @@
             </div>
 
             <div class="panel">
-              <div class="panel-header"><div class="panel-title">Add field manually</div></div>
+              <div class="panel-header"><div class="panel-title">Add field on this document</div></div>
               <div style="padding:14px">
                 <div class="form-row"><label class="form-label">Field label</label><input class="form-input" id="mapper-field-label" placeholder="e.g. Purchase price"></div>
                 <div class="form-row"><label class="form-label">Field key / placeholder</label><input class="form-input" id="mapper-field-id" placeholder="purchase_price"></div>
@@ -1582,7 +1580,7 @@
     document.querySelectorAll('.nav-item').forEach(n => {
       if (n.textContent.trim().toLowerCase().includes(id.replace('-',' '))) n.classList.add('active');
     });
-    const titles = { dashboard:'Dashboard', workflows:'Workflows', templates:'Templates', builder:'Form Builder', mapper:'Document Mapper', transactions:'Transactions', entities:'Entities', submissions:'Submissions', 'sub-detail':'Submission detail', documents:'Generated Documents', signflow:'Send to SignFlow', settings:'Settings' };
+    const titles = { dashboard:'Dashboard', workflows:'Workflows', templates:'Templates', builder:'Form Builder', mapper:'Document Builder', transactions:'Transactions', entities:'Entities', submissions:'Submissions', 'sub-detail':'Submission detail', documents:'Generated Documents', signflow:'Send to SignFlow', settings:'Settings' };
     document.getElementById('topbar-title').textContent = titles[id] || id;
   }
 
@@ -1667,11 +1665,15 @@
       : fields;
 
     renderBuilderFields(builderFields);
-    document.getElementById('builder-title').value = currentWF.name || '';
-    document.getElementById('builder-message').value = currentWF.desc || '';
+    mappedFields = deepClone(builderFields);
+    transactionParties = deepClone(currentWF.parties || transactionParties || []);
+    mapperDocument = deepClone(currentWF.document || mapperDocument || {});
+    if (document.getElementById('builder-title')) document.getElementById('builder-title').value = currentWF.name || '';
+    if (document.getElementById('builder-message')) document.getElementById('builder-message').value = currentWF.desc || '';
     if (document.getElementById('wf-purpose')) document.getElementById('wf-purpose').value = currentWF.purpose || 'document';
     if (document.getElementById('wf-output')) document.getElementById('wf-output').value = currentWF.output || 'document_mapper';
-    showView('builder');
+    renderMapperWorkspace();
+    showView('mapper');
   }
 
   // ── TEMPLATES ───────────────────────────────────────────────
@@ -1706,9 +1708,13 @@
     const sourceFields = Array.isArray(t.mappings) && t.mappings.length ? t.mappings : (t.fields || []);
     builderFields = sourceFields.map(f=> typeof f === 'string' ? ({ id:f, label:formatLabel(f), placeholder:'{{'+f+'}}', type:guessFieldType(f), required:true }) : f);
     renderBuilderFields(builderFields);
-    document.getElementById('builder-title').value = t.name;
-    showView('builder');
-    showToast('Template loaded: ' + t.name);
+    mappedFields = deepClone(builderFields);
+    mapperDocument = deepClone(t.document || mapperDocument || {});
+    transactionParties = deepClone(t.parties || transactionParties || []);
+    if (document.getElementById('builder-title')) document.getElementById('builder-title').value = t.name;
+    renderMapperWorkspace();
+    showView('mapper');
+    showToast('Template opened in Document Builder: ' + t.name);
   }
 
   function openTemplateMapper(id) {
@@ -1883,9 +1889,11 @@
       showToast('Template saved: ' + name);
 
       builderFields = fields.map(f => typeof f === 'string' ? ({ id:f, label:formatLabel(f), placeholder:'{{'+f+'}}', type:guessFieldType(f), required:true }) : f);
+      mappedFields = deepClone(builderFields);
       renderBuilderFields(builderFields);
-      document.getElementById('builder-title').value = name;
-      showView('builder');
+      renderMapperWorkspace();
+      if (document.getElementById('builder-title')) document.getElementById('builder-title').value = name;
+      showView('mapper');
     } catch (e) {
       console.error('Save template failed', e);
       showToast('Template save failed: ' + (e.message || e));
@@ -2083,15 +2091,25 @@
     return 'other';
   }
 
-  function useMapperFieldsInBuilder() {
-    if (!mappedFields.length) { showToast('Map at least one field first'); return; }
+  function syncMapperToFormFields() {
     builderFields = mappedFields.map(f => ({ ...f }));
     renderBuilderFields(builderFields);
-    if (mapperDocument.name) document.getElementById('builder-title').value = mapperDocument.name.replace(/\.[^.]+$/, '') + ' Workflow';
+    if (mapperDocument.name && document.getElementById('builder-title')) document.getElementById('builder-title').value = mapperDocument.name.replace(/\.[^.]+$/, '') + ' Workflow';
     const msg = 'Please complete the required information and consent to the secure processing of your personal information for this workflow.';
-    document.getElementById('builder-message').value = msg;
-    showView('builder');
-    showToast('Mapped fields loaded into Form Builder');
+    if (document.getElementById('builder-message')) document.getElementById('builder-message').value = msg;
+  }
+
+  function useMapperFieldsInBuilder() {
+    if (!mappedFields.length) { showToast('Add at least one field on the document first'); return; }
+    syncMapperToFormFields();
+    renderMapperWorkspace();
+    showToast('Mapped fields saved for this workflow');
+  }
+
+  function previewMappedForm() {
+    if (!mappedFields.length) { showToast('Add at least one field on the document first'); return; }
+    syncMapperToFormFields();
+    previewForm();
   }
 
   function mapperLoadEntityPreset() {
