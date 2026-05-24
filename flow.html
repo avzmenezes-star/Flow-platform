@@ -1275,15 +1275,43 @@
     <!-- Step 2: OTP -->
     <div class="auth-step" id="step-otp">
       <div class="auth-heading">Check your email</div>
-      <div class="auth-sub" id="otp-sub">We sent a 6-digit code to your email.</div>
+      <div class="auth-sub" id="otp-sub">We sent an 8-digit code to your email.</div>
       <div class="field-wrap">
         <label class="field-label">Verification code</label>
-        <input class="field-input otp" type="text" id="auth-otp" maxlength="6" placeholder="000000">
+        <input class="field-input otp" type="text" id="auth-otp" maxlength="8" placeholder="00000000">
       </div>
       <button class="auth-btn" onclick="verifyOTP()">Verify & sign in</button>
       <div class="auth-msg error" id="otp-error"></div>
       <div class="auth-msg success" id="otp-success"></div>
       <button class="auth-back" onclick="backToEmail()">← Back</button>
+    </div>
+
+    <!-- Step 3: Org setup (new users only) -->
+    <div class="auth-step" id="step-setup">
+      <div class="auth-heading">Set up your workspace</div>
+      <div class="auth-sub">Tell us about your business to get started.</div>
+      <div class="field-wrap">
+        <label class="field-label">Your full name</label>
+        <input class="field-input" id="setup-name" placeholder="e.g. John Smith">
+      </div>
+      <div class="field-wrap">
+        <label class="field-label">Organisation name</label>
+        <input class="field-input" id="setup-org" placeholder="e.g. Elegante Estates">
+      </div>
+      <div class="field-wrap">
+        <label class="field-label">Industry</label>
+        <select class="field-input" id="setup-industry">
+          <option value="Real Estate">Real Estate</option>
+          <option value="Legal">Legal</option>
+          <option value="HR / Corporate">HR / Corporate</option>
+          <option value="Finance">Finance</option>
+          <option value="Insurance">Insurance</option>
+          <option value="Vehicle Sales">Vehicle Sales</option>
+          <option value="Accounting">Accounting</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <button class="auth-btn" id="btn-setup" onclick="createOrg()">Get started →</button>
     </div>
   </div>
 </div>
@@ -1359,11 +1387,11 @@
     </nav>
 
     <div class="sidebar-footer">
-      <div class="user-tile">
+      <div class="user-tile" onclick="signOut()">
         <div class="user-avatar" id="sidebar-avatar">JS</div>
         <div>
           <div class="user-name" id="sidebar-name">John Smith</div>
-          <div class="user-role">Admin</div>
+          <div class="user-role">Sign out</div>
         </div>
       </div>
     </div>
@@ -1777,7 +1805,7 @@
                   <label class="form-label">Support email</label>
                   <input class="form-input" value="admin@elegante.co.za" type="email">
                 </div>
-                <button class="btn-primary" onclick="showToast('Settings saved')">Save changes</button>
+                <button class="btn-primary" onclick="saveOrgSettings()">Save changes</button>
               </div>
               <div class="settings-section">
                 <div class="settings-section-title">SignFlow integration</div>
@@ -1790,7 +1818,7 @@
                   <label class="form-label">API key</label>
                   <input class="form-input" type="password" placeholder="sk_live_...">
                 </div>
-                <button class="btn-primary" onclick="showToast('SignFlow connected')">Connect SignFlow</button>
+                <button class="btn-primary" onclick="saveSignFlowSettings()">Connect SignFlow</button>
               </div>
             </div>
 
@@ -1976,14 +2004,20 @@
 <!-- TOAST -->
 <div id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   // ── CONFIG ──────────────────────────────────────────────────
   const SUPABASE_URL = 'https://juqudzkrayyrylwqzygj.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_Ciob2fNho3WJHaHbd3wLnw_2_QhBwiq';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   // ── STATE ───────────────────────────────────────────────────
-  let currentUser = null;
-  let currentView = 'dashboard';
+  let currentUser    = null;
+  let currentOrg     = null;
+  let currentProfile = null;
+  let currentView    = 'dashboard';
+  let liveWorkspaces = [];
+  let liveHubs       = [];
 
   // ── DEMO DATA ───────────────────────────────────────────────
   const demoWorkspaces = [
@@ -2022,49 +2056,483 @@
   ];
 
   // ── AUTH ────────────────────────────────────────────────────
-  function sendOTP() {
+  async function sendOTP() {
     const email = document.getElementById('auth-email').value.trim();
     if (!email || !email.includes('@')) {
       showAuthMsg('email-error', 'Please enter a valid email address.', 'error');
       return;
     }
-    document.getElementById('otp-sub').textContent = `We sent a 6-digit code to ${email}`;
-    showStep('step-otp');
-    showAuthMsg('otp-success', 'Code sent! Check your inbox.', 'success');
+    const btn = document.querySelector('#step-email .auth-btn');
+    btn.disabled = true; btn.textContent = 'Sending...';
+    try {
+      const { error } = await sb.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: window.location.href,
+          shouldCreateUser: true
+        }
+      });
+      if (error) throw error;
+      document.getElementById('otp-sub').textContent = `We sent an 8-digit code to ${email}`;
+      showStep('step-otp');
+      showAuthMsg('otp-success', 'Code sent! Check your inbox.', 'success');
+    } catch(e) {
+      showAuthMsg('email-error', e.message || 'Failed to send code. Try again.', 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Continue →';
+    }
   }
 
-  function verifyOTP() {
-    const code = document.getElementById('auth-otp').value.trim();
-    if (code.length !== 6) {
-      showAuthMsg('otp-error', 'Please enter the 6-digit code.', 'error');
+  async function verifyOTP() {
+    const email = document.getElementById('auth-email').value.trim();
+    const code  = document.getElementById('auth-otp').value.trim();
+    if (code.length < 6) {
+      showAuthMsg('otp-error', 'Please enter the full verification code.', 'error');
       return;
     }
-    const email = document.getElementById('auth-email').value.trim();
-    enterApp(email);
+    const btn = document.querySelector('#step-otp .auth-btn');
+    btn.disabled = true; btn.textContent = 'Verifying...';
+    try {
+      const { data, error } = await sb.auth.verifyOtp({
+        email, token: code, type: 'email'
+      });
+      if (error) throw error;
+      currentUser = data.user;
+      await loadOrCreateOrg();
+    } catch(e) {
+      showAuthMsg('otp-error', e.message || 'Invalid code. Please try again.', 'error');
+      btn.disabled = false; btn.textContent = 'Verify & sign in';
+    }
   }
 
   function devBypass() {
-    const email = document.getElementById('auth-email').value.trim() || 'john@elegante.co.za';
-    enterApp(email);
+    // Demo mode — loads with demo data, no Supabase needed
+    currentUser = { id: 'demo', email: 'demo@flow.com' };
+    enterApp({ fullName: 'Demo User', role: 'owner' }, null, true);
   }
 
-  function enterApp(email) {
-    currentUser = { email };
-    const name = email.split('@')[0].replace('.', ' ').replace(/\b\w/g, c => c.toUpperCase());
-    document.getElementById('sidebar-name').textContent = name;
-    document.getElementById('sidebar-avatar').textContent = name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+  // ── ORG SETUP ───────────────────────────────────────────────
+  async function loadOrCreateOrg() {
+    try {
+      // Check if user has a profile + org already
+      const { data: profile } = await sb
+        .from('ff_profiles')
+        .select('*, ff_organisations(*)')
+        .eq('user_id', currentUser.id)
+        .single();
 
-    setGreeting(name.split(' ')[0]);
-    renderRecent();
-    renderTasks();
-    renderActivity();
-    renderHubsFull();
-    renderWSFull();
-    renderTasksFull();
+      if (profile && profile.ff_organisations) {
+        currentProfile = profile;
+        currentOrg     = profile.ff_organisations;
+        enterApp(profile, currentOrg, false);
+        return;
+      }
+
+      // New user — show org setup
+      showStep('step-setup');
+    } catch(e) {
+      // No profile yet — show setup
+      showStep('step-setup');
+    }
+  }
+
+  async function createOrg() {
+    const orgName  = document.getElementById('setup-org').value.trim();
+    const fullName = document.getElementById('setup-name').value.trim();
+    const industry = document.getElementById('setup-industry').value;
+    if (!orgName || !fullName) {
+      showToast('Please fill in your name and organisation.');
+      return;
+    }
+    const btn = document.getElementById('btn-setup');
+    btn.disabled = true; btn.textContent = 'Setting up...';
+    try {
+      // Create organisation
+      const { data: org, error: orgErr } = await sb
+        .from('ff_organisations')
+        .insert({ name: orgName, industry, owner_id: currentUser.id })
+        .select().single();
+      if (orgErr) throw orgErr;
+
+      // Create profile
+      const { data: profile, error: profErr } = await sb
+        .from('ff_profiles')
+        .insert({
+          user_id: currentUser.id,
+          organisation_id: org.id,
+          full_name: fullName,
+          email: currentUser.email,
+          role: 'owner'
+        })
+        .select().single();
+      if (profErr) throw profErr;
+
+      // Create default hubs
+      const defaultHubs = [
+        { name:'Deals',     icon:'🏠', color:'#1a5c3a', description:'Property transactions, OTPs, mandates' },
+        { name:'HR',        icon:'👔', color:'#1d4ed8', description:'Employee onboarding, contracts, policies' },
+        { name:'Legal',     icon:'⚖️', color:'#6d28d9', description:'Client matters, FICA/KYC, precedents' },
+        { name:'Finance',   icon:'💰', color:'#b45309', description:'Accounts, invoices, reconciliation' },
+        { name:'Marketing', icon:'📣', color:'#c2410c', description:'Campaigns, content, outreach' },
+      ];
+
+      for (const hub of defaultHubs) {
+        await sb.from('ff_workspaces').insert({
+          organisation_id: org.id,
+          name: hub.name,
+          type: 'hub',
+          metadata: { icon: hub.icon, color: hub.color, description: hub.description, is_hub: true }
+        });
+      }
+
+      currentOrg     = org;
+      currentProfile = { ...profile, ff_organisations: org };
+      enterApp(profile, org, false);
+    } catch(e) {
+      showToast('Setup failed: ' + e.message);
+      btn.disabled = false; btn.textContent = 'Get started →';
+    }
+  }
+
+  async function enterApp(profile, org, isDemo) {
+    const name = isDemo ? 'Demo User' : (profile.full_name || currentUser.email.split('@')[0]);
+    const firstName = name.split(' ')[0];
+    const initials  = name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+
+    document.getElementById('sidebar-name').textContent = name;
+    document.getElementById('sidebar-avatar').textContent = initials;
+
+    if (org) {
+      document.getElementById('org-name').textContent = org.name;
+      document.getElementById('org-avatar').textContent = org.name.substring(0,2).toUpperCase();
+      // Pre-fill settings
+      const inp = document.getElementById('settings-org-name');
+      if (inp) inp.value = org.name;
+      const ind = document.getElementById('settings-industry');
+      if (ind && org.industry) ind.value = org.industry;
+    }
+
+    setGreeting(firstName);
     setDate();
+
+    if (isDemo) {
+      // Use demo data
+      renderRecent(demoWorkspaces);
+      renderTasks(demoTasks);
+      renderActivity(demoActivity);
+      renderHubsFull(demoHubs);
+      renderWSFull(demoWorkspaces);
+      renderTasksFull([...demoTasks,
+        { title:'Review employment contract — S. Nkosi', due:'Due in 3 days', type:'soon' },
+        { title:'Upload FICA — Van der Merwe',           due:'Due in 4 days', type:'soon' },
+        { title:'Send lease to SignFlow',                due:'Due in 5 days', type:'soon' },
+      ]);
+      updateStats(demoWorkspaces);
+    } else {
+      await loadLiveData();
+    }
 
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app').classList.add('visible');
+  }
+
+  // ── LIVE DATA ───────────────────────────────────────────────
+  async function loadLiveData() {
+    try {
+      // Load hubs (workspaces with type='hub')
+      const { data: hubs } = await sb
+        .from('ff_workspaces')
+        .select('*')
+        .eq('organisation_id', currentOrg.id)
+        .eq('type', 'hub')
+        .eq('archived', false)
+        .order('created_at');
+
+      liveHubs = hubs || [];
+
+      // Load regular workspaces
+      const { data: workspaces } = await sb
+        .from('ff_workspaces')
+        .select('*')
+        .eq('organisation_id', currentOrg.id)
+        .neq('type', 'hub')
+        .eq('archived', false)
+        .order('updated_at', { ascending: false });
+
+      liveWorkspaces = workspaces || [];
+
+      // Load tasks
+      const { data: tasks } = await sb
+        .from('ff_tasks')
+        .select('*')
+        .eq('organisation_id', currentOrg.id)
+        .neq('status', 'completed')
+        .order('due_at', { ascending: true, nullsFirst: false })
+        .limit(20);
+
+      // Load audit log for activity
+      const { data: activity } = await sb
+        .from('ff_audit_log')
+        .select('*')
+        .eq('organisation_id', currentOrg.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      // Render everything
+      renderHubsFull(liveHubs);
+      renderRecent(liveWorkspaces);
+      renderWSFull(liveWorkspaces);
+      renderLiveTasks(tasks || []);
+      renderLiveActivity(activity || []);
+      updateStats(liveWorkspaces, tasks || []);
+
+      // Update hub select in new workspace modal
+      populateHubSelect(liveHubs);
+
+    } catch(e) {
+      console.error('Failed to load data:', e);
+      showToast('Failed to load data. Check console.');
+    }
+  }
+
+  function populateHubSelect(hubs) {
+    const sel = document.getElementById('new-ws-hub');
+    if (!sel) return;
+    const hubNames = hubs.length > 0
+      ? hubs.map(h => `<option value="${h.id}">${h.metadata?.icon || ''} ${h.name}</option>`).join('')
+      : ['Deals','HR','Legal','Finance','Marketing'].map(n => `<option>${n}</option>`).join('');
+    sel.innerHTML = hubNames;
+  }
+
+  function updateStats(workspaces, tasks) {
+    const total     = workspaces.length;
+    const pending   = workspaces.filter(w => w.status === 'signature').length;
+    const awaitDocs = workspaces.filter(w => w.status === 'docs').length;
+    const completed = workspaces.filter(w => w.status === 'completed').length;
+    const overdue   = (tasks || []).filter(t => t.due_at && new Date(t.due_at) < new Date()).length;
+
+    // Update stat cards
+    const cards = document.querySelectorAll('.stat-value');
+    if (cards[0]) cards[0].textContent = total || demoWorkspaces.length;
+    if (cards[1]) cards[1].textContent = pending || 14;
+    if (cards[2]) cards[2].textContent = awaitDocs || 18;
+    if (cards[3]) cards[3].textContent = completed || 10;
+
+    // Update nav badge
+    const taskBadge = document.querySelector('.nav-badge.urgent');
+    if (taskBadge && tasks) taskBadge.textContent = overdue || tasks.length || 12;
+  }
+
+  // ── RENDER — LIVE DATA ───────────────────────────────────────
+  function renderLiveTasks(tasks) {
+    if (tasks.length === 0) {
+      // Fall back to demo tasks for new accounts
+      renderTasks(demoTasks);
+      renderTasksFull([...demoTasks]);
+      return;
+    }
+    const formatted = tasks.map(t => {
+      const due    = t.due_at ? new Date(t.due_at) : null;
+      const now    = new Date();
+      const isOver = due && due < now;
+      const isToday= due && due.toDateString() === now.toDateString();
+      return {
+        title: t.title,
+        due:   isOver ? 'Overdue' : isToday ? 'Due today' : due ? `Due ${due.toLocaleDateString('en-ZA', {day:'numeric',month:'short'})}` : 'No due date',
+        type:  isOver ? 'overdue' : isToday ? 'today' : 'soon'
+      };
+    });
+    renderTasks(formatted.slice(0,5));
+    renderTasksFull(formatted);
+  }
+
+  function renderLiveActivity(activity) {
+    if (activity.length === 0) {
+      renderActivity(demoActivity);
+      return;
+    }
+    const actionIcons = {
+      'workspace.created': '🗂',
+      'submission.created': '📋',
+      'document.approved': '✅',
+      'signflow.triggered': '✍️',
+      'task.completed': '✓',
+    };
+    const formatted = activity.map(a => ({
+      icon:  actionIcons[a.action] || '📋',
+      title: a.action.replace('.', ' — ').replace(/\b\w/g, c => c.toUpperCase()),
+      sub:   a.actor_name || 'System',
+      time:  timeAgo(a.created_at)
+    }));
+    renderActivity(formatted);
+  }
+
+  // ── WORKSPACE OPERATIONS ────────────────────────────────────
+  async function createWorkspace() {
+    const name   = document.getElementById('new-ws-name').value.trim();
+    const hubSel = document.getElementById('new-ws-hub');
+    const hub    = hubSel.value;
+    const client = document.getElementById('new-ws-client').value.trim();
+    const typeEl = document.querySelector('#new-workspace-modal .hub-type-btn.selected span');
+    const type   = typeEl ? typeEl.textContent.toLowerCase() : 'client';
+
+    if (!name) { showToast('Please enter a workspace name'); return; }
+
+    const btn = document.querySelector('#new-workspace-modal .btn-primary');
+    btn.disabled = true; btn.textContent = 'Creating...';
+
+    try {
+      if (currentOrg) {
+        // Find hub id if we have live hubs
+        const hubRecord = liveHubs.find(h => h.id === hub || h.name === hub);
+
+        const wsData = {
+          organisation_id: currentOrg.id,
+          name,
+          type,
+          client_name:  client || null,
+          client_email: null,
+          status:       'active',
+          metadata:     { hub: hubRecord ? hubRecord.name : hub }
+        };
+
+        const { data: ws, error } = await sb
+          .from('ff_workspaces')
+          .insert(wsData)
+          .select().single();
+
+        if (error) throw error;
+
+        // Log to audit
+        await sb.from('ff_audit_log').insert({
+          organisation_id: currentOrg.id,
+          workspace_id:    ws.id,
+          actor_id:        currentUser.id,
+          actor_name:      currentProfile?.full_name || currentUser.email,
+          actor_type:      'user',
+          action:          'workspace.created',
+          detail:          { name, type, hub }
+        });
+
+        liveWorkspaces.unshift(ws);
+        renderRecent(liveWorkspaces);
+        renderWSFull(liveWorkspaces);
+        updateStats(liveWorkspaces);
+        showToast('Workspace created: ' + name);
+      } else {
+        // Demo mode
+        demoWorkspaces.unshift({
+          id: Date.now(), name, hub, type, client,
+          status:'progress', updated:'Just now', icon:'🗂', progress:0
+        });
+        renderRecent(demoWorkspaces);
+        renderWSFull(demoWorkspaces);
+        showToast('Workspace created: ' + name);
+      }
+
+      closeModal('new-workspace-modal');
+      document.getElementById('new-ws-name').value   = '';
+      document.getElementById('new-ws-client').value = '';
+    } catch(e) {
+      showToast('Error: ' + e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Create workspace';
+    }
+  }
+
+  // ── HUB OPERATIONS ──────────────────────────────────────────
+  async function createHub() {
+    const name = document.getElementById('new-hub-name').value.trim();
+    const desc = document.getElementById('new-hub-desc').value.trim();
+    const iconEl = document.querySelector('#new-hub-modal .hub-type-btn.selected');
+    const icon = iconEl ? iconEl.textContent.trim() : '🗂';
+
+    if (!name) { showToast('Please enter a hub name'); return; }
+
+    const btn = document.querySelector('#new-hub-modal .btn-primary');
+    btn.disabled = true; btn.textContent = 'Creating...';
+
+    try {
+      if (currentOrg) {
+        const { data: hub, error } = await sb
+          .from('ff_workspaces')
+          .insert({
+            organisation_id: currentOrg.id,
+            name,
+            type: 'hub',
+            status: 'active',
+            metadata: { icon, description: desc, color: '#4f46e5', is_hub: true }
+          })
+          .select().single();
+
+        if (error) throw error;
+        liveHubs.push(hub);
+        renderHubsFull(liveHubs);
+        populateHubSelect(liveHubs);
+        showToast('Hub created: ' + name);
+      } else {
+        demoHubs.push({
+          name, icon, color:'var(--hub-custom)',
+          desc: desc || 'Custom hub',
+          workspaces:0, active:0, completed:0
+        });
+        renderHubsFull(demoHubs);
+        showToast('Hub created: ' + name);
+      }
+
+      closeModal('new-hub-modal');
+      document.getElementById('new-hub-name').value = '';
+      document.getElementById('new-hub-desc').value = '';
+    } catch(e) {
+      showToast('Error: ' + e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Add hub';
+    }
+  }
+
+  // ── SAVE SETTINGS ───────────────────────────────────────────
+  async function saveOrgSettings() {
+    if (!currentOrg) { showToast('Settings saved (demo mode)'); return; }
+    const name     = document.getElementById('settings-org-name').value.trim();
+    const industry = document.getElementById('settings-industry').value;
+    try {
+      const { error } = await sb
+        .from('ff_organisations')
+        .update({ name, industry, updated_at: new Date().toISOString() })
+        .eq('id', currentOrg.id);
+      if (error) throw error;
+      currentOrg.name = name;
+      document.getElementById('org-name').textContent = name;
+      document.getElementById('org-avatar').textContent = name.substring(0,2).toUpperCase();
+      showToast('Settings saved');
+    } catch(e) {
+      showToast('Error saving: ' + e.message);
+    }
+  }
+
+  async function saveSignFlowSettings() {
+    if (!currentOrg) { showToast('SignFlow connected (demo)'); return; }
+    const url = document.querySelector('input[placeholder="https://your-signflow-instance.com"]').value.trim();
+    const key = document.querySelector('input[placeholder="sk_live_..."]').value.trim();
+    try {
+      await sb.from('ff_organisations')
+        .update({ signflow_url: url, signflow_key: key })
+        .eq('id', currentOrg.id);
+      showToast('SignFlow connected');
+    } catch(e) {
+      showToast('Error: ' + e.message);
+    }
+  }
+
+  // ── SIGN OUT ────────────────────────────────────────────────
+  async function signOut() {
+    await sb.auth.signOut();
+    currentUser = null; currentOrg = null; currentProfile = null;
+    document.getElementById('app').classList.remove('visible');
+    document.getElementById('auth-screen').style.display = 'flex';
+    showStep('step-email');
+    document.getElementById('auth-email').value = '';
+    showToast('Signed out');
   }
 
   function backToEmail() { showStep('step-email'); }
@@ -2076,6 +2544,7 @@
 
   function showAuthMsg(id, msg, type) {
     const el = document.getElementById(id);
+    if (!el) return;
     el.textContent = msg;
     el.className = 'auth-msg ' + type;
     el.style.display = 'block';
@@ -2107,44 +2576,72 @@
 
   // ── RENDER ──────────────────────────────────────────────────
   function statusClass(s) {
-    const m = { progress:'status-progress', docs:'status-docs', signature:'status-signature', hold:'status-hold', completed:'status-completed', planning:'status-planning' };
+    const m = { progress:'status-progress', active:'status-progress', docs:'status-docs', signature:'status-signature', hold:'status-hold', completed:'status-completed', planning:'status-planning' };
     return m[s] || 'status-hold';
   }
 
   function statusLabel(s) {
-    const m = { progress:'In Progress', docs:'Awaiting Docs', signature:'Awaiting Signature', hold:'On Hold', completed:'Completed', planning:'Planning' };
+    const m = { progress:'In Progress', active:'In Progress', docs:'Awaiting Docs', signature:'Awaiting Signature', hold:'On Hold', completed:'Completed', planning:'Planning' };
     return m[s] || s;
   }
 
   function progressColor(s) {
-    const m = { progress:'#1d4ed8', docs:'#b45309', signature:'#6d28d9', hold:'#94a3b8', completed:'#16a34a', planning:'#c2410c' };
+    const m = { progress:'#1d4ed8', active:'#1d4ed8', docs:'#b45309', signature:'#6d28d9', hold:'#94a3b8', completed:'#16a34a', planning:'#c2410c' };
     return m[s] || '#94a3b8';
   }
 
-  function renderRecent() {
+  function wsIcon(ws) {
+    if (ws.icon) return ws.icon;
+    const hub = ws.hub || ws.metadata?.hub || '';
+    const m = { Deals:'🏠', HR:'👔', Legal:'⚖️', Finance:'💰', Marketing:'📣' };
+    return m[hub] || '🗂';
+  }
+
+  function wsHub(ws) {
+    return ws.hub || ws.metadata?.hub || ws.type || '—';
+  }
+
+  function timeAgo(dateStr) {
+    if (!dateStr) return '';
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    const hrs  = Math.floor(mins / 60);
+    const days = Math.floor(hrs / 24);
+    if (mins < 60)  return mins + 'm ago';
+    if (hrs  < 24)  return hrs  + 'h ago';
+    return days + 'd ago';
+  }
+
+  function renderRecent(workspaces) {
     const list = document.getElementById('recent-workspace-list');
-    list.innerHTML = demoWorkspaces.slice(0,6).map(ws => `
-      <div class="workspace-row" onclick="showToast('Opening: ${ws.name}')">
-        <div class="ws-icon" style="background:${hubBg(ws.hub)}">${ws.icon}</div>
+    const data = workspaces || demoWorkspaces;
+    if (data.length === 0) {
+      list.innerHTML = '<div style="padding:24px 20px;text-align:center;color:var(--ink-4);font-size:13px">No workspaces yet. Create your first one above.</div>';
+      return;
+    }
+    list.innerHTML = data.slice(0,6).map(ws => `
+      <div class="workspace-row" onclick="openWorkspace('${ws.id}')">
+        <div class="ws-icon" style="background:${hubBg(wsHub(ws))}">${wsIcon(ws)}</div>
         <div class="ws-info">
           <div class="ws-name">${ws.name}</div>
           <div class="ws-meta">
-            <span>${ws.hub}</span>
+            <span>${wsHub(ws)}</span>
             <div class="ws-meta-dot"></div>
-            <span>${ws.type}</span>
-            ${ws.client ? `<div class="ws-meta-dot"></div><span>${ws.client}</span>` : ''}
+            <span>${ws.type || 'workspace'}</span>
+            ${ws.client_name || ws.client ? `<div class="ws-meta-dot"></div><span>${ws.client_name || ws.client}</span>` : ''}
           </div>
         </div>
         <span class="status-badge ${statusClass(ws.status)}">${statusLabel(ws.status)}</span>
-        <span class="ws-updated">${ws.updated}</span>
+        <span class="ws-updated">${ws.updated || timeAgo(ws.updated_at)}</span>
         <div class="ws-menu">⋯</div>
       </div>
     `).join('');
   }
 
-  function renderTasks() {
+  function renderTasks(tasks) {
     const list = document.getElementById('task-list');
-    list.innerHTML = demoTasks.map(t => `
+    const data = tasks || demoTasks;
+    list.innerHTML = data.slice(0,5).map(t => `
       <div class="task-row">
         <div class="task-check" onclick="this.classList.toggle('done');this.textContent=this.classList.contains('done')?'✓':''"></div>
         <div class="task-body">
@@ -2155,9 +2652,10 @@
     `).join('');
   }
 
-  function renderActivity() {
+  function renderActivity(activity) {
     const list = document.getElementById('activity-list');
-    list.innerHTML = demoActivity.map(a => `
+    const data = activity || demoActivity;
+    list.innerHTML = data.slice(0,5).map(a => `
       <div class="activity-row">
         <div class="activity-icon">${a.icon}</div>
         <div class="activity-body">
@@ -2169,12 +2667,28 @@
     `).join('');
   }
 
-  function renderHubsFull() {
+  function renderHubsFull(hubs) {
     const grid = document.getElementById('hubs-full-grid');
-    grid.innerHTML = demoHubs.map(h => `
-      <div class="hub-full-card" onclick="showToast('Opening ${h.name} hub...')">
+    const data = hubs || demoHubs;
+
+    // Handle live hub records from ff_workspaces
+    const formatted = data.map(h => {
+      const isLive = !!h.organisation_id;
+      return {
+        name:       h.name,
+        icon:       isLive ? (h.metadata?.icon || '🗂') : h.icon,
+        color:      isLive ? (h.metadata?.color || '#4f46e5') : h.color.replace('var(--hub-deals)','#1a5c3a').replace('var(--hub-hr)','#1d4ed8').replace('var(--hub-legal)','#6d28d9').replace('var(--hub-finance)','#b45309').replace('var(--hub-marketing)','#c2410c'),
+        desc:       isLive ? (h.metadata?.description || '') : h.desc,
+        workspaces: isLive ? liveWorkspaces.filter(w => w.metadata?.hub === h.name).length : h.workspaces,
+        active:     isLive ? liveWorkspaces.filter(w => w.metadata?.hub === h.name && w.status !== 'completed').length : h.active,
+        completed:  isLive ? liveWorkspaces.filter(w => w.metadata?.hub === h.name && w.status === 'completed').length : h.completed,
+      };
+    });
+
+    grid.innerHTML = formatted.map(h => `
+      <div class="hub-full-card" onclick="filterByHub('${h.name}')">
         <div style="position:absolute;top:0;left:0;right:0;height:4px;background:${h.color};border-radius:14px 14px 0 0"></div>
-        <div class="hub-full-icon" style="background:${hubBg2(h.color)}">${h.icon}</div>
+        <div class="hub-full-icon" style="background:${h.color}18">${h.icon}</div>
         <div class="hub-full-name">${h.name}</div>
         <div class="hub-full-desc">${h.desc}</div>
         <div class="hub-full-stats">
@@ -2201,44 +2715,51 @@
     `;
   }
 
-  function renderWSFull(filter='all') {
+  function renderWSFull(workspaces, filter) {
     const grid = document.getElementById('ws-full-grid');
-    const filtered = filter === 'all' ? demoWorkspaces : demoWorkspaces.filter(w => w.status === filter);
-    grid.innerHTML = filtered.map(ws => `
-      <div class="ws-full-card" onclick="showToast('Opening workspace: ${ws.name}')">
+    let data = workspaces || demoWorkspaces;
+
+    if (filter && filter !== 'all') {
+      data = data.filter(w => w.status === filter);
+    }
+
+    if (data.length === 0) {
+      grid.innerHTML = '<div style="padding:48px;text-align:center;color:var(--ink-4);font-size:13px;grid-column:1/-1">No workspaces found. Create your first one using the + New button.</div>';
+      return;
+    }
+
+    grid.innerHTML = data.map(ws => `
+      <div class="ws-full-card" onclick="openWorkspace('${ws.id}')">
         <div class="ws-card-top">
           <div style="display:flex;align-items:flex-start;gap:12px;flex:1;min-width:0">
-            <div class="ws-card-icon" style="background:${hubBg(ws.hub)}">${ws.icon}</div>
+            <div class="ws-card-icon" style="background:${hubBg(wsHub(ws))}">${wsIcon(ws)}</div>
             <div style="flex:1;min-width:0">
               <div class="ws-card-name">${ws.name}</div>
-              <div class="ws-card-meta">${ws.hub} · ${ws.type}${ws.client ? ' · ' + ws.client : ''}</div>
+              <div class="ws-card-meta">${wsHub(ws)} · ${ws.type || 'workspace'}${ws.client_name || ws.client ? ' · ' + (ws.client_name || ws.client) : ''}</div>
             </div>
           </div>
           <span class="status-badge ${statusClass(ws.status)}">${statusLabel(ws.status)}</span>
         </div>
         <div class="progress-wrap">
-          <div class="progress-label"><span>Progress</span><span>${ws.progress}%</span></div>
-          <div class="progress-bar"><div class="progress-fill" style="width:${ws.progress}%;background:${progressColor(ws.status)}"></div></div>
+          <div class="progress-label"><span>Progress</span><span>${ws.progress || 0}%</span></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${ws.progress||0}%;background:${progressColor(ws.status)}"></div></div>
         </div>
         <div class="ws-card-footer">
-          <span style="font-size:11px;color:var(--ink-4)">Updated ${ws.updated}</span>
+          <span style="font-size:11px;color:var(--ink-4)">Updated ${ws.updated || timeAgo(ws.updated_at)}</span>
           <span style="font-size:11px;color:var(--indigo);font-weight:600;cursor:pointer">Open →</span>
         </div>
       </div>
     `).join('');
   }
 
-  function renderTasksFull() {
-    const allTasks = [
-      ...demoTasks,
-      { title:'Review employment contract — S. Nkosi', due:'Due in 3 days', type:'soon' },
-      { title:'Upload FICA — Van der Merwe',           due:'Due in 4 days', type:'soon' },
-      { title:'Send lease to SignFlow',                due:'Due in 5 days', type:'soon' },
-      { title:'Approve bond application',              due:'Due in 5 days', type:'soon' },
-      { title:'Process trust account statement',       due:'Due in 7 days', type:'soon' },
-    ];
+  function renderTasksFull(tasks) {
     const list = document.getElementById('tasks-full-list');
-    list.innerHTML = allTasks.map(t => `
+    const data = tasks || demoTasks;
+    if (data.length === 0) {
+      list.innerHTML = '<div style="padding:32px;text-align:center;color:var(--ink-4);font-size:13px">No open tasks. You\'re all caught up!</div>';
+      return;
+    }
+    list.innerHTML = data.map(t => `
       <div class="task-row">
         <div class="task-check" onclick="this.classList.toggle('done');this.textContent=this.classList.contains('done')?'✓':''"></div>
         <div class="task-body">
@@ -2249,19 +2770,25 @@
     `).join('');
   }
 
+  function openWorkspace(id) {
+    const ws = liveWorkspaces.find(w => String(w.id) === String(id))
+            || demoWorkspaces.find(w => String(w.id) === String(id));
+    if (ws) showToast('Opening: ' + ws.name);
+    // Full workspace view coming in next session
+  }
+
+  function filterByHub(hubName) {
+    showView('workspaces');
+    const data = liveWorkspaces.length > 0 ? liveWorkspaces : demoWorkspaces;
+    const filtered = data.filter(w => wsHub(w) === hubName);
+    renderWSFull(filtered.length > 0 ? filtered : data);
+    showToast('Showing ' + hubName + ' workspaces');
+  }
+
   // ── HELPERS ─────────────────────────────────────────────────
   function hubBg(hub) {
     const m = { Deals:'#e8f3ed', HR:'#eff6ff', Legal:'#f5f3ff', Finance:'#fffbeb', Marketing:'#fff7ed', Other:'#f1f5f9' };
     return m[hub] || '#f1f5f9';
-  }
-
-  function hubBg2(color) {
-    if (color.includes('hub-deals'))     return '#e8f3ed';
-    if (color.includes('hub-hr'))        return '#eff6ff';
-    if (color.includes('hub-legal'))     return '#f5f3ff';
-    if (color.includes('hub-finance'))   return '#fffbeb';
-    if (color.includes('hub-marketing')) return '#fff7ed';
-    return '#f1f5f9';
   }
 
   function setGreeting(name) {
@@ -2313,7 +2840,8 @@
   function filterWS(btn, filter) {
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    renderWSFull(filter);
+    const data = liveWorkspaces.length > 0 ? liveWorkspaces : demoWorkspaces;
+    renderWSFull(data, filter === 'all' ? null : filter);
   }
 
   // ── SETTINGS ────────────────────────────────────────────────
@@ -2341,9 +2869,35 @@
   });
 
   // ── SESSION RESTORE ─────────────────────────────────────────
-  window.addEventListener('load', () => {
-    const saved = localStorage.getItem('flow_auth_email');
-    if (saved) { enterApp(saved); return; }
+  window.addEventListener('load', async () => {
+    // Check for existing Supabase session
+    const { data: { session } } = await sb.auth.getSession();
+    if (session?.user) {
+      currentUser = session.user;
+      await loadOrCreateOrg();
+      return;
+    }
+    // Check for magic link in URL (after email redirect)
+    const hash = window.location.hash;
+    if (hash && hash.includes('access_token')) {
+      const { data: { session: s }, error } = await sb.auth.getSession();
+      if (s?.user) {
+        currentUser = s.user;
+        await loadOrCreateOrg();
+        return;
+      }
+    }
+  });
+
+  // Listen for auth state changes (magic link click)
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session?.user && !currentUser) {
+      currentUser = session.user;
+      await loadOrCreateOrg();
+    }
+    if (event === 'SIGNED_OUT') {
+      currentUser = null;
+    }
   });
 </script>
 
