@@ -2315,11 +2315,11 @@
   ];
 
   const demoTasks = [
-    { title:'Review FICA — John Smith',      due:'Overdue',     type:'overdue' },
-    { title:'Upload ID — Mary Jacobs',       due:'Due today',   type:'today'   },
-    { title:'Sign OTP — 12 Main Road',       due:'Due today',   type:'today'   },
-    { title:'Confirm banking details',       due:'Due tomorrow',type:'soon'    },
-    { title:'Employee contract review',      due:'Due in 2 days',type:'soon'   },
+    { id:'demo-task-1', title:'Review FICA — John Smith',      due:'Overdue',      type:'overdue', status:'open',      workspace_id:1, assignee_name:'Amanda' },
+    { id:'demo-task-2', title:'Upload ID — Mary Jacobs',       due:'Due today',    type:'today',   status:'open',      workspace_id:2, assignee_name:'Karen'  },
+    { id:'demo-task-3', title:'Sign OTP — 12 Main Road',       due:'Due today',    type:'today',   status:'open',      workspace_id:1, assignee_name:'Rick'   },
+    { id:'demo-task-4', title:'Confirm banking details',       due:'Due tomorrow', type:'soon',    status:'open',      workspace_id:5 },
+    { id:'demo-task-5', title:'Employee contract review',      due:'Due in 2 days',type:'soon',    status:'open',      workspace_id:3 },
   ];
 
   const demoActivity = [
@@ -2967,7 +2967,7 @@
       const done = t.status === 'completed';
       const toggle = t.id
         ? `toggleGlobalTask('${t.id}', ${!done})`
-        : `this.classList.toggle('done');this.textContent=this.classList.contains('done')?'✓':''`;
+        : `toggleInlineTask(this)`;
       return `
         <div class="task-row">
           <div class="task-check ${done ? 'done' : ''}" onclick="${toggle}">${done ? '✓' : ''}</div>
@@ -3108,7 +3108,7 @@
       const assignee = t.assignee_name || t.metadata?.assignee_name || '';
       const toggle = t.id
         ? `toggleGlobalTask('${t.id}', ${!done})`
-        : `this.classList.toggle('done');this.textContent=this.classList.contains('done')?'✓':''`;
+        : `toggleInlineTask(this)`;
       return `
         <div class="task-row" style="${done?'opacity:0.55':''}">
           <div class="task-check ${done?'done':''}" onclick="${toggle}">${done?'✓':''}</div>
@@ -3420,9 +3420,10 @@
     if (currentOrg) {
       await loadWSData(id);
     } else {
+      const wsTasks = demoTasks.filter(t => String(t.workspace_id) === String(id));
       renderWSActivity([]);
       renderWSMessages([]);
-      renderWSTasks([]);
+      renderWSTasks(wsTasks);
       document.getElementById('ws-detail-activity').innerHTML = '<div style="padding:20px;text-align:center;color:var(--ink-4);font-size:13px">No activity yet in demo mode.</div>';
     }
   }
@@ -3574,6 +3575,35 @@
       </div>`).join('');
   }
 
+  function toggleInlineTask(el) {
+    const done = !el.classList.contains('done');
+    el.classList.toggle('done', done);
+    el.textContent = done ? '✓' : '';
+    const row = el.closest('.task-row');
+    if (row) {
+      const title = row.querySelector('.task-title');
+      if (title) {
+        title.style.textDecoration = done ? 'line-through' : '';
+        title.style.color = done ? 'var(--ink-4)' : '';
+      }
+      row.style.opacity = done ? '0.55' : '';
+    }
+  }
+
+  function updateDemoTask(taskId, completed) {
+    const task = demoTasks.find(t => String(t.id) === String(taskId));
+    if (!task) return;
+    task.status = completed ? 'completed' : 'open';
+    task.completed_at = completed ? new Date().toISOString() : null;
+    renderTasks(demoTasks);
+    renderTasksFull(demoTasks);
+    if (currentWorkspaceId) {
+      const wsTasks = demoTasks.filter(t => String(t.workspace_id) === String(currentWorkspaceId));
+      renderWSTasks(wsTasks);
+    }
+    showToast(completed ? 'Task completed ✓' : 'Task reopened');
+  }
+
   // ── GLOBAL TASKS ────────────────────────────────────────────
   let allTasks   = [];
   let taskFilter = 'all';
@@ -3714,7 +3744,7 @@
         await loadLiveData();
         if (currentWorkspaceId) await loadWSData(currentWorkspaceId);
         showToast(completed ? 'Task completed ✓' : 'Task reopened');
-      } else { showToast(completed ? 'Task completed ✓' : 'Task reopened'); }
+      } else { updateDemoTask(taskId, completed); }
     } catch(e) { showToast('Error: ' + e.message); }
   }
 
