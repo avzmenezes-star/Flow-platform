@@ -6,6 +6,7 @@
   <title>FormFlow — Document Builder V3</title>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
   <style>
     :root {
       --chrome:#0f1117; --chrome-2:#171a24; --chrome-border:#2a2d3e;
@@ -113,6 +114,16 @@
     .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(20px);background:var(--chrome);color:white;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;opacity:0;pointer-events:none;transition:.25s;z-index:99}
     .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
+    
+    .link-card{border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;background:var(--surface-2)}
+    .link-card strong{font-size:12px}
+    .link-url{font-family:monospace;font-size:10px;color:var(--ff-dark);word-break:break-all;margin-top:5px;background:white;border:1px solid var(--border);border-radius:6px;padding:6px}
+    .docx-preview{max-height:260px;overflow:auto;background:white;border:1px solid var(--border);border-radius:8px;padding:10px;margin-top:8px;font-size:12px;line-height:1.45}
+    .docx-preview h1,.docx-preview h2,.docx-preview h3{font-size:14px;margin:8px 0}
+    .docx-preview table{border-collapse:collapse;width:100%}
+    .docx-preview td,.docx-preview th{border:1px solid #ddd;padding:4px}
+    .generated-custom-chip{display:flex;align-items:center;justify-content:space-between;gap:6px;border:1px solid var(--border);border-radius:8px;background:white;padding:7px 8px;margin-bottom:6px;font-size:11px;font-weight:800}
+    .generated-custom-chip button{border:none;background:#fef2f2;color:#dc2626;border-radius:6px;padding:2px 6px;cursor:pointer;font-weight:900}
     @media(max-width:1000px){
       .app{grid-template-columns:1fr}.sidebar{display:none}
       .builder{grid-template-columns:1fr}.right-tools{min-height:360px}
@@ -167,6 +178,7 @@
               <label class="small-btn">Upload PDF<input type="file" accept="application/pdf" hidden onchange="uploadPdf(event)"></label>
               <label class="small-btn">Upload DOCX<input type="file" accept=".docx,.doc" hidden onchange="uploadDocx(event)"></label>
               <button class="small-btn" onclick="clearFields()">Clear fields</button>
+              <button class="small-btn" onclick="generatePartyLinks()">Generate party links</button>
               <button class="primary-btn" onclick="previewForm()">Preview form</button>
             </div>
             <div class="pdf-scroll" id="pdf-scroll">
@@ -216,13 +228,22 @@
                   <option value="upload">Upload requirement</option>
                 </select>
                 <input class="tool-input" id="custom-options" placeholder="Dropdown options e.g. Single, Married ANC, Married COP">
-                <button class="tool-btn primary wide" onclick="selectCustomField()">Place custom field</button>
+                <button class="tool-btn primary wide" onclick="addCustomFieldToPalette()">Add custom field to place box</button>
+                <div id="custom-generated-fields" style="margin-top:8px"></div>
               </div>
 
               <div class="tool-section">
                 <div class="tool-title">DOCX template</div>
                 <div id="docx-status" style="font-size:12px;color:var(--ink-3);line-height:1.5;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:9px">
                   No DOCX template attached.
+                </div>
+                <div id="docx-preview" class="docx-preview" style="display:none"></div>
+              </div>
+
+              <div class="tool-section">
+                <div class="tool-title">Collection links</div>
+                <div id="party-links-box" style="font-size:12px;color:var(--ink-3);line-height:1.5">
+                  Generate party links after placing fields.
                 </div>
               </div>
 
@@ -326,6 +347,8 @@ let state = loadState();
 let currentWorkflowId = state.currentWorkflowId || (state.workflows[0]?.id || null);
 let pendingField = null;
 let drag = null;
+let customFieldPalette = [];
+let generatedLinks = [];
 let resize = null;
 let modalParties = [];
 
@@ -405,7 +428,7 @@ function renderAll(){
       <div class="row-main"><div class="row-title">${esc(wf.name)}</div><div class="row-sub">${wf.mode} · ${wf.parties.length} parties · ${wf.fields.length} mapped fields · DOCX: ${wf.docx?.name||"none"}</div></div>
       <button class="small-btn" onclick="showView('builder')">Build</button>
     </div>`:"";
-  renderWorkflows();renderParties();renderPalette();renderTransactions();renderEntities();renderSimpleForms();
+  renderWorkflows();renderParties();renderPalette();renderTransactions();renderEntities();renderSimpleForms();renderPartyLinks();
 }
 function renderWorkflows(){
   const el=document.getElementById("workflow-list");
@@ -441,23 +464,50 @@ function updateParty(id,k,v){const p=currentWorkflow().parties.find(p=>p.id===id
 
 function renderPalette(){
   const el=document.getElementById("field-palette");
-  el.innerHTML=presetFields.map(f=>`<button class="tool-btn ${f.type}" onclick='selectPreset(${JSON.stringify(f)})'>${esc(f.label)}</button>`).join("");
+  const allFields=[...presetFields,...customFieldPalette];
+  el.innerHTML=allFields.map(f=>`<button class="tool-btn ${f.type}" onclick='selectPreset(${JSON.stringify(f)})'>${esc(f.label)}</button>`).join("");
+  renderCustomGeneratedFields();
+}
+
+function renderCustomGeneratedFields(){
+  const box=document.getElementById("custom-generated-fields");
+  if(!box)return;
+  if(!customFieldPalette.length){box.innerHTML="";return}
+  box.innerHTML=customFieldPalette.map((f,i)=>`
+    <div class="generated-custom-chip">
+      <span>${esc(f.label)} <small style="color:var(--ink-4)">· ${esc(f.type)}</small></span>
+      <button onclick="removeCustomPaletteField(${i})">×</button>
+    </div>`).join("");
+}
+
+function removeCustomPaletteField(i){
+  customFieldPalette.splice(i,1);
+  renderPalette();
+  showToast("Custom field removed");
 }
 function selectPreset(f){
   const wf=currentWorkflow();const partyId=document.getElementById("active-party").value;const p=wf.parties.find(x=>x.id===partyId);
   pendingField={...f,partyId,partyName:p?.name||"Generic",baseKey:f.key,key:makeKey(`${p?.role||"generic"}_${f.key}`)};
   document.getElementById("hint").textContent=`Click the PDF page to place: ${pendingField.partyName} ${pendingField.label}`;
 }
-function selectCustomField(){
+function addCustomFieldToPalette(){
   const label=document.getElementById("custom-label").value.trim();
   if(!label){showToast("Enter a custom field label");return}
-  const wf=currentWorkflow();const partyId=document.getElementById("active-party").value;const p=wf.parties.find(x=>x.id===partyId);
   const type=document.getElementById("custom-type").value;
   const customKey=document.getElementById("custom-key").value.trim();
   const options=document.getElementById("custom-options").value.split(",").map(x=>x.trim()).filter(Boolean);
-  pendingField={label,type,partyId,partyName:p?.name||"Generic",baseKey:customKey||makeKey(label),key:makeKey(customKey||`${p?.role||"generic"}_${label}`),options};
-  document.getElementById("hint").textContent=`Click the PDF page to place: ${pendingField.label}`;
-  document.getElementById("custom-label").value="";document.getElementById("custom-key").value="";document.getElementById("custom-options").value="";
+  customFieldPalette.push({
+    label,
+    type,
+    key: makeKey(customKey || label),
+    options,
+    custom:true
+  });
+  document.getElementById("custom-label").value="";
+  document.getElementById("custom-key").value="";
+  document.getElementById("custom-options").value="";
+  renderPalette();
+  showToast("Custom field added to place box");
 }
 
 async function uploadPdf(e){
@@ -479,10 +529,20 @@ async function uploadPdf(e){
   }
   renderPdfFields();showToast("PDF loaded");
 }
-function uploadDocx(e){
+async function uploadDocx(e){
   const file=e.target.files[0];if(!file)return;
   const wf=currentWorkflow();wf.docx={name:file.name,size:file.size,attachedAt:new Date().toISOString()};saveState();
-  document.getElementById("docx-status").innerHTML=`<strong>${esc(file.name)}</strong><br>Attached for final DOCX generation. It does not open visually here; the PDF is only the visual reference.`;
+  document.getElementById("docx-status").innerHTML=`<strong>${esc(file.name)}</strong><br>Attached for final DOCX generation. Preview shown below. Formatting is approximate in-browser; final generation will use the DOCX template.`;
+  const preview=document.getElementById("docx-preview");
+  preview.style.display="block";
+  preview.innerHTML="<em>Loading DOCX preview...</em>";
+  try{
+    const arrayBuffer=await file.arrayBuffer();
+    const result=await mammoth.convertToHtml({arrayBuffer});
+    preview.innerHTML=result.value || "<em>No readable preview content found.</em>";
+  }catch(err){
+    preview.innerHTML="<em>Could not preview this DOCX in-browser. It is still attached for generation.</em>";
+  }
   showToast("DOCX template attached");
 }
 
@@ -542,6 +602,82 @@ function editField(id){
 }
 function clearFields(){if(!confirm("Clear all placed fields?"))return;currentWorkflow().fields=[];saveState();renderPdfFields()}
 
+
+function generatePartyLinks(){
+  const wf=currentWorkflow();
+  generatedLinks = wf.parties
+    .filter(p=>p.completesForm)
+    .map(p=>{
+      const token=uid("link");
+      return {
+        token,
+        partyId:p.id,
+        partyName:p.name,
+        url:`${location.origin}${location.pathname}?party=${token}`
+      };
+    });
+  wf.partyLinks=generatedLinks;
+  saveState();
+  renderPartyLinks();
+  showToast("Party links generated");
+}
+
+function renderPartyLinks(){
+  const wf=currentWorkflow();
+  const box=document.getElementById("party-links-box");
+  if(!box)return;
+  const links=wf?.partyLinks || generatedLinks || [];
+  if(!links.length){
+    box.innerHTML="Generate party links after placing fields.";
+    return;
+  }
+  box.innerHTML=links.map(l=>`
+    <div class="link-card">
+      <strong>${esc(l.partyName)}</strong>
+      <div class="link-url">${esc(l.url)}</div>
+      <button class="small-btn" style="margin-top:7px;width:100%" onclick="copyText('${escAttr(l.url)}')">Copy link</button>
+    </div>
+  `).join("");
+}
+
+function copyText(text){
+  navigator.clipboard?.writeText(text).then(()=>showToast("Link copied"));
+}
+
+function renderPartyCollectionFromToken(token){
+  const wf=state.workflows.find(w => (w.partyLinks||[]).some(l=>l.token===token));
+  if(!wf)return false;
+  const link=(wf.partyLinks||[]).find(l=>l.token===token);
+  const party=wf.parties.find(p=>p.id===link.partyId);
+  const fields=wf.fields.filter(f=>f.partyId===party.id && !["signature","initials"].includes(f.type));
+  document.body.innerHTML=`
+    <div style="min-height:100vh;background:#f5f4f1;padding:28px;font-family:'Instrument Sans',sans-serif">
+      <div style="max-width:680px;margin:0 auto;background:white;border:1px solid #e5e3de;border-radius:16px;padding:24px;box-shadow:0 2px 14px rgba(0,0,0,.08)">
+        <div style="font-family:'Instrument Serif',serif;font-size:28px;margin-bottom:4px">form<span style="color:#0d9488">flow</span></div>
+        <h2 style="font-family:'Instrument Serif',serif;font-size:24px;margin:20px 0 4px">${esc(wf.name)}</h2>
+        <p style="color:#6b7280;font-size:14px;margin-bottom:22px">Information required from: <strong>${esc(party.name)}</strong></p>
+        ${fields.map(f=>renderStandalonePartyField(f)).join("") || `<p style="color:#9ca3af">No fields assigned to this party yet.</p>`}
+        <button onclick="document.getElementById('done').style.display='block';this.disabled=true" style="width:100%;margin-top:12px;padding:13px;border:none;border-radius:10px;background:#0d9488;color:white;font-weight:800;cursor:pointer">Submit information</button>
+        <div id="done" style="display:none;margin-top:14px;background:#f0fdf4;border:1px solid #86efac;color:#166534;border-radius:10px;padding:12px;font-size:13px">Submitted in developer mode. In production this will save to the transaction workspace.</div>
+      </div>
+    </div>`;
+  return true;
+}
+
+function renderStandalonePartyField(f){
+  const label=`<label style="display:block;font-size:12px;font-weight:800;color:#374151;margin-bottom:6px">${esc(f.label)} ${f.required?"*":""}</label>`;
+  const wrapStart=`<div style="margin-bottom:14px">`;
+  const wrapEnd=`</div>`;
+  if(f.type==="textbox")return `${wrapStart}${label}<textarea rows="3" style="width:100%;padding:10px;border:1px solid #e5e3de;border-radius:8px"></textarea>${wrapEnd}`;
+  if(f.type==="dropdown")return `${wrapStart}${label}<select style="width:100%;padding:10px;border:1px solid #e5e3de;border-radius:8px">${(f.options||["Single","Married ANC","Married COP","Divorced","Widowed"]).map(o=>`<option>${esc(o)}</option>`).join("")}</select>${wrapEnd}`;
+  if(f.type==="checkbox")return `${wrapStart}<label style="font-size:13px"><input type="checkbox"> ${esc(f.label)}</label>${wrapEnd}`;
+  if(f.type==="upload")return `${wrapStart}${label}<input type="file" style="width:100%;padding:10px;border:1px solid #e5e3de;border-radius:8px">${wrapEnd}`;
+  const type=f.type==="email"?"email":f.type==="date"?"date":f.type==="amount"?"number":"text";
+  return `${wrapStart}${label}<input type="${type}" style="width:100%;padding:10px;border:1px solid #e5e3de;border-radius:8px" placeholder="{{${esc(f.key)}}}">${wrapEnd}`;
+}
+
+function escAttr(s){return String(s??"").replace(/'/g,"&#39;").replace(/"/g,"&quot;")}
+
 function previewForm(){
   const wf=currentWorkflow();const fields=wf.fields.filter(f=>f.type!=="signature"&&f.type!=="initials");
   const groups={}; fields.forEach(f=>{groups[f.partyName]=groups[f.partyName]||[];groups[f.partyName].push(f)});
@@ -591,7 +727,8 @@ function resetDemo(){if(!confirm("Reset all FormFlow developer data?"))return;st
 function makeKey(s){return String(s||"field").toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"")}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]))}
 
-renderAll();
+const partyToken = new URLSearchParams(location.search).get("party");
+if(!partyToken || !renderPartyCollectionFromToken(partyToken)) renderAll();
 </script>
 </body>
 </html>
