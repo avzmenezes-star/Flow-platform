@@ -1913,7 +1913,7 @@
 
       <div class="nav-section">
         <div class="nav-section-label">Tools</div>
-        <div class="nav-item" onclick="showView('notetaker')">
+        <div class="nav-item" onclick="showView('notetaker');initNotetaker()">
           <div class="nav-icon">📝</div> Notetaker
         </div>
         <div class="nav-item" onclick="showView('formflow')">
@@ -1967,7 +1967,7 @@
         <input class="search-input" placeholder="Search workspaces, documents, contacts...">
       </div>
       <div class="topbar-actions">
-        <div class="icon-btn" title="Sticky notes &amp; quick capture (⌘K)" onclick="toggleStickyPanel()" id="sticky-btn" style="position:relative">
+        <div class="icon-btn" title="Notetaker (⌘K)" onclick="showView('notetaker');initNotetaker()" id="sticky-btn" style="position:relative">
           📝 <div class="sticky-btn-dot" id="sticky-btn-dot"></div>
         </div>
         <div class="icon-btn" title="Notifications" onclick="toggleNotifications()" id="notif-btn">
@@ -2021,7 +2021,7 @@
           <div class="section-header">
             <div class="section-title">📌 My sticky notes</div>
             <div style="display:flex;align-items:center;gap:10px">
-              <button class="section-link" onclick="toggleStickyPanel()">View all & add →</button>
+              <button class="section-link" onclick="showView('notetaker');initNotetaker()">View all in Notetaker →</button>
             </div>
           </div>
           <div class="stickies-bar" id="stickies-bar">
@@ -2621,19 +2621,27 @@
         <div style="margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-start">
           <div>
             <h2 style="font-family:'Instrument Serif',serif;font-size:26px;margin-bottom:4px;letter-spacing:-0.3px">Notetaker</h2>
-            <p style="font-size:13px;color:var(--ink-3)">Capture thoughts, manage tasks, and review meeting transcripts — all in one place.</p>
+            <p style="font-size:13px;color:var(--ink-3)">Sticky notes, scratchpad, meeting transcripts — your whole second brain.</p>
           </div>
           <div style="display:flex;gap:8px">
             <button class="btn-ghost" onclick="openStickyModal()" style="font-size:13px">📌 New sticky</button>
+            <button class="btn-ghost" onclick="openNewMeetingModal()" style="font-size:13px">🎙 Log meeting</button>
             <button class="btn-primary" onclick="openNewNoteModal()">+ New note</button>
           </div>
         </div>
 
-        <!-- ⌘K shortcut hint -->
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:24px;padding:10px 16px;background:var(--indigo-light);border-radius:9px;border:1px solid #c7d2fe">
-          <span style="font-size:13px;color:var(--indigo-mid)">💡 Quick tip: press <kbd style="background:white;border:1px solid #c7d2fe;border-radius:4px;padding:1px 6px;font-size:11px;font-family:monospace">⌘K</kbd> from anywhere in Flow to instantly open the sticky panel for a quick capture.</span>
+        <!-- STICKY NOTES SECTION -->
+        <div style="margin-bottom:28px">
+          <div class="section-header">
+            <div class="section-title">📌 Sticky notes</div>
+            <button class="section-link" onclick="openStickyModal()">+ Add sticky →</button>
+          </div>
+          <div class="stickies-bar" id="nt-stickies-bar">
+            <!-- rendered by renderNTStickies() -->
+          </div>
         </div>
 
+        <!-- MAIN GRID -->
         <div class="nt-grid">
 
           <!-- LEFT: Scratchpad + Notes -->
@@ -2643,7 +2651,7 @@
             <div>
               <div class="section-header">
                 <div class="section-title">Scratchpad</div>
-                <span style="font-size:11px;color:var(--ink-4)">Auto-saved locally</span>
+                <span style="font-size:11px;color:var(--ink-4)">Auto-saved · <kbd style="background:var(--surface-2);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:10px;font-family:monospace">⌘K</kbd> to open from anywhere</span>
               </div>
               <div class="panel" style="overflow:visible">
                 <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
@@ -2658,7 +2666,8 @@
                 <div style="padding:12px 20px;display:flex;justify-content:space-between;align-items:center">
                   <span style="font-size:11px;color:var(--ink-4)" id="scratchpad-saved-label">Start typing to capture a note</span>
                   <div style="display:flex;gap:8px">
-                    <button class="btn-ghost" style="font-size:12px;padding:6px 14px" onclick="promoteToTask()">→ Promote to task</button>
+                    <button class="btn-ghost" style="font-size:12px;padding:6px 14px" onclick="promoteToTask()">→ To task</button>
+                    <button class="btn-ghost" style="font-size:12px;padding:6px 14px" onclick="promoteToSticky()">📌 To sticky</button>
                     <button class="btn-primary" style="font-size:12px;padding:6px 14px" onclick="saveScratchpad()">Save note</button>
                   </div>
                 </div>
@@ -2668,16 +2677,14 @@
             <!-- Notes list -->
             <div>
               <div class="section-header">
-                <div class="section-title">Recent notes</div>
+                <div class="section-title">Saved notes</div>
                 <div style="display:flex;gap:6px">
                   <button class="filter-btn active" id="notes-filter-all" onclick="filterNotes(this,'all')" style="font-size:11px;padding:4px 10px">All</button>
                   <button class="filter-btn" id="notes-filter-general" onclick="filterNotes(this,'General')" style="font-size:11px;padding:4px 10px">General</button>
                   <button class="filter-btn" id="notes-filter-ws" onclick="filterNotes(this,'workspace')" style="font-size:11px;padding:4px 10px">Workspace</button>
                 </div>
               </div>
-              <div id="notes-list" style="display:flex;flex-direction:column;gap:10px">
-                <!-- rendered by JS -->
-              </div>
+              <div id="notes-list" style="display:flex;flex-direction:column;gap:10px"></div>
             </div>
 
           </div>
@@ -2703,16 +2710,13 @@
             <div>
               <div class="section-header">
                 <div class="section-title">Meeting notes</div>
-                <button class="section-link" onclick="openNewMeetingModal()">+ New meeting</button>
+                <button class="section-link" onclick="openNewMeetingModal()">+ Log meeting</button>
               </div>
-              <div class="panel" id="meetings-panel">
-                <!-- rendered by JS -->
-              </div>
-              <!-- Connect bot CTA -->
+              <div class="panel" id="meetings-panel"></div>
               <div style="margin-top:10px;padding:14px 18px;background:var(--surface);border:1.5px dashed var(--border-2);border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:space-between;gap:16px">
                 <div>
                   <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px">🎙 Connect a notetaker bot</div>
-                  <div style="font-size:11px;color:var(--ink-4)">Automatically transcribe Google Meet, Teams & Zoom calls</div>
+                  <div style="font-size:11px;color:var(--ink-4)">Auto-transcribe Google Meet, Teams &amp; Zoom calls</div>
                 </div>
                 <button class="btn-primary" style="font-size:12px;padding:7px 14px;white-space:nowrap" onclick="showToast('Notetaker bot integration coming soon')">Connect</button>
               </div>
@@ -4653,7 +4657,8 @@
     if (ta && scratch) { ta.value = scratch; document.getElementById('scratchpad-saved-label').textContent = 'Draft restored'; }
 
     // auto-save scratchpad as user types
-    if (ta) {
+    if (ta && !ta._bound) {
+      ta._bound = true;
       ta.addEventListener('input', () => {
         localStorage.setItem(SCRATCH_KEY, ta.value);
         document.getElementById('scratchpad-saved-label').textContent = 'Saved just now';
@@ -4661,9 +4666,54 @@
     }
 
     populateNoteContexts();
+    renderNTStickies();
     renderNotesList();
     renderMeetingsPanel();
     renderNTTasks();
+  }
+
+  function renderNTStickies() {
+    const bar = document.getElementById('nt-stickies-bar');
+    if (!bar) return;
+    const notes = stickyNotes.slice(0, 6);
+    bar.innerHTML = notes.map((n, i) => `
+      <div class="sticky-note ${n.color} ${rotations[i % 5]}" onclick="openEditSticky('${n.id}')">
+        <div class="sn-top">
+          <span class="sn-ctx">${escapeHTML(n.ctx || 'General')}</span>
+          <button class="sn-del" onclick="event.stopPropagation();deleteSticky('${n.id}')" title="Delete">✕</button>
+        </div>
+        <div class="sn-body">${escapeHTML(n.text)}</div>
+        <div class="sn-foot">
+          <span class="sn-time">${n.time || stickyTimeLabel(n.ts)}</span>
+          <span class="sn-scope">📌</span>
+        </div>
+        <div class="sticky-dog"></div>
+      </div>
+    `).join('') + `
+      <div class="sticky-add-btn" onclick="openStickyModal()">
+        <div class="sticky-add-icon">+</div>
+        <div>New sticky</div>
+      </div>
+    `;
+  }
+
+  function promoteToSticky() {
+    const body = document.getElementById('scratchpad-body').value.trim();
+    if (!body) { showToast('Write something first!'); return; }
+    const colors = ['sn-yellow','sn-blue','sn-green','sn-pink','sn-purple'];
+    stickyNotes.unshift({
+      id: 'sn'+Date.now(),
+      text: body.substring(0, 140),
+      color: colors[Math.floor(Math.random() * colors.length)],
+      ctx: document.getElementById('scratchpad-ctx')?.value || 'General',
+      ts: Date.now(), time: stickyTimeLabel(Date.now())
+    });
+    saveStickiesToStorage();
+    renderStickies();
+    renderNTStickies();
+    document.getElementById('scratchpad-body').value = '';
+    localStorage.removeItem(SCRATCH_KEY);
+    showToast('Pinned as sticky note 📌');
   }
 
   function populateNoteContexts() {
@@ -4955,15 +5005,6 @@
     showToast('Meeting note saved ✓');
   }
 
-  // Re-render notetaker tasks when switching to that view
-  const _origShowView = showView;
-  function showView(id) {
-    _origShowView(id);
-    if (id === 'notetaker') {
-      initNotetaker();
-    }
-  }
-
   // ── STICKY NOTES ─────────────────────────────────────────────
   const STICKY_KEY = 'flow_stickies_v1';
   let stickyNotes = [];
@@ -5018,6 +5059,7 @@
   function renderStickies() {
     renderDashboardStickies();
     renderPanelStickies();
+    renderNTStickies();
     updateStickyDot();
   }
 
@@ -5180,16 +5222,15 @@
     showToast('Sticky removed');
   }
 
-  // ⌘K / Ctrl+K keyboard shortcut to open sticky panel
+  // ⌘K / Ctrl+K keyboard shortcut → open Notetaker view
   document.addEventListener('keydown', e => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
       e.preventDefault();
-      if (!stickyPanelOpen) toggleStickyPanel();
-      else document.getElementById('sp-textarea')?.focus();
+      showView('notetaker');
+      initNotetaker();
+      setTimeout(() => document.getElementById('scratchpad-body')?.focus(), 150);
     }
   });
-
-  // Close sticky panel on outside click is handled by backdrop div
 
   // Close notification panel on outside click
   document.addEventListener('click', (e) => {
