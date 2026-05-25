@@ -2393,35 +2393,82 @@
       </div>
 
       <!-- ── FORMFLOW STUB ───────────────────────────────────────── -->
-      <div class="view" id="view-formflow">
-        <div style="text-align:center;padding:80px 40px">
-          <div style="font-size:48px;margin-bottom:16px">📋</div>
-          <h2 style="font-family:'Instrument Serif',serif;font-size:28px;margin-bottom:8px">FormFlow</h2>
-          <p style="font-size:14px;color:var(--ink-3);max-width:440px;margin:0 auto 28px;line-height:1.6">Compliance-grade onboarding, document uploads, and workflow automation. Build once, deploy across every client type.</p>
-          <div style="display:inline-block;padding:8px 20px;background:var(--indigo-light);color:var(--indigo);border-radius:20px;font-size:13px;font-weight:600">Coming next — in active development</div>
+      <!-- ── FORMFLOW ───────────────────────────────────────────── -->
+      <div class="view" id="view-formflow" style="padding:0;margin:0;height:calc(100vh - 56px);display:none">
+        <iframe
+          id="formflow-frame"
+          src="./formflow.html"
+          style="width:100%;height:100%;border:none;display:block"
+          title="FormFlow"
+        ></iframe>
+      </div>
+
+      <!-- ── SIGNFLOW ───────────────────────────────────────────── -->
+      <div class="view" id="view-signflow" style="padding:0;margin:0;height:calc(100vh - 56px);display:none">
+        <iframe
+          id="signflow-frame"
+          src="./signflow.html"
+          style="width:100%;height:100%;border:none;display:block"
+          title="SignFlow"
+          onerror="document.getElementById('signflow-fallback').style.display='flex'"
+        ></iframe>
+        <!-- fallback shown if signflow.html doesn't exist yet -->
+        <div id="signflow-fallback" style="display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);gap:16px">
+          <div style="font-size:48px">✍️</div>
+          <h2 style="font-family:'Instrument Serif',serif;font-size:28px">SignFlow</h2>
+          <p style="font-size:14px;color:var(--ink-3);max-width:400px;text-align:center;line-height:1.6">SignFlow hasn't been added to the repo yet. Once <code>signflow.html</code> is committed alongside <code>flow.html</code>, it will load here automatically.</p>
+          <div style="display:inline-block;padding:8px 20px;background:var(--indigo-light);color:var(--indigo);border-radius:20px;font-size:13px;font-weight:600">In development</div>
         </div>
       </div>
 
-      <!-- ── SIGNFLOW STUB ───────────────────────────────────────── -->
-      <div class="view" id="view-signflow">
-        <div style="text-align:center;padding:80px 40px">
-          <div style="font-size:48px;margin-bottom:16px">✍️</div>
-          <h2 style="font-family:'Instrument Serif',serif;font-size:28px;margin-bottom:8px">SignFlow</h2>
-          <p style="font-size:14px;color:var(--ink-3);max-width:440px;margin:0 auto 28px;line-height:1.6">Electronic signatures, audit trails, and completed PDF packages. Launch SignFlow to manage your signing requests.</p>
-          <button class="btn-primary" onclick="showToast('Opening SignFlow...')">Open SignFlow →</button>
-        </div>
-      </div>
-
-      <!-- ── DOCUMENTS STUB ─────────────────────────────────────── -->
+      <!-- ── DOCUMENTS ──────────────────────────────────────────── -->
+      <!-- ── DOCUMENTS ──────────────────────────────────────────── -->
       <div class="view" id="view-documents">
-        <div style="margin-bottom:24px">
-          <h2 style="font-family:'Instrument Serif',serif;font-size:24px;margin-bottom:4px">Documents</h2>
-          <p style="font-size:13px;color:var(--ink-3)">All files across your workspaces.</p>
+        <div style="margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <h2 style="font-family:'Instrument Serif',serif;font-size:26px;margin-bottom:4px;letter-spacing:-0.3px">Documents</h2>
+            <p style="font-size:13px;color:var(--ink-3)">All files across your workspaces. Upload, organise, and link documents to clients and workflows.</p>
+          </div>
+          <div style="display:flex;gap:8px">
+            <label class="btn-ghost" style="cursor:pointer;font-size:13px;padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface)">
+              ↑ Upload file
+              <input type="file" multiple hidden onchange="handleDocUpload(event)">
+            </label>
+            <button class="btn-primary" onclick="showView('formflow')">Open FormFlow →</button>
+          </div>
         </div>
-        <div style="text-align:center;padding:60px;background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border)">
-          <div style="font-size:40px;margin-bottom:12px">📁</div>
-          <div style="font-size:15px;font-weight:600;margin-bottom:6px">Document centre</div>
-          <div style="font-size:13px;color:var(--ink-3)">Coming with FormFlow</div>
+
+        <!-- Search + filters -->
+        <div style="display:flex;gap:10px;margin-bottom:20px;align-items:center">
+          <input id="doc-search" class="form-input" placeholder="Search documents…" style="flex:1;max-width:360px" oninput="renderDocuments()">
+          <button class="filter-btn active" id="doc-filter-all" onclick="setDocFilter(this,'all')">All</button>
+          <button class="filter-btn" id="doc-filter-formflow" onclick="setDocFilter(this,'formflow')">FormFlow</button>
+          <button class="filter-btn" id="doc-filter-signflow" onclick="setDocFilter(this,'signflow')">SignFlow</button>
+          <button class="filter-btn" id="doc-filter-uploads" onclick="setDocFilter(this,'uploads')">Uploaded</button>
+        </div>
+
+        <!-- Drop zone -->
+        <div id="doc-dropzone" style="border:2px dashed var(--border-2);border-radius:var(--radius-lg);padding:28px;text-align:center;margin-bottom:20px;background:var(--surface);transition:all 0.15s;display:none">
+          <div style="font-size:28px;margin-bottom:8px">📁</div>
+          <div style="font-size:14px;font-weight:600;color:var(--ink-2);margin-bottom:4px">Drop files here to upload</div>
+          <div style="font-size:12px;color:var(--ink-4)">PDF, DOCX, images and more</div>
+        </div>
+
+        <!-- Stats row -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px" id="doc-stats-row">
+          <div class="stat-card"><div class="stat-label">Total files</div><div class="stat-value" id="doc-stat-total">0</div></div>
+          <div class="stat-card"><div class="stat-label">FormFlow collections</div><div class="stat-value" style="color:var(--ff,#0d9488)" id="doc-stat-ff">0</div></div>
+          <div class="stat-card"><div class="stat-label">Signed packages</div><div class="stat-value" style="color:#7c3aed" id="doc-stat-sf">0</div></div>
+          <div class="stat-card"><div class="stat-label">Uploaded files</div><div class="stat-value" style="color:var(--indigo)" id="doc-stat-up">0</div></div>
+        </div>
+
+        <!-- Document list -->
+        <div class="panel" id="doc-list-panel">
+          <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid var(--border)">
+            <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4)" id="doc-list-label">All documents</span>
+            <span style="font-size:12px;color:var(--ink-4)" id="doc-list-count"></span>
+          </div>
+          <div id="doc-list"></div>
         </div>
       </div>
 
@@ -3548,26 +3595,41 @@
   }
 
   // ── NAVIGATION ──────────────────────────────────────────────
+  const IFRAME_VIEWS = new Set(['formflow', 'signflow']);
+
   function showView(id) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     const targetView = document.getElementById('view-' + id);
     if (!targetView) { showToast('View not found: ' + id); return; }
     targetView.classList.add('active');
 
+    // iframe views need full-height treatment — remove page-scroll padding
+    const pageScroll = document.querySelector('.page-scroll');
+    if (IFRAME_VIEWS.has(id)) {
+      pageScroll.style.padding = '0';
+      pageScroll.style.overflow = 'hidden';
+      targetView.style.display = 'block';
+      // Show SignFlow fallback if the file doesn't exist
+      if (id === 'signflow') {
+        const frame = document.getElementById('signflow-frame');
+        frame.onerror = () => {
+          frame.style.display = 'none';
+          document.getElementById('signflow-fallback').style.display = 'flex';
+        };
+      }
+    } else {
+      pageScroll.style.padding = '';
+      pageScroll.style.overflow = '';
+    }
+
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    const map = { dashboard:'⊞ Dashboard', hubs:'◫ Hubs', workspaces:'🗂 Workspaces', tasks:'✓ Tasks', documents:'📄 Documents', formflow:'📋 FormFlow', signflow:'✍️ SignFlow', contacts:'👥 Contacts', flowmail:'✉ FlowMail', reports:'↗ Reports', settings:'⚙ Settings', plugins:'🔌 Apps & Plugins' };
     const titles = { dashboard:'Dashboard', hubs:'Hubs', workspaces:'Workspaces', tasks:'Tasks', activity:'Recent Activity', documents:'Documents', formflow:'FormFlow', signflow:'SignFlow', contacts:'Contacts', flowmail:'FlowMail', reports:'Reports', settings:'Settings', plugins:'Apps & Plugins', notetaker:'Notetaker' };
     document.getElementById('topbar-title').textContent = titles[id] || id;
 
-    document.querySelectorAll('.nav-item').forEach(n => {
-      if (n.textContent.trim().startsWith(Object.entries(map).find(([k])=>k===id)?.[1]?.[0]||'')) {}
-    });
-
     // Match nav item by text
     document.querySelectorAll('.nav-item').forEach(n => {
-      const txt = n.textContent.trim();
       const label = titles[id];
-      if (label && txt.includes(label)) n.classList.add('active');
+      if (label && n.textContent.trim().includes(label)) n.classList.add('active');
     });
 
     currentView = id;
@@ -5004,6 +5066,150 @@
     closeModal('new-meeting-modal');
     showToast('Meeting note saved ✓');
   }
+
+  // ── DOCUMENTS ────────────────────────────────────────────────
+  const DOCS_KEY = 'flow_documents_v1';
+  let docFilter = 'all';
+  let docFiles  = [];
+
+  const demoDocs = [
+    { id:'d1', name:'12 Main Road — OTP v3.pdf',      type:'formflow', source:'FormFlow Collection', ws:'12 Main Road — Purchase',  size:'248 KB', date:'Today, 09:22',    icon:'📋' },
+    { id:'d2', name:'John Smith — FICA Pack.pdf',      type:'formflow', source:'FormFlow Collection', ws:'12 Main Road — Purchase',  size:'1.2 MB', date:'Today, 09:20',    icon:'📋' },
+    { id:'d3', name:'Acme Corp Lease — Signed.pdf',    type:'signflow', source:'SignFlow Package',    ws:'Acme Corp — Lease',        size:'384 KB', date:'Yesterday, 14:55', icon:'✍️' },
+    { id:'d4', name:'Mary Jacobs — ID Document.pdf',   type:'uploads',  source:'Uploaded',            ws:'Sandy Close — Sale',       size:'892 KB', date:'Mon, 11:03',       icon:'📄' },
+    { id:'d5', name:'Trust Account May 2025.xlsx',     type:'uploads',  source:'Uploaded',            ws:'General',                  size:'56 KB',  date:'Mon, 09:14',       icon:'📊' },
+    { id:'d6', name:'Thabo Nkosi — Contract.docx',     type:'formflow', source:'FormFlow Collection', ws:'HR Hub',                   size:'120 KB', date:'Fri, 16:30',       icon:'📋' },
+    { id:'d7', name:'Sandton Block — Mandate.pdf',     type:'uploads',  source:'Uploaded',            ws:'General',                  size:'210 KB', date:'Fri, 10:45',       icon:'📄' },
+    { id:'d8', name:'Lease Agreement — Signed v2.pdf', type:'signflow', source:'SignFlow Package',    ws:'12 Main Road — Purchase',  size:'445 KB', date:'Thu, 15:20',       icon:'✍️' },
+  ];
+
+  function initDocuments() {
+    try { docFiles = JSON.parse(localStorage.getItem(DOCS_KEY)) || demoDocs; } catch(e) { docFiles = demoDocs; }
+    setupDocDropzone();
+    renderDocuments();
+  }
+
+  function setupDocDropzone() {
+    const zone = document.getElementById('doc-dropzone');
+    const page = document.getElementById('view-documents');
+    if (!zone || !page || page._dropBound) return;
+    page._dropBound = true;
+
+    page.addEventListener('dragover', e => { e.preventDefault(); zone.style.display = 'block'; zone.style.borderColor = 'var(--indigo)'; zone.style.background = 'var(--indigo-light)'; });
+    page.addEventListener('dragleave', e => { if (!page.contains(e.relatedTarget)) { zone.style.display = 'none'; } });
+    page.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.style.display = 'none';
+      const files = [...e.dataTransfer.files];
+      addUploadedFiles(files);
+    });
+  }
+
+  function handleDocUpload(e) {
+    const files = [...e.target.files];
+    addUploadedFiles(files);
+    e.target.value = '';
+  }
+
+  function addUploadedFiles(files) {
+    files.forEach(f => {
+      const kb = Math.round(f.size / 1024);
+      const size = kb > 1024 ? (kb/1024).toFixed(1)+' MB' : kb+' KB';
+      docFiles.unshift({
+        id: 'd'+Date.now()+Math.random(),
+        name: f.name, type: 'uploads',
+        source: 'Uploaded', ws: 'General',
+        size, date: 'Just now', icon: getDocIcon(f.name)
+      });
+    });
+    try { localStorage.setItem(DOCS_KEY, JSON.stringify(docFiles)); } catch(e) {}
+    renderDocuments();
+    showToast(`${files.length} file${files.length>1?'s':''} uploaded ✓`);
+  }
+
+  function getDocIcon(name) {
+    const ext = name.split('.').pop().toLowerCase();
+    if (['pdf'].includes(ext)) return '📄';
+    if (['doc','docx'].includes(ext)) return '📝';
+    if (['xls','xlsx','csv'].includes(ext)) return '📊';
+    if (['png','jpg','jpeg','gif','webp'].includes(ext)) return '🖼';
+    return '📎';
+  }
+
+  function setDocFilter(btn, filter) {
+    document.querySelectorAll('#view-documents .filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    docFilter = filter;
+    renderDocuments();
+  }
+
+  function renderDocuments() {
+    const search = (document.getElementById('doc-search')?.value || '').toLowerCase();
+    let data = docFiles;
+    if (docFilter !== 'all') data = data.filter(d => d.type === docFilter);
+    if (search) data = data.filter(d => d.name.toLowerCase().includes(search) || (d.ws||'').toLowerCase().includes(search));
+
+    // stats
+    document.getElementById('doc-stat-total').textContent = docFiles.length;
+    document.getElementById('doc-stat-ff').textContent    = docFiles.filter(d=>d.type==='formflow').length;
+    document.getElementById('doc-stat-sf').textContent    = docFiles.filter(d=>d.type==='signflow').length;
+    document.getElementById('doc-stat-up').textContent    = docFiles.filter(d=>d.type==='uploads').length;
+
+    const labelMap = { all:'All documents', formflow:'FormFlow collections', signflow:'SignFlow packages', uploads:'Uploaded files' };
+    document.getElementById('doc-list-label').textContent = labelMap[docFilter] || 'All documents';
+    document.getElementById('doc-list-count').textContent = data.length + ' file' + (data.length !== 1 ? 's' : '');
+
+    const list = document.getElementById('doc-list');
+    if (!list) return;
+
+    if (data.length === 0) {
+      list.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink-4);font-size:13px">No documents found. Upload a file or check FormFlow for collections.</div>';
+      return;
+    }
+
+    const typeColors = { formflow:'#f0fdfa', signflow:'#f5f3ff', uploads:'var(--indigo-light)' };
+    const typeBadge  = { formflow:['FormFlow','#0d9488','#f0fdfa'], signflow:['SignFlow','#7c3aed','#f5f3ff'], uploads:['Uploaded','var(--indigo)','var(--indigo-light)'] };
+
+    list.innerHTML = data.map(d => {
+      const [badgeLabel, badgeColor, badgeBg] = typeBadge[d.type] || ['File','var(--ink-4)','var(--surface-2)'];
+      const isFF = d.type === 'formflow';
+      const isSF = d.type === 'signflow';
+      return `
+        <div style="display:flex;align-items:center;gap:14px;padding:12px 20px;border-bottom:0.5px solid var(--border);transition:background 0.12s" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">
+          <div style="width:36px;height:36px;border-radius:8px;background:${typeColors[d.type]||'var(--surface-2)'};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${d.icon}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHTML(d.name)}</div>
+            <div style="font-size:11px;color:var(--ink-4);margin-top:2px;display:flex;align-items:center;gap:6px">
+              <span>${escapeHTML(d.ws || 'General')}</span>
+              <span>·</span><span>${d.size}</span>
+              <span>·</span><span>${d.date}</span>
+            </div>
+          </div>
+          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:${badgeBg};color:${badgeColor};flex-shrink:0">${badgeLabel}</span>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            ${isFF ? `<button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="showView('formflow')">Open in FormFlow</button>` : ''}
+            ${isSF ? `<button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="showView('signflow')">Open in SignFlow</button>` : ''}
+            <button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="deleteDoc('${d.id}')">Remove</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function deleteDoc(id) {
+    docFiles = docFiles.filter(d => d.id !== id);
+    try { localStorage.setItem(DOCS_KEY, JSON.stringify(docFiles)); } catch(e) {}
+    renderDocuments();
+    showToast('Document removed');
+  }
+
+  // init documents when navigating to that view
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.textContent.includes('Documents')) {
+      const orig = n.getAttribute('onclick');
+      n.setAttribute('onclick', (orig||'') + ';initDocuments()');
+    }
+  });
 
   // ── STICKY NOTES ─────────────────────────────────────────────
   const STICKY_KEY = 'flow_stickies_v1';
