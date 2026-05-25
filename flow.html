@@ -2394,28 +2394,18 @@
 
       <!-- ── FORMFLOW STUB ───────────────────────────────────────── -->
       <!-- ── FORMFLOW ───────────────────────────────────────────── -->
-      <div class="view" id="view-formflow" style="padding:0;margin:0;height:calc(100vh - 56px)">
-        <iframe
-          id="formflow-frame"
-          src="./formflow.html"
-          style="width:100%;height:100%;border:none;display:block"
-          title="FormFlow"
-        ></iframe>
+      <div class="view" id="view-formflow">
+        <div style="text-align:center;padding:80px 40px">
+          <div style="font-size:48px;margin-bottom:16px">📋</div>
+          <h2 style="font-family:'Instrument Serif',serif;font-size:28px;margin-bottom:8px">Opening FormFlow…</h2>
+        </div>
       </div>
 
       <!-- ── SIGNFLOW ───────────────────────────────────────────── -->
-      <div class="view" id="view-signflow" style="padding:0;margin:0;height:calc(100vh - 56px);position:relative">
-        <iframe
-          id="signflow-frame"
-          src="./signflow.html"
-          style="width:100%;height:100%;border:none;display:block"
-          title="SignFlow"
-        ></iframe>
-        <div id="signflow-fallback" style="display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);gap:16px">
-          <div style="font-size:48px">✍️</div>
-          <h2 style="font-family:'Instrument Serif',serif;font-size:28px">SignFlow</h2>
-          <p style="font-size:14px;color:var(--ink-3);max-width:400px;text-align:center;line-height:1.6">Once <code>signflow.html</code> is committed to the repo alongside <code>flow.html</code>, it will load here automatically.</p>
-          <div style="display:inline-block;padding:8px 20px;background:var(--indigo-light);color:var(--indigo);border-radius:20px;font-size:13px;font-weight:600">In development</div>
+      <div class="view" id="view-signflow">
+        <div style="text-align:center;padding:80px 40px">
+          <div style="font-size:48px;margin-bottom:16px">✍️</div>
+          <h2 style="font-family:'Instrument Serif',serif;font-size:28px;margin-bottom:8px">Opening SignFlow…</h2>
         </div>
       </div>
 
@@ -3594,10 +3584,16 @@
   }
 
   // ── NAVIGATION ──────────────────────────────────────────────
-  const IFRAME_VIEWS = new Set(['formflow', 'signflow']);
+  const EXTERNAL_TOOLS = { formflow: './formflow.html', signflow: './signflow.html' };
 
   function showView(id) {
-    // Hide every view explicitly — overrides any inline style
+    // External tools — navigate directly to the standalone file
+    if (EXTERNAL_TOOLS[id]) {
+      window.location.href = EXTERNAL_TOOLS[id];
+      return;
+    }
+
+    // Hide every view explicitly
     document.querySelectorAll('.view').forEach(v => {
       v.classList.remove('active');
       v.style.display = 'none';
@@ -3605,28 +3601,13 @@
 
     const targetView = document.getElementById('view-' + id);
     if (!targetView) { showToast('View not found: ' + id); return; }
-
     targetView.classList.add('active');
     targetView.style.display = 'block';
 
-    // Iframe views: strip page-scroll padding so iframe fills full height
+    // Restore page-scroll padding (in case coming back from iframe)
     const pageScroll = document.querySelector('.page-scroll');
-    if (IFRAME_VIEWS.has(id)) {
-      pageScroll.style.padding = '0';
-      pageScroll.style.overflow = 'hidden';
-      // SignFlow: detect missing file and show fallback
-      if (id === 'signflow') {
-        const frame = document.getElementById('signflow-frame');
-        const fallback = document.getElementById('signflow-fallback');
-        frame.onerror = () => {
-          frame.style.display = 'none';
-          fallback.style.display = 'flex';
-        };
-      }
-    } else {
-      pageScroll.style.padding = '';
-      pageScroll.style.overflow = '';
-    }
+    pageScroll.style.padding = '';
+    pageScroll.style.overflow = '';
 
     // Nav active state
     const titles = { dashboard:'Dashboard', hubs:'Hubs', workspaces:'Workspaces', tasks:'Tasks', activity:'Recent Activity', documents:'Documents', formflow:'FormFlow', signflow:'SignFlow', contacts:'Contacts', flowmail:'FlowMail', reports:'Reports', settings:'Settings', plugins:'Apps & Plugins', notetaker:'Notetaker' };
