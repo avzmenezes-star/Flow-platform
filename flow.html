@@ -1415,8 +1415,38 @@
       margin: 4px 0;
     }
 
+    /* ── DOCUMENTS — PREVIEW PANEL ────────────────────────────── */
+    #doc-preview-panel.open { width: 380px; min-width: 380px; }
+
+    .preview-pdf {
+      flex: 1; border: none; width: 100%; height: 100%;
+      background: #f1f5f9;
+    }
+
+    .file-img-thumb {
+      width: 100%; cursor: zoom-in;
+      border-radius: 6px; display: block;
+      transition: opacity 0.15s;
+    }
+    .file-img-thumb:hover { opacity: 0.88; }
+
+    /* file type colour dots in file rows */
+    .ft-pdf     { background: #fee2e2; }
+    .ft-word    { background: #dbeafe; }
+    .ft-sheet   { background: #dcfce7; }
+    .ft-image   { background: #fce7f3; }
+    .ft-ppt     { background: #ffedd5; }
+    .ft-email   { background: #ede9fe; }
+    .ft-other   { background: #f1f5f9; }
+
     /* ── DOCUMENTS FILE SYSTEM ─────────────────────────────────── */
     #view-documents { padding: 0; }
+
+    /* Full-bleed views that need page-scroll padding removed */
+    .page-scroll.full-bleed { padding: 0; overflow: hidden; }
+
+    /* Notetaker needs standard padding restored */
+    .page-scroll:not(.full-bleed) { padding: 28px 28px 40px; overflow-y: auto; }
 
     .doc-tree-hub {
       padding: 6px 16px 4px;
@@ -2508,7 +2538,7 @@
         </div>
 
         <!-- ── DOCUMENTS — full file system ──────────────────── -->
-        <div style="display:flex;gap:0;height:calc(100vh - 56px);margin:-24px;overflow:hidden">
+        <div style="display:flex;gap:0;height:calc(100vh - 56px);overflow:hidden">
 
           <!-- Folder tree sidebar -->
           <div id="doc-sidebar" style="width:240px;min-width:240px;border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow:hidden">
@@ -2521,7 +2551,7 @@
             </div>
             <div style="flex:1;overflow-y:auto;padding:8px 0;scrollbar-width:thin" id="doc-tree"></div>
             <div style="padding:10px 12px;border-top:1px solid var(--border)">
-              <button class="btn-ghost" style="width:100%;font-size:12px;padding:7px" onclick="setDocView('all','All Documents','')">
+              <button class="btn-ghost" style="width:100%;font-size:12px;padding:7px" onclick="setDocView({type:'all',label:'All Documents'})">
                 🔍 Search all files
               </button>
             </div>
@@ -2540,6 +2570,7 @@
                 ↑ Upload
                 <input type="file" multiple hidden onchange="handleDocUpload(event)">
               </label>
+              <button class="btn-ghost" style="font-size:12px;padding:7px 14px" onclick="promptNewFolder()">📂 New folder</button>
               <button class="btn-primary" style="font-size:12px;padding:7px 14px" onclick="openCreateFileModal()">+ Create</button>
             </div>
 
@@ -2557,9 +2588,36 @@
               <div id="ds-gen"    style="flex:1;padding:10px 20px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4)">Generated</div><div style="font-size:18px;font-family:'Instrument Serif',serif;color:#b45309" id="dstat-gen">0</div></div>
             </div>
 
-            <!-- File list -->
-            <div style="flex:1;overflow-y:auto;scrollbar-width:thin" id="doc-file-area">
-              <div id="doc-list" style="padding:0"></div>
+            <!-- File type filter bar -->
+            <div style="display:flex;align-items:center;gap:6px;padding:8px 20px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface);overflow-x:auto;scrollbar-width:none">
+              <button class="filter-btn active" id="doctype-all"      onclick="setDocTypeFilter(this,'all')">All types</button>
+              <button class="filter-btn"        id="doctype-pdf"      onclick="setDocTypeFilter(this,'pdf')">📄 PDF</button>
+              <button class="filter-btn"        id="doctype-word"     onclick="setDocTypeFilter(this,'word')">📝 Word</button>
+              <button class="filter-btn"        id="doctype-sheet"    onclick="setDocTypeFilter(this,'sheet')">📊 Spreadsheet</button>
+              <button class="filter-btn"        id="doctype-image"    onclick="setDocTypeFilter(this,'image')">🖼 Images</button>
+              <button class="filter-btn"        id="doctype-ppt"      onclick="setDocTypeFilter(this,'ppt')">📑 Presentation</button>
+              <button class="filter-btn"        id="doctype-email"    onclick="setDocTypeFilter(this,'email')">✉️ Email</button>
+              <button class="filter-btn"        id="doctype-other"    onclick="setDocTypeFilter(this,'other')">📎 Other</button>
+            </div>
+
+            <!-- File list + preview panel side by side -->
+            <div style="flex:1;display:flex;overflow:hidden">
+
+              <!-- File list -->
+              <div style="flex:1;overflow-y:auto;scrollbar-width:thin" id="doc-file-area">
+                <div id="doc-list" style="padding:0"></div>
+              </div>
+
+              <!-- Preview panel (hidden until file clicked) -->
+              <div id="doc-preview-panel" style="width:0;min-width:0;border-left:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow:hidden;transition:width 0.25s cubic-bezier(0.16,1,0.3,1)">
+                <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
+                  <span style="font-size:12px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1" id="preview-filename">Preview</span>
+                  <button onclick="closePreview()" style="border:none;background:none;cursor:pointer;color:var(--ink-4);font-size:16px;padding:0 0 0 8px;flex-shrink:0">✕</button>
+                </div>
+                <div style="flex:1;overflow:hidden;display:flex;flex-direction:column" id="preview-body"></div>
+                <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0" id="preview-footer"></div>
+              </div>
+
             </div>
 
           </div>
@@ -2936,6 +2994,13 @@
       <button class="btn-primary" onclick="saveNewMeeting()">Save meeting</button>
     </div>
   </div>
+</div>
+
+<!-- ── IMAGE LIGHTBOX ────────────────────────────────────────── -->
+<div id="img-lightbox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:900;align-items:center;justify-content:center;flex-direction:column;gap:16px" onclick="closeLightbox()">
+  <div style="position:absolute;top:20px;right:24px;color:white;font-size:24px;cursor:pointer;opacity:0.7" onclick="closeLightbox()">✕</div>
+  <img id="lightbox-img" src="" style="max-width:90vw;max-height:80vh;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,0.5);object-fit:contain" onclick="event.stopPropagation()">
+  <div id="lightbox-caption" style="color:rgba(255,255,255,0.7);font-size:13px;text-align:center"></div>
 </div>
 
 <!-- ── CREATE FILE MODAL ─────────────────────────────────────── -->
@@ -3851,11 +3916,6 @@
     targetView.classList.add('active');
     targetView.style.display = 'block';
 
-    // Restore page-scroll padding (in case coming back from iframe)
-    const pageScroll = document.querySelector('.page-scroll');
-    pageScroll.style.padding = '';
-    pageScroll.style.overflow = '';
-
     // Nav active state
     const titles = { dashboard:'Dashboard', hubs:'Hubs', workspaces:'Workspaces', tasks:'Tasks', activity:'Recent Activity', documents:'Documents', formflow:'FormFlow', signflow:'SignFlow', contacts:'Contacts', flowmail:'FlowMail', reports:'Reports', settings:'Settings', plugins:'Apps & Plugins', notetaker:'Notetaker' };
     document.getElementById('topbar-title').textContent = titles[id] || id;
@@ -3870,6 +3930,20 @@
     if (id === 'tasks' && typeof renderGlobalTasks === 'function') {
       renderGlobalTasks(taskFilter || 'all');
     }
+    // Full-bleed layout for documents (removes page-scroll padding)
+    const pageScroll = document.querySelector('.page-scroll');
+    if (pageScroll) {
+      if (id === 'documents') {
+        pageScroll.classList.add('full-bleed');
+      } else {
+        pageScroll.classList.remove('full-bleed');
+        pageScroll.style.padding = '';
+        pageScroll.style.overflow = '';
+      }
+    }
+    // Auto-init views that need it
+    if (id === 'notetaker') setTimeout(() => initNotetaker(), 0);
+    if (id === 'documents') setTimeout(() => initDocuments(), 0);
   }
 
   // ── RENDER ──────────────────────────────────────────────────
@@ -5353,324 +5427,633 @@
   }
 
   // ── DOCUMENTS FILE SYSTEM ────────────────────────────────────
-  const DOCS_KEY = 'flow_documents_v2';
+  const DOCS_KEY    = 'flow_documents_v3';
+  const FOLDERS_KEY = 'flow_doc_folders_v1';
   let docFiles   = [];
-  let docView    = { type: 'all', hub: '', ws: '', label: 'All Documents' };
+  let docFolders = []; // { id, name, hub, ws, source, parentFolder, ts }
+  let docView    = { type:'all', hub:'', ws:'', source:'', folder:'', label:'All Documents' };
   let createFileType = 'pdf';
 
-  // Standard subfolders every workspace gets
+  // Collapsible tree state — hubs open by default, workspaces closed
+  let docTreeState = {};
+  function isExpanded(key) {
+    return docTreeState[key] !== undefined ? docTreeState[key] : key.startsWith('hub:');
+  }
+  function toggleTree(key, e) {
+    if (e) e.stopPropagation();
+    docTreeState[key] = !isExpanded(key);
+    renderDocTree();
+  }
+
   const WS_FOLDERS = [
-    { key: 'formflow',  label: 'FormFlow',         icon: '📋', color: '#f0fdfa', desc: 'Collected forms, FICA packs, onboarding submissions' },
-    { key: 'signflow',  label: 'Signed Documents',  icon: '✍️', color: '#f5f3ff', desc: 'Executed agreements, signed OTPs, completed packages' },
-    { key: 'upload',    label: 'Uploaded',           icon: '📁', color: '#eef2ff', desc: 'Manually uploaded files — title deeds, certificates, IDs' },
-    { key: 'generated', label: 'Generated',          icon: '📊', color: '#fffbeb', desc: 'DOCX and PDF outputs generated from templates' },
-    { key: 'notetaker', label: 'Meeting Notes',      icon: '🎙', color: '#f0fdf4', desc: 'Transcripts and action item exports from Notetaker' },
+    { key:'formflow',  label:'FormFlow',         icon:'📋', color:'#f0fdfa', desc:'Collected forms, FICA packs, onboarding submissions' },
+    { key:'signflow',  label:'Signed Documents',  icon:'✍️', color:'#f5f3ff', desc:'Executed agreements, signed OTPs, completed packages' },
+    { key:'upload',    label:'Uploaded',           icon:'📁', color:'#eef2ff', desc:'Manually uploaded files — title deeds, certificates, IDs' },
+    { key:'generated', label:'Generated',          icon:'📊', color:'#fffbeb', desc:'DOCX and PDF outputs generated from templates' },
+    { key:'notetaker', label:'Meeting Notes',      icon:'🎙', color:'#f0fdf4', desc:'Transcripts and action item exports from Notetaker' },
   ];
 
   const SOURCE_META = {
-    formflow:  { label: 'FormFlow',  cls: 'src-formflow',  icon: '📋', bg: '#f0fdfa' },
-    signflow:  { label: 'SignFlow',  cls: 'src-signflow',  icon: '✍️', bg: '#f5f3ff' },
-    upload:    { label: 'Uploaded',  cls: 'src-upload',    icon: '📄', bg: '#eef2ff' },
-    generated: { label: 'Generated', cls: 'src-generated', icon: '📊', bg: '#fffbeb' },
-    notetaker: { label: 'Notetaker', cls: 'src-notetaker', icon: '🎙', bg: '#f0fdf4' },
+    formflow:  { label:'FormFlow',  cls:'src-formflow',  bg:'#f0fdfa' },
+    signflow:  { label:'SignFlow',  cls:'src-signflow',  bg:'#f5f3ff' },
+    upload:    { label:'Uploaded',  cls:'src-upload',    bg:'#eef2ff' },
+    generated: { label:'Generated', cls:'src-generated', bg:'#fffbeb' },
+    notetaker: { label:'Notetaker', cls:'src-notetaker', bg:'#f0fdf4' },
   };
 
   const HUB_COLORS = {
-    Sales: '#0e7490', Deals: '#1a5c3a', HR: '#1d4ed8',
-    Legal: '#6d28d9', Finance: '#b45309', Marketing: '#c2410c'
+    Sales:'#0e7490', Deals:'#1a5c3a', HR:'#1d4ed8',
+    Legal:'#6d28d9', Finance:'#b45309', Marketing:'#c2410c'
   };
 
   const demoDocs = [
-    { id:'d1',  name:'12 Main Road — OTP v3.pdf',        source:'signflow',  hub:'Deals',     ws:'12 Main Road — Purchase',  size:'248 KB', ts: Date.now()-7200000  },
-    { id:'d2',  name:'John Smith — FICA Pack.pdf',        source:'formflow',  hub:'Deals',     ws:'12 Main Road — Purchase',  size:'1.2 MB', ts: Date.now()-7500000  },
-    { id:'d3',  name:'Bond Application — ABSA.pdf',       source:'formflow',  hub:'Deals',     ws:'12 Main Road — Purchase',  size:'340 KB', ts: Date.now()-86400000 },
-    { id:'d4',  name:'Van der Merwe — FICA Pack.pdf',     source:'formflow',  hub:'Deals',     ws:'Van der Merwe — Bond Application', size:'980 KB', ts: Date.now()-259200000 },
-    { id:'d5',  name:'Acme Corp Lease — Signed.pdf',      source:'signflow',  hub:'Legal',     ws:'Acme Corp — Lease Agreement', size:'384 KB', ts: Date.now()-90000000  },
-    { id:'d6',  name:'Sarah Nkosi — ID Document.pdf',     source:'upload',    hub:'Legal',     ws:'Sarah Nkosi — FICA Pack',  size:'892 KB', ts: Date.now()-345600000 },
-    { id:'d7',  name:'Thabo Mokoena — Employment Contract.docx', source:'signflow', hub:'HR', ws:'Employee Onboarding — Thabo M.', size:'145 KB', ts: Date.now()-86400000 },
-    { id:'d8',  name:'Thabo Mokoena — Onboarding Form.pdf', source:'formflow', hub:'HR',      ws:'Employee Onboarding — Thabo M.', size:'220 KB', ts: Date.now()-90000000 },
-    { id:'d9',  name:'Trust Account May 2025.xlsx',        source:'upload',    hub:'Finance',  ws:'Trust Account — May 2025', size:'56 KB',  ts: Date.now()-172800000 },
-    { id:'d10', name:'May 2025 Recon Report.pdf',          source:'generated', hub:'Finance',  ws:'Trust Account — May 2025', size:'128 KB', ts: Date.now()-180000000 },
-    { id:'d11', name:'Q3 Campaign Brief.pdf',              source:'upload',    hub:'Marketing',ws:'Winter Campaign Q3',        size:'210 KB', ts: Date.now()-432000000 },
-    { id:'d12', name:'Campaign Results — Aug 2025.xlsx',   source:'generated', hub:'Marketing',ws:'Winter Campaign Q3',        size:'88 KB',  ts: Date.now()-440000000 },
-    { id:'d13', name:'Greenfield Devs — Proposal v2.pdf',  source:'generated', hub:'Sales',    ws:'Greenfield Devs — Proposal', size:'312 KB', ts: Date.now()-10800000  },
-    { id:'d14', name:'Sandton Block — Site Visit Notes.pdf',source:'notetaker',hub:'Sales',    ws:'Sandton Block — Lead',     size:'64 KB',  ts: Date.now()-21600000  },
-    { id:'d15', name:'Q3 Agency Retainer — Quote.pdf',     source:'signflow',  hub:'Sales',    ws:'Q3 Agency Retainer — Quote', size:'195 KB', ts: Date.now()-86400000  },
+    { id:'d1',  name:'OTP v3 — Signed.pdf',              source:'signflow',  hub:'Deals',     ws:'12 Main Road — Purchase',           folder:'',          size:'248 KB', ts:Date.now()-7200000   },
+    { id:'d2',  name:'John Smith — FICA Pack.pdf',        source:'formflow',  hub:'Deals',     ws:'12 Main Road — Purchase',           folder:'Buyer FICA',size:'1.2 MB', ts:Date.now()-7500000   },
+    { id:'d3',  name:'Bond Application — ABSA.pdf',       source:'formflow',  hub:'Deals',     ws:'12 Main Road — Purchase',           folder:'',          size:'340 KB', ts:Date.now()-86400000  },
+    { id:'d4',  name:'Title Deed.pdf',                    source:'upload',    hub:'Deals',     ws:'12 Main Road — Purchase',           folder:'Title Docs',size:'720 KB', ts:Date.now()-172800000 },
+    { id:'d5',  name:'Rates Certificate 2025.pdf',        source:'upload',    hub:'Deals',     ws:'12 Main Road — Purchase',           folder:'Rates & Levies', size:'180 KB', ts:Date.now()-180000000 },
+    { id:'d6',  name:'Van der Merwe — FICA Pack.pdf',     source:'formflow',  hub:'Deals',     ws:'Van der Merwe — Bond Application',  folder:'',          size:'980 KB', ts:Date.now()-259200000 },
+    { id:'d7',  name:'Acme Corp Lease — Signed.pdf',      source:'signflow',  hub:'Legal',     ws:'Acme Corp — Lease Agreement',       folder:'',          size:'384 KB', ts:Date.now()-90000000  },
+    { id:'d8',  name:'Sarah Nkosi — ID Document.pdf',     source:'upload',    hub:'Legal',     ws:'Sarah Nkosi — FICA Pack',           folder:'',          size:'892 KB', ts:Date.now()-345600000 },
+    { id:'d9',  name:'Employment Contract — Signed.docx', source:'signflow',  hub:'HR',        ws:'Employee Onboarding — Thabo M.',    folder:'',          size:'145 KB', ts:Date.now()-86400000  },
+    { id:'d10', name:'Onboarding Form — Completed.pdf',   source:'formflow',  hub:'HR',        ws:'Employee Onboarding — Thabo M.',    folder:'',          size:'220 KB', ts:Date.now()-90000000  },
+    { id:'d11', name:'Trust Account May 2025.xlsx',        source:'upload',    hub:'Finance',   ws:'Trust Account — May 2025',          folder:'',          size:'56 KB',  ts:Date.now()-172800000 },
+    { id:'d12', name:'May 2025 Recon Report.pdf',          source:'generated', hub:'Finance',   ws:'Trust Account — May 2025',          folder:'',          size:'128 KB', ts:Date.now()-180000000 },
+    { id:'d13', name:'Q3 Campaign Brief.pdf',              source:'upload',    hub:'Marketing', ws:'Winter Campaign Q3',                folder:'Briefs',    size:'210 KB', ts:Date.now()-432000000 },
+    { id:'d14', name:'Greenfield Devs — Proposal v2.pdf', source:'generated', hub:'Sales',     ws:'Greenfield Devs — Proposal',        folder:'',          size:'312 KB', ts:Date.now()-10800000  },
+    { id:'d15', name:'Site Visit Notes.pdf',               source:'notetaker', hub:'Sales',     ws:'Sandton Block — Lead',              folder:'',          size:'64 KB',  ts:Date.now()-21600000  },
+  ];
+
+  const demoFolders = [
+    { id:'f1', name:'Buyer FICA',    hub:'Deals',   ws:'12 Main Road — Purchase', source:'formflow', parentFolder:'', ts:Date.now()-7600000  },
+    { id:'f2', name:'Seller FICA',   hub:'Deals',   ws:'12 Main Road — Purchase', source:'formflow', parentFolder:'', ts:Date.now()-7600000  },
+    { id:'f3', name:'Title Docs',    hub:'Deals',   ws:'12 Main Road — Purchase', source:'upload',   parentFolder:'', ts:Date.now()-173000000 },
+    { id:'f4', name:'Rates & Levies',hub:'Deals',   ws:'12 Main Road — Purchase', source:'upload',   parentFolder:'', ts:Date.now()-173000000 },
+    { id:'f5', name:'Briefs',        hub:'Marketing',ws:'Winter Campaign Q3',     source:'upload',   parentFolder:'', ts:Date.now()-432100000 },
   ];
 
   function initDocuments() {
-    try { docFiles = JSON.parse(localStorage.getItem(DOCS_KEY)) || demoDocs; }
-    catch(e) { docFiles = demoDocs; }
+    try { docFiles   = JSON.parse(localStorage.getItem(DOCS_KEY))    || demoDocs;    } catch(e) { docFiles   = demoDocs;    }
+    try { docFolders = JSON.parse(localStorage.getItem(FOLDERS_KEY)) || demoFolders; } catch(e) { docFolders = demoFolders; }
     renderDocTree();
-    setDocView('all', 'All Documents', '');
+    setDocView({ type:'all', label:'All Documents' });
     setupDocDrop();
   }
 
-  function saveDocFiles() {
-    try { localStorage.setItem(DOCS_KEY, JSON.stringify(docFiles)); } catch(e) {}
+  function saveDocData() {
+    try { localStorage.setItem(DOCS_KEY,    JSON.stringify(docFiles));   } catch(e) {}
+    try { localStorage.setItem(FOLDERS_KEY, JSON.stringify(docFolders)); } catch(e) {}
   }
 
+  // ── TREE ──────────────────────────────────────────────────────
   function renderDocTree() {
     const tree = document.getElementById('doc-tree');
     if (!tree) return;
-
-    const hubs = [...new Set(docFiles.map(f => f.hub))].sort();
-    // Ensure all defined hubs appear even if empty
-    const allHubs = [...new Set([...demoHubs.map(h => h.name), ...hubs])];
+    const allHubs = [...new Set([...demoHubs.map(h=>h.name), ...docFiles.map(f=>f.hub)])];
 
     let html = `
-      <div class="doc-tree-item ${docView.type==='all'?'active':''}" onclick="setDocView('all','All Documents','')">
-        <span>🗂</span> All Documents
-        <span style="margin-left:auto;font-size:10px;color:var(--ink-4)">${docFiles.length}</span>
-      </div>
-    `;
+      <div class="doc-tree-item ${docView.type==='all'?'active':''}" onclick="setDocView({type:'all',label:'All Documents'})">
+        <span>🗂</span><span style="flex:1">All Documents</span>
+        <span style="font-size:10px;color:var(--ink-4)">${docFiles.length}</span>
+      </div>`;
 
     allHubs.forEach(hub => {
-      const hubFiles = docFiles.filter(f => f.hub === hub);
-      const color = HUB_COLORS[hub] || '#374151';
-      const hubDef = demoHubs.find(h => h.name === hub);
-      const icon = hubDef?.icon || '🗂';
-      const isHubActive = docView.type === 'hub' && docView.hub === hub;
+      const hubKey   = 'hub:' + hub;
+      const expanded = isExpanded(hubKey);
+      const hubFiles = docFiles.filter(f=>f.hub===hub);
+      const color    = HUB_COLORS[hub] || '#374151';
+      const icon     = demoHubs.find(h=>h.name===hub)?.icon || '🗂';
+      const hubActive = docView.hub===hub && !docView.ws;
 
-      html += `
-        <div style="margin-top:6px">
-          <div class="doc-tree-item ${isHubActive && !docView.ws ? 'active' : ''}"
-               onclick="setDocView('hub','${hub} Hub','${hub}')"
-               style="border-left-color:${isHubActive && !docView.ws ? color : 'transparent'}">
-            <span style="font-size:13px">${icon}</span>
-            <span style="flex:1;overflow:hidden;text-overflow:ellipsis">${hub}</span>
-            <span style="font-size:10px;color:var(--ink-4)">${hubFiles.length}</span>
-          </div>
-      `;
+      html += `<div style="margin-top:4px">
+        <div class="doc-tree-item ${hubActive?'active':''}"
+             style="${hubActive?`border-left-color:${color}`:''}">
+          <span onclick="toggleTree('${hubKey}',event)" style="cursor:pointer;font-size:10px;color:var(--ink-4);width:14px;flex-shrink:0;text-align:center">${expanded?'▾':'▸'}</span>
+          <span style="font-size:13px">${icon}</span>
+          <span style="flex:1;cursor:pointer" onclick="setDocView({type:'hub',hub:'${hub}',label:'${hub}'})">${hub}</span>
+          <span style="font-size:10px;color:var(--ink-4)">${hubFiles.length}</span>
+        </div>`;
 
-      // Workspace subfolders
-      const wsNames = [...new Set(hubFiles.map(f => f.ws).filter(Boolean))].sort();
-      wsNames.forEach(ws => {
-        const wsFiles = hubFiles.filter(f => f.ws === ws);
-        const isWsActive = docView.type === 'ws' && docView.ws === ws;
-        const shortName = ws.length > 26 ? ws.substring(0, 24) + '…' : ws;
-        html += `
-          <div class="doc-tree-ws ${isWsActive ? 'active' : ''}"
-               onclick="setDocView('ws','${escapeHTML(ws)}','${hub}','${escapeHTML(ws)}')"
-               style="border-left-color:${isWsActive ? color : 'transparent'}" title="${escapeHTML(ws)}">
-            <span style="color:${color};font-size:10px">▸</span>
-            <span style="flex:1;overflow:hidden;text-overflow:ellipsis">${escapeHTML(shortName)}</span>
-            <span style="font-size:10px;color:var(--ink-4)">${wsFiles.length}</span>
-          </div>
-        `;
-      });
+      if (expanded) {
+        const wsNames = [...new Set(hubFiles.map(f=>f.ws).filter(Boolean))].sort();
+        wsNames.forEach(ws => {
+          const wsKey    = 'ws:' + ws;
+          const wsOpen   = isExpanded(wsKey);
+          const wsFiles  = hubFiles.filter(f=>f.ws===ws);
+          const wsActive = docView.ws===ws;
+          const short    = ws.length>22 ? ws.substring(0,20)+'…' : ws;
 
+          html += `
+            <div class="doc-tree-ws ${wsActive&&!docView.source?'active':''}"
+                 style="${wsActive&&!docView.source?`border-left-color:${color}`:''}">
+              <span onclick="toggleTree('${wsKey}',event)" style="cursor:pointer;font-size:10px;color:var(--ink-4);width:14px;flex-shrink:0;text-align:center">${wsOpen?'▾':'▸'}</span>
+              <span style="flex:1;overflow:hidden;text-overflow:ellipsis;cursor:pointer" title="${escapeHTML(ws)}" onclick="setDocView({type:'ws',hub:'${hub}',ws:'${escapeHTML(ws)}',label:'${escapeHTML(ws)}'})">
+                ${escapeHTML(short)}
+              </span>
+              <span style="font-size:10px;color:var(--ink-4)">${wsFiles.length}</span>
+            </div>`;
+
+          if (wsOpen) {
+            // Source subfolders
+            WS_FOLDERS.forEach(sf => {
+              const sfFiles   = wsFiles.filter(f=>f.source===sf.key);
+              const sfFolders = docFolders.filter(f=>f.hub===hub&&f.ws===ws&&f.source===sf.key);
+              if (!sfFiles.length && !sfFolders.length) return;
+              const sfActive  = docView.ws===ws && docView.source===sf.key;
+              html += `
+                <div class="doc-tree-ws ${sfActive&&!docView.folder?'active':''}"
+                     onclick="setDocView({type:'source',hub:'${hub}',ws:'${escapeHTML(ws)}',source:'${sf.key}',label:'${sf.label}'})"
+                     style="padding-left:46px;${sfActive&&!docView.folder?`border-left-color:${color}`:''}">
+                  <span>${sf.icon}</span>
+                  <span style="flex:1">${sf.label}</span>
+                  <span style="font-size:10px;color:var(--ink-4)">${sfFiles.length}</span>
+                </div>`;
+
+              // User-created folders
+              sfFolders.forEach(fld => {
+                const fActive = docView.folder===fld.name && docView.source===sf.key && docView.ws===ws;
+                html += `
+                  <div class="doc-tree-ws ${fActive?'active':''}"
+                       onclick="setDocView({type:'folder',hub:'${hub}',ws:'${escapeHTML(ws)}',source:'${sf.key}',folder:'${escapeHTML(fld.name)}',label:'${escapeHTML(fld.name)}'})"
+                       style="padding-left:60px;${fActive?`border-left-color:${color}`:''}">
+                    <span style="font-size:11px">📂</span>
+                    <span style="flex:1;overflow:hidden;text-overflow:ellipsis">${escapeHTML(fld.name)}</span>
+                    <span style="font-size:10px;color:var(--ink-4)">${docFiles.filter(f=>f.ws===ws&&f.source===sf.key&&f.folder===fld.name).length}</span>
+                  </div>`;
+              });
+            });
+          }
+        });
+      }
       html += `</div>`;
     });
 
     tree.innerHTML = html;
   }
 
-  function setDocView(type, label, hub, ws) {
-    docView = { type, label, hub: hub||'', ws: ws||'' };
-    document.getElementById('doc-breadcrumb').innerHTML = buildBreadcrumb(type, hub, ws);
+  // ── NAVIGATION ────────────────────────────────────────────────
+  function setDocView(v) {
+    docView = { type:'all', hub:'', ws:'', source:'', folder:'', label:'All Documents', ...v };
+    document.getElementById('doc-breadcrumb').innerHTML = buildBreadcrumb();
     renderDocTree();
     renderFileList();
   }
 
-  function buildBreadcrumb(type, hub, ws) {
-    let parts = [`<span style="cursor:pointer;color:var(--indigo)" onclick="setDocView('all','All Documents','')">All Documents</span>`];
-    if (hub) parts.push(`<span style="cursor:pointer;color:var(--indigo)" onclick="setDocView('hub','${hub} Hub','${hub}')">${hub}</span>`);
-    if (ws)  parts.push(`<span style="color:var(--ink-2)">${escapeHTML(ws)}</span>`);
+  function buildBreadcrumb() {
+    const parts = [];
+    parts.push(`<span style="cursor:pointer;color:var(--indigo)" onclick="setDocView({type:'all',label:'All Documents'})">All Documents</span>`);
+    if (docView.hub)    parts.push(`<span style="cursor:pointer;color:var(--indigo)" onclick="setDocView({type:'hub',hub:'${docView.hub}',label:'${docView.hub}'})">${docView.hub}</span>`);
+    if (docView.ws)     parts.push(`<span style="cursor:pointer;color:var(--indigo)" onclick="setDocView({type:'ws',hub:'${docView.hub}',ws:'${escapeHTML(docView.ws)}',label:'${escapeHTML(docView.ws)}'})">` + escapeHTML(docView.ws) + `</span>`);
+    if (docView.source) {
+      const sf = WS_FOLDERS.find(f=>f.key===docView.source);
+      parts.push(`<span style="cursor:pointer;color:var(--indigo)" onclick="setDocView({type:'source',hub:'${docView.hub}',ws:'${escapeHTML(docView.ws)}',source:'${docView.source}',label:'${sf?.label||docView.source}'})">${sf?.icon||''} ${sf?.label||docView.source}</span>`);
+    }
+    if (docView.folder) parts.push(`<span style="color:var(--ink-2)">📂 ${escapeHTML(docView.folder)}</span>`);
     return parts.join(' <span style="color:var(--ink-4)">›</span> ');
   }
 
+  // ── FILE LIST ─────────────────────────────────────────────────
   function renderFileList() {
-    const list  = document.getElementById('doc-list');
-    const search = (document.getElementById('doc-search')?.value || '').toLowerCase();
+    const list   = document.getElementById('doc-list');
+    const search = (document.getElementById('doc-search')?.value||'').toLowerCase();
     if (!list) return;
 
-    let data = docFiles;
-    if (docView.type === 'hub') data = data.filter(f => f.hub === docView.hub);
-    if (docView.type === 'ws')  data = data.filter(f => f.ws  === docView.ws);
-    if (search) data = data.filter(f => f.name.toLowerCase().includes(search) || (f.ws||'').toLowerCase().includes(search) || (f.hub||'').toLowerCase().includes(search));
-
-    // Stats (always from full set)
+    // Stats always from full set
     document.getElementById('dstat-total').textContent = docFiles.length;
     document.getElementById('dstat-ff').textContent    = docFiles.filter(f=>f.source==='formflow').length;
     document.getElementById('dstat-sf').textContent    = docFiles.filter(f=>f.source==='signflow').length;
     document.getElementById('dstat-up').textContent    = docFiles.filter(f=>f.source==='upload').length;
     document.getElementById('dstat-gen').textContent   = docFiles.filter(f=>f.source==='generated').length;
 
-    if (data.length === 0) {
-      list.innerHTML = `
-        <div style="padding:60px;text-align:center;color:var(--ink-4)">
-          <div style="font-size:36px;margin-bottom:12px">📂</div>
-          <div style="font-size:14px;font-weight:600;margin-bottom:6px">No files here yet</div>
-          <div style="font-size:12px;margin-bottom:16px">Files from FormFlow, SignFlow and uploads will appear here automatically</div>
-          <label class="btn-primary" style="cursor:pointer;display:inline-block">
-            ↑ Upload a file
-            <input type="file" multiple hidden onchange="handleDocUpload(event)">
-          </label>
-        </div>`;
-      return;
-    }
+    let files = docFiles;
+    if (docView.hub)    files = files.filter(f=>f.hub===docView.hub);
+    if (docView.ws)     files = files.filter(f=>f.ws===docView.ws);
+    if (docView.source) files = files.filter(f=>f.source===docView.source);
+    if (docView.folder) files = files.filter(f=>f.folder===docView.folder);
+    else if (docView.source) files = files.filter(f=>!f.folder); // source root = unfiled files only
+    if (search) files = files.filter(f=>f.name.toLowerCase().includes(search)||(f.ws||'').toLowerCase().includes(search));
 
-    // If at hub level with no ws filter, show workspace folder cards first
-    if (docView.type === 'hub' && !docView.ws) {
-      const wsNames = [...new Set(data.map(f => f.ws).filter(Boolean))].sort();
-      const hubColor = HUB_COLORS[docView.hub] || '#374151';
-      list.innerHTML = `
+    // Hub view → workspace folder cards
+    if (docView.type==='hub') {
+      const wsNames  = [...new Set(docFiles.filter(f=>f.hub===docView.hub).map(f=>f.ws).filter(Boolean))].sort();
+      const hubColor = HUB_COLORS[docView.hub]||'#374151';
+      list.innerHTML = wsNames.length ? `
         <div style="padding:14px 20px 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-4)">Workspaces</div>
-        ${wsNames.map(ws => {
-          const wsFiles = data.filter(f => f.ws === ws);
-          const lastFile = wsFiles.sort((a,b) => (b.ts||0)-(a.ts||0))[0];
-          return `
-            <div class="doc-folder-card" onclick="setDocView('ws','${escapeHTML(ws)}','${docView.hub}','${escapeHTML(ws)}')">
-              <div style="width:38px;height:38px;border-radius:9px;background:${hubColor}14;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📂</div>
-              <div style="flex:1;min-width:0">
-                <div style="font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHTML(ws)}</div>
-                <div style="font-size:11px;color:var(--ink-4);margin-top:2px">${wsFiles.length} file${wsFiles.length!==1?'s':''} · Last updated ${stickyTimeLabel(lastFile?.ts||0)}</div>
-              </div>
-              <div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end">
-                ${[...new Set(wsFiles.map(f=>f.source))].map(s => {
-                  const m = SOURCE_META[s] || {};
-                  return `<span class="doc-source-badge ${m.cls||''}">${m.label||s}</span>`;
-                }).join('')}
-              </div>
-              <span style="color:var(--ink-4);font-size:16px;margin-left:8px">›</span>
+        ${wsNames.map(ws=>{
+          const wsF = docFiles.filter(f=>f.hub===docView.hub&&f.ws===ws);
+          const last = wsF.sort((a,b)=>(b.ts||0)-(a.ts||0))[0];
+          const badges = [...new Set(wsF.map(f=>f.source))].map(s=>{
+            const m=SOURCE_META[s]||{}; return `<span class="doc-source-badge ${m.cls||''}">${m.label||s}</span>`;
+          }).join('');
+          return `<div class="doc-folder-card" onclick="setDocView({type:'ws',hub:'${docView.hub}',ws:'${escapeHTML(ws)}',label:'${escapeHTML(ws)}'})">
+            <div style="width:38px;height:38px;border-radius:9px;background:${hubColor}14;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📂</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHTML(ws)}</div>
+              <div style="font-size:11px;color:var(--ink-4);margin-top:2px">${wsF.length} file${wsF.length!==1?'s':''} · ${stickyTimeLabel(last?.ts||0)}</div>
             </div>
-          `;
+            <div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end">${badges}</div>
+            <span style="color:var(--ink-4);font-size:16px;margin-left:6px">›</span>
+          </div>`;
         }).join('')}
-        <div style="padding:14px 20px 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-4);margin-top:8px">All files in ${escapeHTML(docView.hub)}</div>
-        ${renderFileRows(data)}
-      `;
+      ` : emptyState();
       return;
     }
 
-    // Workspace view — show subfolders then files
-    if (docView.type === 'ws') {
-      const hubColor = HUB_COLORS[docView.hub] || '#374151';
+    // Workspace view → source subfolder cards
+    if (docView.type==='ws') {
       list.innerHTML = `
         <div style="padding:14px 20px 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-4)">Folders</div>
-        ${WS_FOLDERS.map(folder => {
-          const folderFiles = data.filter(f => f.source === folder.key);
-          return `
-            <div class="doc-folder-card" onclick="setDocView('folder','${folder.label}','${docView.hub}','${docView.ws}','${folder.key}')">
-              <div style="width:38px;height:38px;border-radius:9px;background:${folder.color};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${folder.icon}</div>
-              <div style="flex:1;min-width:0">
-                <div style="font-size:13px;font-weight:600;color:var(--ink)">${folder.label}</div>
-                <div style="font-size:11px;color:var(--ink-4);margin-top:2px">${folder.desc}</div>
-              </div>
-              <span style="font-size:13px;font-weight:600;color:var(--ink-3);margin-right:4px">${folderFiles.length}</span>
-              <span style="color:var(--ink-4);font-size:16px">›</span>
+        ${WS_FOLDERS.map(sf=>{
+          const sfFiles   = docFiles.filter(f=>f.ws===docView.ws&&f.source===sf.key);
+          const sfFolders = docFolders.filter(f=>f.ws===docView.ws&&f.source===sf.key);
+          return `<div class="doc-folder-card" onclick="setDocView({type:'source',hub:'${docView.hub}',ws:'${escapeHTML(docView.ws)}',source:'${sf.key}',label:'${sf.label}'})">
+            <div style="width:38px;height:38px;border-radius:9px;background:${sf.color};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${sf.icon}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600;color:var(--ink)">${sf.label}</div>
+              <div style="font-size:11px;color:var(--ink-4);margin-top:2px">${sf.desc}</div>
             </div>
-          `;
-        }).join('')}
-        ${data.length > 0 ? `
-          <div style="padding:14px 20px 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-4);margin-top:8px">All files</div>
-          ${renderFileRows(data)}
-        ` : ''}
-      `;
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:13px;font-weight:700;color:var(--ink)">${sfFiles.length}</div>
+              ${sfFolders.length ? `<div style="font-size:10px;color:var(--ink-4)">${sfFolders.length} folder${sfFolders.length!==1?'s':''}</div>` : ''}
+            </div>
+            <span style="color:var(--ink-4);font-size:16px;margin-left:6px">›</span>
+          </div>`;
+        }).join('')}`;
       return;
     }
 
-    // folder / all view — just files
-    list.innerHTML = renderFileRows(data);
+    // Source subfolder view → user folders + files at root
+    if (docView.type==='source') {
+      const sf      = WS_FOLDERS.find(f=>f.key===docView.source);
+      const folders = docFolders.filter(f=>f.ws===docView.ws&&f.source===docView.source&&!f.parentFolder);
+      const rootFiles = docFiles.filter(f=>f.ws===docView.ws&&f.source===docView.source&&!f.folder);
+      const srch = search ? rootFiles.filter(f=>f.name.toLowerCase().includes(search)) : rootFiles;
+
+      list.innerHTML = `
+        ${folders.length ? `
+          <div style="padding:14px 20px 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-4)">Folders</div>
+          ${folders.map(fld=>{
+            const fldFiles = docFiles.filter(f=>f.ws===docView.ws&&f.source===docView.source&&f.folder===fld.name);
+            return `<div class="doc-folder-card" onclick="setDocView({type:'folder',hub:'${docView.hub}',ws:'${escapeHTML(docView.ws)}',source:'${docView.source}',folder:'${escapeHTML(fld.name)}',label:'${escapeHTML(fld.name)}'})">
+              <div style="width:38px;height:38px;border-radius:9px;background:${sf?.color||'var(--surface-2)'};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📂</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:600;color:var(--ink)">${escapeHTML(fld.name)}</div>
+                <div style="font-size:11px;color:var(--ink-4);margin-top:2px">${fldFiles.length} file${fldFiles.length!==1?'s':''}</div>
+              </div>
+              <button class="btn-ghost" style="font-size:11px;padding:4px 9px" onclick="event.stopPropagation();deleteFolder('${fld.id}')">Delete</button>
+              <span style="color:var(--ink-4);font-size:16px;margin-left:6px">›</span>
+            </div>`;
+          }).join('')}
+        ` : ''}
+        ${srch.length ? `
+          <div style="padding:14px 20px 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-4)">${folders.length?'Files (unfiled)':'Files'}</div>
+          ${renderFileRows(srch)}
+        ` : (!folders.length ? emptyState() : '')}`;
+      return;
+    }
+
+    // Folder view — just files inside it
+    if (docView.type==='folder') {
+      list.innerHTML = files.length
+        ? `<div style="padding:14px 20px 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-4)">Files in ${escapeHTML(docView.folder)}</div>` + renderFileRows(files)
+        : emptyState();
+      return;
+    }
+
+    // All / search view
+    list.innerHTML = files.length ? renderFileRows(files) : emptyState();
+  }
+
+  function emptyState() {
+    return `<div style="padding:60px;text-align:center;color:var(--ink-4)">
+      <div style="font-size:36px;margin-bottom:12px">📂</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:6px">No files here yet</div>
+      <div style="font-size:12px;margin-bottom:16px">Files from FormFlow, SignFlow and uploads will appear here automatically.</div>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <label class="btn-primary" style="cursor:pointer;display:inline-block">
+          ↑ Upload a file<input type="file" multiple hidden onchange="handleDocUpload(event)">
+        </label>
+        <button class="btn-ghost" onclick="promptNewFolder()">+ New folder</button>
+      </div>
+    </div>`;
+  }
+
+  // ── FILE TYPE SYSTEM ─────────────────────────────────────────
+  let docTypeFilter = 'all';
+
+  const FILE_TYPES = {
+    // PDFs
+    pdf:  { label:'PDF',          icon:'📄', cls:'ft-pdf',   group:'pdf'   },
+    // Word
+    doc:  { label:'Word',         icon:'📝', cls:'ft-word',  group:'word'  },
+    docx: { label:'Word',         icon:'📝', cls:'ft-word',  group:'word'  },
+    odt:  { label:'Document',     icon:'📝', cls:'ft-word',  group:'word'  },
+    rtf:  { label:'Rich Text',    icon:'📝', cls:'ft-word',  group:'word'  },
+    txt:  { label:'Text',         icon:'📄', cls:'ft-word',  group:'word'  },
+    md:   { label:'Markdown',     icon:'📄', cls:'ft-word',  group:'word'  },
+    // Spreadsheets
+    xls:  { label:'Excel',        icon:'📊', cls:'ft-sheet', group:'sheet' },
+    xlsx: { label:'Excel',        icon:'📊', cls:'ft-sheet', group:'sheet' },
+    csv:  { label:'CSV',          icon:'📊', cls:'ft-sheet', group:'sheet' },
+    ods:  { label:'Spreadsheet',  icon:'📊', cls:'ft-sheet', group:'sheet' },
+    tsv:  { label:'TSV',          icon:'📊', cls:'ft-sheet', group:'sheet' },
+    // Images
+    jpg:  { label:'Image',        icon:'🖼', cls:'ft-image', group:'image' },
+    jpeg: { label:'Image',        icon:'🖼', cls:'ft-image', group:'image' },
+    png:  { label:'Image',        icon:'🖼', cls:'ft-image', group:'image' },
+    gif:  { label:'Image',        icon:'🖼', cls:'ft-image', group:'image' },
+    webp: { label:'Image',        icon:'🖼', cls:'ft-image', group:'image' },
+    heic: { label:'Photo',        icon:'🖼', cls:'ft-image', group:'image' },
+    heif: { label:'Photo',        icon:'🖼', cls:'ft-image', group:'image' },
+    tiff: { label:'Image',        icon:'🖼', cls:'ft-image', group:'image' },
+    tif:  { label:'Image',        icon:'🖼', cls:'ft-image', group:'image' },
+    bmp:  { label:'Image',        icon:'🖼', cls:'ft-image', group:'image' },
+    svg:  { label:'SVG',          icon:'🖼', cls:'ft-image', group:'image' },
+    // Presentations
+    ppt:  { label:'PowerPoint',   icon:'📑', cls:'ft-ppt',   group:'ppt'   },
+    pptx: { label:'PowerPoint',   icon:'📑', cls:'ft-ppt',   group:'ppt'   },
+    key:  { label:'Keynote',      icon:'📑', cls:'ft-ppt',   group:'ppt'   },
+    odp:  { label:'Presentation', icon:'📑', cls:'ft-ppt',   group:'ppt'   },
+    // Email
+    eml:  { label:'Email',        icon:'✉️', cls:'ft-email', group:'email' },
+    msg:  { label:'Email',        icon:'✉️', cls:'ft-email', group:'email' },
+    // Data/other
+    json: { label:'JSON',         icon:'📋', cls:'ft-other', group:'other' },
+    xml:  { label:'XML',          icon:'📋', cls:'ft-other', group:'other' },
+    zip:  { label:'Archive',      icon:'🗜', cls:'ft-other', group:'other' },
+    rar:  { label:'Archive',      icon:'🗜', cls:'ft-other', group:'other' },
+    mp4:  { label:'Video',        icon:'🎬', cls:'ft-other', group:'other' },
+    mp3:  { label:'Audio',        icon:'🎵', cls:'ft-other', group:'other' },
+  };
+
+  function getFileType(name) {
+    const ext = (name||'').split('.').pop().toLowerCase();
+    return FILE_TYPES[ext] || { label: ext.toUpperCase()||'File', icon:'📎', cls:'ft-other', group:'other' };
+  }
+
+  function setDocTypeFilter(btn, filter) {
+    document.querySelectorAll('#view-documents .filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    docTypeFilter = filter;
+    renderFileList();
+  }
+
+  function applyTypeFilter(data) {
+    if (docTypeFilter === 'all') return data;
+    return data.filter(f => getFileType(f.name).group === docTypeFilter);
   }
 
   function renderFileRows(data) {
-    // Group by source folder
-    const sorted = [...data].sort((a,b) => (b.ts||0)-(a.ts||0));
-    return sorted.map(f => {
-      const src = SOURCE_META[f.source] || { label: f.source, cls: 'src-upload', icon: '📄', bg: '#f1f5f9' };
-      const ext = f.name.split('.').pop().toLowerCase();
-      const fileIcon = {pdf:'📄',docx:'📝',doc:'📝',xlsx:'📊',xls:'📊',png:'🖼',jpg:'🖼',jpeg:'🖼'}[ext] || '📎';
-      return `
-        <div class="doc-file-row">
-          <div class="doc-file-icon" style="background:${src.bg}">${fileIcon}</div>
-          <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHTML(f.name)}</div>
-            <div style="font-size:11px;color:var(--ink-4);margin-top:2px;display:flex;align-items:center;gap:6px">
-              ${f.hub  ? `<span>${escapeHTML(f.hub)}</span><span>·</span>` : ''}
-              ${f.ws   ? `<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">${escapeHTML(f.ws)}</span><span>·</span>` : ''}
-              <span>${f.size||''}</span>
-              <span>·</span>
-              <span>${stickyTimeLabel(f.ts||0)}</span>
-            </div>
-          </div>
-          <span class="doc-source-badge ${src.cls}">${src.label}</span>
-          <div style="display:flex;gap:6px;flex-shrink:0;margin-left:8px">
-            <button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="deleteDoc('${f.id}')">Remove</button>
+    const filtered = applyTypeFilter(data);
+    if (!filtered.length) {
+      return `<div style="padding:32px;text-align:center;color:var(--ink-4);font-size:13px">No ${docTypeFilter === 'all' ? '' : docTypeFilter + ' '}files here yet.</div>`;
+    }
+    return [...filtered].sort((a,b)=>(b.ts||0)-(a.ts||0)).map(f => {
+      const ft  = getFileType(f.name);
+      const src = SOURCE_META[f.source] || { label: f.source||'File', cls:'src-upload', bg:'#f1f5f9' };
+      const isImg = ft.group === 'image';
+      const isPdf = ft.group === 'pdf';
+      const canPreview = isImg || isPdf;
+
+      // For image files that have a dataUrl stored, show thumbnail
+      const thumbHtml = isImg && f.dataUrl
+        ? `<img src="${f.dataUrl}" class="file-img-thumb" style="width:48px;height:48px;object-fit:cover;border-radius:6px;flex-shrink:0;cursor:pointer" onclick="openLightbox('${f.id}')" alt="${escapeHTML(f.name)}">`
+        : `<div class="doc-file-icon ${ft.cls}" style="flex-shrink:0">${ft.icon}</div>`;
+
+      return `<div class="doc-file-row" id="frow-${f.id}">
+        ${thumbHtml}
+        <div style="flex:1;min-width:0;cursor:${canPreview?'pointer':'default'}" onclick="${canPreview?`openFilePreview('${f.id}')`:''}" >
+          <div style="font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHTML(f.name)}</div>
+          <div style="font-size:11px;color:var(--ink-4);margin-top:2px;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+            <span class="doc-source-badge ${src.cls}" style="font-size:9px">${src.label}</span>
+            <span style="background:var(--surface-2);color:var(--ink-3);font-size:9px;font-weight:600;padding:1px 6px;border-radius:8px;text-transform:uppercase;letter-spacing:0.05em">${ft.label}</span>
+            ${f.hub    ? `<span>·</span><span>${escapeHTML(f.hub)}</span>`:''}
+            ${f.folder ? `<span>·</span><span>📂 ${escapeHTML(f.folder)}</span>`:''}
+            <span>·</span><span>${f.size||'—'}</span>
+            <span>·</span><span>${stickyTimeLabel(f.ts||0)}</span>
           </div>
         </div>
-      `;
+        <div style="display:flex;gap:5px;flex-shrink:0;margin-left:8px;align-items:center">
+          ${canPreview ? `<button class="btn-ghost" style="font-size:11px;padding:4px 9px" onclick="openFilePreview('${f.id}')">👁 Preview</button>` : ''}
+          ${isImg      ? `<button class="btn-ghost" style="font-size:11px;padding:4px 9px" onclick="openLightbox('${f.id}')">🔍 Full</button>` : ''}
+          <button class="btn-ghost" style="font-size:11px;padding:4px 9px" onclick="deleteDoc('${f.id}')">Remove</button>
+        </div>
+      </div>`;
     }).join('');
   }
 
+  // ── PREVIEW PANEL ─────────────────────────────────────────────
+  let activePreviewId = null;
+
+  function openFilePreview(id) {
+    const f   = docFiles.find(d => d.id === id);
+    if (!f) return;
+    const ft  = getFileType(f.name);
+    const panel = document.getElementById('doc-preview-panel');
+    const body  = document.getElementById('preview-body');
+    const foot  = document.getElementById('preview-footer');
+
+    document.getElementById('preview-filename').textContent = f.name;
+    activePreviewId = id;
+
+    // Highlight the active row
+    document.querySelectorAll('.doc-file-row').forEach(r => r.style.background = '');
+    const row = document.getElementById('frow-' + id);
+    if (row) row.style.background = 'var(--indigo-light)';
+
+    if (ft.group === 'image' && f.dataUrl) {
+      body.innerHTML = `
+        <div style="flex:1;overflow:auto;padding:16px;display:flex;align-items:center;justify-content:center;background:#0f1117">
+          <img src="${f.dataUrl}" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:6px;cursor:zoom-in" onclick="openLightbox('${id}')">
+        </div>
+        <div style="padding:12px 16px;font-size:11px;color:var(--ink-4);border-top:1px solid var(--border)">
+          ${escapeHTML(f.name)} · ${f.size||'—'}<br>Click image to view full screen
+        </div>`;
+    } else if (ft.group === 'image') {
+      body.innerHTML = `
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:32px;color:var(--ink-4)">
+          <div style="font-size:48px">🖼</div>
+          <div style="font-size:13px;font-weight:600;text-align:center">${escapeHTML(f.name)}</div>
+          <div style="font-size:11px;text-align:center;line-height:1.6">Image preview available after<br>Supabase Storage is connected.<br>The file URL will load here automatically.</div>
+        </div>`;
+    } else if (ft.group === 'pdf') {
+      if (f.dataUrl) {
+        body.innerHTML = `<iframe class="preview-pdf" src="${f.dataUrl}" title="${escapeHTML(f.name)}"></iframe>`;
+      } else if (f.url) {
+        body.innerHTML = `<iframe class="preview-pdf" src="${f.url}" title="${escapeHTML(f.name)}"></iframe>`;
+      } else {
+        body.innerHTML = `
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:32px;color:var(--ink-4)">
+            <div style="font-size:48px">📄</div>
+            <div style="font-size:13px;font-weight:600;text-align:center">${escapeHTML(f.name)}</div>
+            <div style="font-size:11px;text-align:center;line-height:1.6">PDF preview available once<br>Supabase Storage is connected.<br>The file will render here automatically.</div>
+          </div>`;
+      }
+    } else {
+      body.innerHTML = `
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:32px;color:var(--ink-4)">
+          <div style="font-size:48px">${ft.icon}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--ink);text-align:center">${escapeHTML(f.name)}</div>
+          <div style="font-size:11px;color:var(--ink-4)">${ft.label} · ${f.size||'—'}</div>
+          <div style="font-size:11px;text-align:center;line-height:1.6;margin-top:8px">
+            ${ft.group === 'word'  ? 'Word documents will render as PDF previews<br>once the conversion service is connected.' : ''}
+            ${ft.group === 'sheet' ? 'Spreadsheets will open in a read-only viewer<br>once Supabase Storage is connected.' : ''}
+            ${ft.group === 'ppt'   ? 'Presentations will render as PDF previews<br>once the conversion service is connected.' : ''}
+            ${ft.group === 'email' ? 'Email files will render inline<br>once Supabase Storage is connected.' : ''}
+            ${ft.group === 'other' ? 'This file type will be available for download<br>once Supabase Storage is connected.' : ''}
+          </div>
+        </div>`;
+    }
+
+    foot.innerHTML = `
+      <button class="btn-ghost" style="flex:1;font-size:12px" onclick="closePreview()">Close</button>
+      <button class="btn-primary" style="flex:1;font-size:12px" onclick="showToast('Download available once Supabase Storage is connected')">↓ Download</button>
+    `;
+
+    panel.classList.add('open');
+  }
+
+  function closePreview() {
+    const panel = document.getElementById('doc-preview-panel');
+    panel.classList.remove('open');
+    document.querySelectorAll('.doc-file-row').forEach(r => r.style.background = '');
+    activePreviewId = null;
+  }
+
+  // ── IMAGE LIGHTBOX ────────────────────────────────────────────
+  function openLightbox(id) {
+    const f = docFiles.find(d => d.id === id);
+    if (!f) return;
+    const lb  = document.getElementById('img-lightbox');
+    const img = document.getElementById('lightbox-img');
+    const cap = document.getElementById('lightbox-caption');
+    if (f.dataUrl) {
+      img.src = f.dataUrl;
+    } else {
+      // Demo mode — use a placeholder colour block
+      img.src = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'><rect width='600' height='400' fill='%231e293b'/><text x='300' y='185' text-anchor='middle' font-family='sans-serif' font-size='48' fill='%23475569'>🖼</text><text x='300' y='240' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%2394a3b8'>${encodeURIComponent(f.name)}</text><text x='300' y='265' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%2364748b'>Preview available after Supabase Storage is connected</text></svg>`;
+    }
+    cap.textContent = f.name + (f.size ? ' · ' + f.size : '');
+    lb.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    document.getElementById('img-lightbox').style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  // Keyboard: Escape closes lightbox or preview
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      if (document.getElementById('img-lightbox').style.display === 'flex') { closeLightbox(); return; }
+      if (document.getElementById('doc-preview-panel')?.classList.contains('open')) { closePreview(); return; }
+    }
+  });
+
+  // When real files are uploaded, read image data URLs for instant preview
+  const _origHandleDocUpload = handleDocUpload;
   function handleDocUpload(e) {
-    const files = [...e.target.files];
-    if (!files.length) return;
-    files.forEach(f => {
-      const kb = Math.round(f.size / 1024);
-      docFiles.unshift({
-        id: 'd'+Date.now()+Math.random(),
-        name: f.name,
-        source: 'upload',
-        hub:  docView.hub || 'General',
-        ws:   docView.ws  || '',
-        size: kb > 1024 ? (kb/1024).toFixed(1)+' MB' : kb+' KB',
-        ts:   Date.now()
-      });
+    const fileObjs = [...e.target.files];
+    if (!fileObjs.length) return;
+    let processed = 0;
+    fileObjs.forEach(file => {
+      const kb = Math.round(file.size / 1024);
+      const ft = getFileType(file.name);
+      const record = {
+        id: 'd'+Date.now()+Math.random(), name: file.name,
+        source: docView.source||'upload',
+        hub:    docView.hub||'General',
+        ws:     docView.ws||'',
+        folder: docView.folder||'',
+        size:   kb > 1024 ? (kb/1024).toFixed(1)+' MB' : kb+' KB',
+        ts:     Date.now(),
+        dataUrl: null
+      };
+      if (ft.group === 'image' || ft.group === 'pdf') {
+        const reader = new FileReader();
+        reader.onload = ev => {
+          record.dataUrl = ev.target.result;
+          processed++;
+          if (processed === fileObjs.length) { saveDocData(); renderDocTree(); renderFileList(); }
+        };
+        reader.readAsDataURL(file);
+      } else {
+        processed++;
+        if (processed === fileObjs.length) { saveDocData(); renderDocTree(); renderFileList(); }
+      }
+      docFiles.unshift(record);
     });
-    saveDocFiles();
-    renderDocTree();
-    renderFileList();
-    showToast(`${files.length} file${files.length>1?'s':''} uploaded ✓`);
+    showToast(`${fileObjs.length} file${fileObjs.length>1?'s':''} uploaded ✓`);
     e.target.value = '';
   }
 
+  // ── FOLDERS & DELETE ─────────────────────────────────────────
   function deleteDoc(id) {
-    docFiles = docFiles.filter(d => d.id !== id);
-    saveDocFiles();
-    renderDocTree();
-    renderFileList();
+    docFiles = docFiles.filter(d=>d.id!==id);
+    saveDocData(); renderDocTree(); renderFileList();
     showToast('File removed');
+  }
+
+  function promptNewFolder() {
+    const name = prompt('Folder name:');
+    if (!name || !name.trim()) return;
+    createFolder(name.trim());
+  }
+
+  function createFolder(name) {
+    if (!docView.ws || !docView.source) {
+      showToast('Navigate into a workspace subfolder first to create a folder there');
+      return;
+    }
+    if (docFolders.some(f=>f.ws===docView.ws&&f.source===docView.source&&f.name===name)) {
+      showToast('A folder with that name already exists here');
+      return;
+    }
+    docFolders.push({ id:'f'+Date.now(), name, hub:docView.hub, ws:docView.ws, source:docView.source, parentFolder:'', ts:Date.now() });
+    saveDocData(); renderDocTree(); renderFileList();
+    showToast(`Folder "${name}" created ✓`);
+  }
+
+  function deleteFolder(id) {
+    const fld = docFolders.find(f=>f.id===id);
+    if (!fld) return;
+    docFiles.forEach(f=>{ if(f.folder===fld.name&&f.ws===fld.ws&&f.source===fld.source) f.folder=''; });
+    docFolders = docFolders.filter(f=>f.id!==id);
+    saveDocData(); renderDocTree(); renderFileList();
+    showToast(`Folder "${fld.name}" deleted — files moved to root`);
   }
 
   function setupDocDrop() {
     const area = document.getElementById('doc-file-area');
     const zone = document.getElementById('doc-dropzone');
-    if (!area || area._dropBound) return;
+    if (!area||area._dropBound) return;
     area._dropBound = true;
-    area.addEventListener('dragover', e => { e.preventDefault(); if(zone) zone.style.display = 'block'; });
-    area.addEventListener('dragleave', e => { if (!area.contains(e.relatedTarget) && zone) zone.style.display = 'none'; });
-    area.addEventListener('drop', e => {
+    area.addEventListener('dragover',  e=>{ e.preventDefault(); if(zone) zone.style.display='block'; });
+    area.addEventListener('dragleave', e=>{ if(!area.contains(e.relatedTarget)&&zone) zone.style.display='none'; });
+    area.addEventListener('drop', e=>{
       e.preventDefault();
-      if(zone) zone.style.display = 'none';
-      const files = [...e.dataTransfer.files];
-      files.forEach(f => {
-        const kb = Math.round(f.size / 1024);
-        docFiles.unshift({ id:'d'+Date.now()+Math.random(), name:f.name, source:'upload', hub:docView.hub||'General', ws:docView.ws||'', size:kb>1024?(kb/1024).toFixed(1)+' MB':kb+' KB', ts:Date.now() });
-      });
-      saveDocFiles(); renderDocTree(); renderFileList();
-      showToast(`${files.length} file${files.length!==1?'s':''} dropped in ✓`);
+      if(zone) zone.style.display='none';
+      // Reuse handleDocUpload by creating a synthetic event
+      const fakeEvent = { target: { files: e.dataTransfer.files, value: '' } };
+      handleDocUpload(fakeEvent);
     });
   }
 
+  // ── CREATE FILE MODAL ─────────────────────────────────────────
   function openCreateFileModal() {
     const hubSel = document.getElementById('create-file-hub');
     const wsSel  = document.getElementById('create-file-ws');
-    if (hubSel) {
-      hubSel.innerHTML = '<option value="">— Choose hub —</option>' +
-        demoHubs.map(h => `<option value="${h.name}" ${docView.hub===h.name?'selected':''}>${h.icon} ${h.name}</option>`).join('');
-    }
-    if (wsSel) {
-      const wsNames = [...new Set(docFiles.map(f=>f.ws).filter(Boolean))].sort();
-      wsSel.innerHTML = '<option value="">— General hub folder —</option>' +
-        wsNames.map(ws => `<option value="${escapeHTML(ws)}" ${docView.ws===ws?'selected':''}>${escapeHTML(ws)}</option>`).join('');
-    }
+    if (hubSel) hubSel.innerHTML = '<option value="">— Choose hub —</option>' + demoHubs.map(h=>`<option value="${h.name}" ${docView.hub===h.name?'selected':''}>${h.icon} ${h.name}</option>`).join('');
+    if (wsSel)  wsSel.innerHTML  = '<option value="">— General hub folder —</option>' + [...new Set(docFiles.map(f=>f.ws).filter(Boolean))].sort().map(ws=>`<option value="${escapeHTML(ws)}" ${docView.ws===ws?'selected':''}>${escapeHTML(ws)}</option>`).join('');
     document.getElementById('create-file-name').value = '';
+    // Default type to folder if we have a ws+source context, else pdf
+    if (!docView.source) createFileType = 'pdf';
     document.getElementById('create-file-modal').classList.add('open');
   }
 
   function selectCreateType(el, type) {
-    document.querySelectorAll('#create-file-type-grid .hub-type-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll('#create-file-type-grid .hub-type-btn').forEach(b=>b.classList.remove('selected'));
     el.classList.add('selected');
     createFileType = type;
   }
@@ -5679,32 +6062,32 @@
     const name = document.getElementById('create-file-name').value.trim();
     const hub  = document.getElementById('create-file-hub').value;
     const ws   = document.getElementById('create-file-ws').value;
-    if (!name) { showToast('Enter a file name'); return; }
-    const extMap = { pdf:'.pdf', docx:'.docx', sheet:'.xlsx', note:'.md', template:'.pdf', folder:'' };
-    const ext = extMap[createFileType] || '';
-    const fullName = name.includes('.') ? name : name + ext;
-    docFiles.unshift({
-      id: 'd'+Date.now(),
-      name: fullName,
-      source: 'generated',
-      hub:  hub  || 'General',
-      ws:   ws   || '',
-      size: '—',
-      ts:   Date.now()
-    });
-    saveDocFiles();
-    renderDocTree();
-    renderFileList();
+    if (!name) { showToast('Enter a name'); return; }
+
+    if (createFileType === 'folder') {
+      if (!ws) { showToast('Choose a workspace for this folder'); return; }
+      const source = docView.source || 'upload';
+      docFolders.push({ id:'f'+Date.now(), name, hub:hub||docView.hub||'General', ws, source, parentFolder:'', ts:Date.now() });
+      saveDocData(); renderDocTree(); renderFileList();
+      closeModal('create-file-modal');
+      showToast(`Folder "${name}" created ✓`);
+      return;
+    }
+
+    const extMap = { pdf:'.pdf', docx:'.docx', sheet:'.xlsx', note:'.md', template:'.pdf' };
+    const fullName = name.includes('.') ? name : name+(extMap[createFileType]||'');
+    docFiles.unshift({ id:'d'+Date.now(), name:fullName, source:'generated', hub:hub||'General', ws:ws||'', folder:docView.folder||'', size:'—', ts:Date.now() });
+    saveDocData(); renderDocTree(); renderFileList();
     closeModal('create-file-modal');
     showToast(`"${fullName}" created ✓`);
   }
 
   // Wire Documents nav to init
-  document.querySelectorAll('.nav-item').forEach(n => {
+  document.querySelectorAll('.nav-item').forEach(n=>{
     if (n.textContent.trim().includes('Documents') && !n._docBound) {
       n._docBound = true;
-      const orig = n.getAttribute('onclick') || '';
-      n.setAttribute('onclick', orig + ';initDocuments()');
+      const orig = n.getAttribute('onclick')||'';
+      n.setAttribute('onclick', orig+';initDocuments()');
     }
   });
 
