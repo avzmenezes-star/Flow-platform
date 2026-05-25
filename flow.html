@@ -462,14 +462,15 @@
 
     /* ── PAGE CONTENT ──────────────────────────────────────── */
     .page-scroll {
-      flex: 1; overflow-y: auto;
+      flex: 1; overflow-y: auto; overflow-x: hidden;
       padding: 28px 28px 40px;
       scrollbar-width: thin;
       scrollbar-color: var(--border) transparent;
+      min-width: 0;
     }
 
     /* View switching */
-    .view { display: none; }
+    .view { display: none; width: 100%; min-width: 0; box-sizing: border-box; }
     .view.active { display: block; }
 
     /* ── DASHBOARD VIEW ────────────────────────────────────── */
@@ -538,6 +539,7 @@
     .section-header {
       display: flex; justify-content: space-between;
       align-items: center; margin-bottom: 14px;
+      width: 100%; min-width: 0;
     }
 
     .section-title {
@@ -626,6 +628,9 @@
       border-radius: var(--radius-lg);
       box-shadow: var(--shadow);
       overflow: hidden;
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
     }
 
     .panel-header {
@@ -1416,11 +1421,13 @@
     /* ── NOTETAKER VIEW ────────────────────────────────────────── */
     .nt-grid {
       display: grid;
-      grid-template-columns: 1fr 340px;
+      grid-template-columns: 1fr 320px;
       gap: 24px;
+      width: 100%;
+      min-width: 0;
     }
 
-    @media (max-width: 1000px) { .nt-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 1100px) { .nt-grid { grid-template-columns: 1fr; } }
 
     .note-card {
       background: var(--surface);
@@ -1429,6 +1436,9 @@
       padding: 16px 20px;
       box-shadow: var(--shadow);
       transition: box-shadow 0.15s;
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
     }
 
     .note-card:hover { box-shadow: var(--shadow-md); }
@@ -1476,6 +1486,7 @@
       padding: 14px 20px;
       border-bottom: 1px solid var(--border);
       cursor: pointer; transition: background 0.12s;
+      min-width: 0; overflow: hidden;
     }
 
     .meeting-row:last-child { border-bottom: none; }
@@ -1523,9 +1534,11 @@
     .meeting-transcript {
       font-size: 12px; color: var(--ink-2);
       line-height: 1.7; white-space: pre-wrap;
-      max-height: 200px; overflow-y: auto;
+      overflow-wrap: break-word; word-break: break-word;
+      max-height: 200px; overflow-y: auto; overflow-x: hidden;
       background: var(--surface); border: 1px solid var(--border);
       border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;
+      width: 100%; box-sizing: border-box;
     }
 
     .meeting-action-items { list-style: none; padding: 0; margin: 0; }
@@ -1551,8 +1564,9 @@
 
     /* ── STICKY NOTES ──────────────────────────────────────────── */
     .stickies-bar {
-      display: flex; align-items: center; gap: 12px;
-      margin-bottom: 28px; flex-wrap: wrap;
+      display: flex; align-items: flex-start; gap: 12px;
+      margin-bottom: 4px; flex-wrap: wrap;
+      width: 100%; min-width: 0;
     }
 
     .sticky-note {
@@ -1803,6 +1817,41 @@
     }
 
     .sticky-btn-dot.show { display: block; }
+    /* ── DOCUMENTS FILE SYSTEM ─────────────────────────────────── */
+    .doc-tree-item {
+      display:flex;align-items:center;gap:7px;padding:6px 14px;
+      font-size:12px;font-weight:500;color:var(--ink-2);cursor:pointer;
+      border-left:2px solid transparent;transition:all 0.1s;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .doc-tree-item:hover { background:var(--surface-2);color:var(--ink); }
+    .doc-tree-item.active { background:var(--indigo-light);color:var(--indigo);border-left-color:var(--indigo);font-weight:600; }
+    .doc-tree-ws {
+      display:flex;align-items:center;gap:6px;padding:5px 14px 5px 28px;
+      font-size:11px;font-weight:500;color:var(--ink-3);cursor:pointer;
+      border-left:2px solid transparent;transition:all 0.1s;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .doc-tree-ws:hover { background:var(--surface-2);color:var(--ink); }
+    .doc-tree-ws.active { background:var(--indigo-light);color:var(--indigo);border-left-color:var(--indigo);font-weight:600; }
+    .doc-file-row {
+      display:flex;align-items:center;gap:12px;padding:10px 16px;
+      border-bottom:0.5px solid var(--border);transition:background 0.1s;
+    }
+    .doc-file-row:hover { background:var(--surface-2); }
+    .doc-file-icon { width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px; }
+    .doc-source-badge { font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;white-space:nowrap; }
+    .src-formflow  { background:#f0fdfa;color:#0d9488; }
+    .src-signflow  { background:#f5f3ff;color:#7c3aed; }
+    .src-upload    { background:var(--indigo-light);color:var(--indigo); }
+    .src-generated { background:#fffbeb;color:#b45309; }
+    .src-notetaker { background:#f0fdf4;color:#166534; }
+    .doc-folder-card {
+      display:flex;align-items:center;gap:12px;padding:12px 16px;
+      border-bottom:0.5px solid var(--border);cursor:pointer;transition:background 0.1s;
+    }
+    .doc-folder-card:hover { background:var(--surface-2); }
+    #doc-preview-panel { width:0;min-width:0;transition:width 0.25s cubic-bezier(0.16,1,0.3,1); }
   </style>
 </head>
 <body>
@@ -2411,52 +2460,82 @@
 
       <!-- ── DOCUMENTS ──────────────────────────────────────────── -->
       <!-- ── DOCUMENTS ──────────────────────────────────────────── -->
-      <div class="view" id="view-documents">
-        <div style="margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-start">
-          <div>
-            <h2 style="font-family:'Instrument Serif',serif;font-size:26px;margin-bottom:4px;letter-spacing:-0.3px">Documents</h2>
-            <p style="font-size:13px;color:var(--ink-3)">All files across your workspaces. Upload, organise, and link documents to clients and workflows.</p>
+      <div class="view" id="view-documents" style="padding:0">
+
+        <!-- ── DOCUMENTS — full file system ──────────────────── -->
+        <div style="display:flex;height:calc(100vh - 56px);overflow:hidden">
+
+          <!-- Folder tree sidebar -->
+          <div id="doc-sidebar" style="width:240px;min-width:240px;border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0">
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;color:var(--ink-4)">File System</span>
+              <label style="cursor:pointer;font-size:18px;color:var(--ink-4);line-height:1" title="Upload file">
+                ＋<input type="file" multiple hidden onchange="handleDocUpload(event)">
+              </label>
+            </div>
+            <div style="flex:1;overflow-y:auto;padding:8px 0;scrollbar-width:thin" id="doc-tree"></div>
+            <div style="padding:10px 12px;border-top:1px solid var(--border)">
+              <button class="btn-ghost" style="width:100%;font-size:12px;padding:7px" onclick="setDocView({type:'all',label:'All Documents'})">🔍 Search all files</button>
+            </div>
           </div>
-          <div style="display:flex;gap:8px">
-            <label class="btn-ghost" style="cursor:pointer;font-size:13px;padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface)">
-              ↑ Upload file
-              <input type="file" multiple hidden onchange="handleDocUpload(event)">
-            </label>
-            <button class="btn-primary" onclick="showView('formflow')">Open FormFlow →</button>
+
+          <!-- Main file area -->
+          <div style="flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden">
+
+            <!-- Toolbar -->
+            <div style="padding:11px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--surface);flex-shrink:0">
+              <span style="font-size:12px;color:var(--ink-4);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="doc-breadcrumb">All Documents</span>
+              <input id="doc-search" class="form-input" placeholder="Search files…" style="width:200px;padding:6px 12px;font-size:12px" oninput="renderFileList()">
+              <label class="btn-ghost" style="cursor:pointer;font-size:12px;padding:6px 14px">
+                ↑ Upload<input type="file" multiple hidden onchange="handleDocUpload(event)">
+              </label>
+              <button class="btn-ghost" style="font-size:12px;padding:6px 14px" onclick="promptNewFolder()">📂 New folder</button>
+              <button class="btn-primary" style="font-size:12px;padding:6px 14px" onclick="openCreateFileModal()">+ Create</button>
+            </div>
+
+            <!-- Stats bar -->
+            <div style="display:flex;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface)">
+              <div style="flex:1;padding:9px 16px;border-right:1px solid var(--border)"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4)">Total</div><div style="font-size:16px;font-family:'Instrument Serif',serif;color:var(--ink)" id="dstat-total">0</div></div>
+              <div style="flex:1;padding:9px 16px;border-right:1px solid var(--border)"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4)">FormFlow</div><div style="font-size:16px;font-family:'Instrument Serif',serif;color:#0d9488" id="dstat-ff">0</div></div>
+              <div style="flex:1;padding:9px 16px;border-right:1px solid var(--border)"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4)">SignFlow</div><div style="font-size:16px;font-family:'Instrument Serif',serif;color:#7c3aed" id="dstat-sf">0</div></div>
+              <div style="flex:1;padding:9px 16px;border-right:1px solid var(--border)"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4)">Uploaded</div><div style="font-size:16px;font-family:'Instrument Serif',serif;color:var(--indigo)" id="dstat-up">0</div></div>
+              <div style="flex:1;padding:9px 16px"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4)">Generated</div><div style="font-size:16px;font-family:'Instrument Serif',serif;color:#b45309" id="dstat-gen">0</div></div>
+            </div>
+
+            <!-- File type filter bar -->
+            <div style="display:flex;align-items:center;gap:6px;padding:7px 16px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface);overflow-x:auto;scrollbar-width:none">
+              <button class="filter-btn active" id="doctype-all"   onclick="setDocTypeFilter(this,'all')">All types</button>
+              <button class="filter-btn" id="doctype-pdf"          onclick="setDocTypeFilter(this,'pdf')">📄 PDF</button>
+              <button class="filter-btn" id="doctype-word"         onclick="setDocTypeFilter(this,'word')">📝 Word</button>
+              <button class="filter-btn" id="doctype-sheet"        onclick="setDocTypeFilter(this,'sheet')">📊 Spreadsheet</button>
+              <button class="filter-btn" id="doctype-image"        onclick="setDocTypeFilter(this,'image')">🖼 Images</button>
+              <button class="filter-btn" id="doctype-ppt"          onclick="setDocTypeFilter(this,'ppt')">📑 Presentation</button>
+              <button class="filter-btn" id="doctype-email"        onclick="setDocTypeFilter(this,'email')">✉️ Email</button>
+              <button class="filter-btn" id="doctype-other"        onclick="setDocTypeFilter(this,'other')">📎 Other</button>
+            </div>
+
+            <!-- Drop zone -->
+            <div id="doc-dropzone" style="display:none;margin:10px 16px;border:2px dashed var(--indigo);border-radius:10px;padding:16px;text-align:center;background:var(--indigo-light);flex-shrink:0">
+              <div style="font-size:13px;font-weight:600;color:var(--indigo)">📁 Drop files here to upload</div>
+            </div>
+
+            <!-- File list + preview panel -->
+            <div style="flex:1;display:flex;overflow:hidden">
+              <div style="flex:1;overflow-y:auto;scrollbar-width:thin" id="doc-file-area">
+                <div id="doc-list"></div>
+              </div>
+              <!-- Preview panel -->
+              <div id="doc-preview-panel" style="width:0;min-width:0;border-left:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow:hidden;transition:width 0.25s cubic-bezier(0.16,1,0.3,1)">
+                <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
+                  <span style="font-size:12px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1" id="preview-filename">Preview</span>
+                  <button onclick="closePreview()" style="border:none;background:none;cursor:pointer;color:var(--ink-4);font-size:16px;padding:0 0 0 8px">✕</button>
+                </div>
+                <div style="flex:1;overflow:hidden;display:flex;flex-direction:column" id="preview-body"></div>
+                <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0" id="preview-footer"></div>
+              </div>
+            </div>
+
           </div>
-        </div>
-
-        <!-- Search + filters -->
-        <div style="display:flex;gap:10px;margin-bottom:20px;align-items:center">
-          <input id="doc-search" class="form-input" placeholder="Search documents…" style="flex:1;max-width:360px" oninput="renderDocuments()">
-          <button class="filter-btn active" id="doc-filter-all" onclick="setDocFilter(this,'all')">All</button>
-          <button class="filter-btn" id="doc-filter-formflow" onclick="setDocFilter(this,'formflow')">FormFlow</button>
-          <button class="filter-btn" id="doc-filter-signflow" onclick="setDocFilter(this,'signflow')">SignFlow</button>
-          <button class="filter-btn" id="doc-filter-uploads" onclick="setDocFilter(this,'uploads')">Uploaded</button>
-        </div>
-
-        <!-- Drop zone -->
-        <div id="doc-dropzone" style="border:2px dashed var(--border-2);border-radius:var(--radius-lg);padding:28px;text-align:center;margin-bottom:20px;background:var(--surface);transition:all 0.15s;display:none">
-          <div style="font-size:28px;margin-bottom:8px">📁</div>
-          <div style="font-size:14px;font-weight:600;color:var(--ink-2);margin-bottom:4px">Drop files here to upload</div>
-          <div style="font-size:12px;color:var(--ink-4)">PDF, DOCX, images and more</div>
-        </div>
-
-        <!-- Stats row -->
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px" id="doc-stats-row">
-          <div class="stat-card"><div class="stat-label">Total files</div><div class="stat-value" id="doc-stat-total">0</div></div>
-          <div class="stat-card"><div class="stat-label">FormFlow collections</div><div class="stat-value" style="color:var(--ff,#0d9488)" id="doc-stat-ff">0</div></div>
-          <div class="stat-card"><div class="stat-label">Signed packages</div><div class="stat-value" style="color:#7c3aed" id="doc-stat-sf">0</div></div>
-          <div class="stat-card"><div class="stat-label">Uploaded files</div><div class="stat-value" style="color:var(--indigo)" id="doc-stat-up">0</div></div>
-        </div>
-
-        <!-- Document list -->
-        <div class="panel" id="doc-list-panel">
-          <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid var(--border)">
-            <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4)" id="doc-list-label">All documents</span>
-            <span style="font-size:12px;color:var(--ink-4)" id="doc-list-count"></span>
-          </div>
-          <div id="doc-list"></div>
         </div>
       </div>
         </div><!-- end view-documents -->
@@ -2654,11 +2733,8 @@
       <!-- ── NOTETAKER VIEW ──────────────────────────────────────── -->
       <div class="view" id="view-notetaker">
 
-        <div style="margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-start">
-          <div>
-            <h2 style="font-family:'Instrument Serif',serif;font-size:26px;margin-bottom:4px;letter-spacing:-0.3px">Notetaker</h2>
-            <p style="font-size:13px;color:var(--ink-3)">Sticky notes, scratchpad, meeting transcripts — your whole second brain.</p>
-          </div>
+        <div style="margin-bottom:24px;display:flex;justify-content:space-between;align-items:center">
+          <p style="font-size:13px;color:var(--ink-3);margin:0">Sticky notes, scratchpad, meeting transcripts — your whole second brain.</p>
           <div style="display:flex;gap:8px">
             <button class="btn-ghost" onclick="openStickyModal()" style="font-size:13px">📌 New sticky</button>
             <button class="btn-ghost" onclick="openNewMeetingModal()" style="font-size:13px">🎙 Log meeting</button>
@@ -2689,7 +2765,7 @@
                 <div class="section-title">Scratchpad</div>
                 <span style="font-size:11px;color:var(--ink-4)">Auto-saved · <kbd style="background:var(--surface-2);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:10px;font-family:monospace">⌘K</kbd> to open from anywhere</span>
               </div>
-              <div class="panel" style="overflow:visible">
+              <div class="panel">
                 <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
                   <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
                     <span style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.07em">Context</span>
@@ -2697,7 +2773,7 @@
                       <option value="General">General</option>
                     </select>
                   </div>
-                  <textarea id="scratchpad-body" style="width:100%;border:none;background:transparent;font-size:14px;font-family:'Instrument Sans',sans-serif;color:var(--ink);resize:none;outline:none;line-height:1.7;min-height:100px" placeholder="Start typing — capture a thought, a to-do, a follow-up…"></textarea>
+                  <textarea id="scratchpad-body" style="width:100%;box-sizing:border-box;border:none;background:transparent;font-size:14px;font-family:'Instrument Sans',sans-serif;color:var(--ink);resize:none;outline:none;line-height:1.7;min-height:100px;overflow-wrap:break-word;word-break:break-word" placeholder="Start typing — capture a thought, a to-do, a follow-up…"></textarea>
                 </div>
                 <div style="padding:12px 20px;display:flex;justify-content:space-between;align-items:center">
                   <span style="font-size:11px;color:var(--ink-4)" id="scratchpad-saved-label">Start typing to capture a note</span>
@@ -2908,6 +2984,52 @@
     <div class="modal-footer">
       <button class="btn-ghost" onclick="closeModal('sticky-modal')">Cancel</button>
       <button class="btn-primary" onclick="saveStickyModal()">Save sticky</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── IMAGE LIGHTBOX ─────────────────────────────────────────── -->
+<div id="img-lightbox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:900;align-items:center;justify-content:center;flex-direction:column;gap:14px" onclick="closeLightbox()">
+  <div style="position:absolute;top:20px;right:24px;color:white;font-size:24px;cursor:pointer;opacity:0.7">✕</div>
+  <img id="lightbox-img" src="" style="max-width:90vw;max-height:82vh;border-radius:8px;object-fit:contain" onclick="event.stopPropagation()">
+  <div id="lightbox-caption" style="color:rgba(255,255,255,0.6);font-size:13px;text-align:center"></div>
+</div>
+
+<!-- ── CREATE FILE MODAL ──────────────────────────────────────── -->
+<div class="modal-overlay" id="create-file-modal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title">Create new file</div>
+      <div class="modal-close" onclick="closeModal('create-file-modal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label">Name</label>
+        <input class="form-input" id="create-file-name" placeholder="e.g. Buyer Agreement — John Smith">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Type</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px" id="create-file-type-grid">
+          <div class="hub-type-btn selected" onclick="selectCreateType(this,'pdf')">📄<span>PDF</span></div>
+          <div class="hub-type-btn" onclick="selectCreateType(this,'docx')">📝<span>Word doc</span></div>
+          <div class="hub-type-btn" onclick="selectCreateType(this,'sheet')">📊<span>Spreadsheet</span></div>
+          <div class="hub-type-btn" onclick="selectCreateType(this,'note')">🗒<span>Note</span></div>
+          <div class="hub-type-btn" onclick="selectCreateType(this,'template')">📋<span>From template</span></div>
+          <div class="hub-type-btn" onclick="selectCreateType(this,'folder')">📁<span>Folder</span></div>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Save to hub</label>
+        <select class="form-input" id="create-file-hub"><option value="">— Choose hub —</option></select>
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label">Workspace (optional)</label>
+        <select class="form-input" id="create-file-ws"><option value="">— General hub folder —</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('create-file-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveCreatedFile()">Create</button>
     </div>
   </div>
 </div>
@@ -3585,7 +3707,7 @@
   }
 
   // ── NAVIGATION ──────────────────────────────────────────────
-  const EXTERNAL_TOOLS = { formflow: './formflow.html', signflow: './signflow.html' };
+  const EXTERNAL_TOOLS = { formflow: './formflow.html', signflow: './signflow.html', notetaker: './notetaker.html' };
 
   function showView(id) {
     // External tools — navigate directly to the standalone file
@@ -3605,10 +3727,17 @@
     targetView.classList.add('active');
     targetView.style.display = 'block';
 
-    // Restore page-scroll padding (in case coming back from iframe)
+    // Page-scroll padding — documents needs full-bleed, everything else gets padding back
     const pageScroll = document.querySelector('.page-scroll');
-    pageScroll.style.padding = '';
-    pageScroll.style.overflow = '';
+    if (pageScroll) {
+      if (id === 'documents') {
+        pageScroll.style.padding = '0';
+        pageScroll.style.overflow = 'hidden';
+      } else {
+        pageScroll.style.padding = '';
+        pageScroll.style.overflow = '';
+      }
+    }
 
     // Nav active state
     const titles = { dashboard:'Dashboard', hubs:'Hubs', workspaces:'Workspaces', tasks:'Tasks', activity:'Recent Activity', documents:'Documents', formflow:'FormFlow', signflow:'SignFlow', contacts:'Contacts', flowmail:'FlowMail', reports:'Reports', settings:'Settings', plugins:'Apps & Plugins', notetaker:'Notetaker' };
@@ -3624,6 +3753,9 @@
     if (id === 'tasks' && typeof renderGlobalTasks === 'function') {
       renderGlobalTasks(taskFilter || 'all');
     }
+    // Auto-init views that need it after the view is visible
+    if (id === 'notetaker') setTimeout(() => { if (typeof initNotetaker === 'function') initNotetaker(); }, 0);
+    if (id === 'documents') setTimeout(() => { if (typeof initDocuments === 'function') initDocuments(); }, 0);
   }
 
   // ── RENDER ──────────────────────────────────────────────────
@@ -5055,150 +5187,523 @@
     showToast('Meeting note saved ✓');
   }
 
-  // ── DOCUMENTS ────────────────────────────────────────────────
-  const DOCS_KEY = 'flow_documents_v1';
-  let docFilter = 'all';
-  let docFiles  = [];
+  // ── DOCUMENTS FILE SYSTEM ────────────────────────────────────
+  const DOCS_KEY    = 'flow_documents_v3';
+  const FOLDERS_KEY = 'flow_doc_folders_v1';
+  let docFiles   = [];
+  let docFolders = [];
+  let docView    = { type:'all', hub:'', ws:'', source:'', folder:'', label:'All Documents' };
+  let createFileType = 'pdf';
+  let docTypeFilter  = 'all';
+  let docTreeState   = {}; // collapsible state
+
+  function isExpanded(key) {
+    return docTreeState[key] !== undefined ? docTreeState[key] : key.startsWith('hub:');
+  }
+  function toggleTree(key, e) {
+    if (e) e.stopPropagation();
+    docTreeState[key] = !isExpanded(key);
+    renderDocTree();
+  }
+
+  const WS_FOLDERS = [
+    { key:'formflow',  label:'FormFlow',        icon:'📋', color:'#f0fdfa', desc:'Collected forms, FICA packs, onboarding submissions' },
+    { key:'signflow',  label:'Signed Documents', icon:'✍️', color:'#f5f3ff', desc:'Executed agreements, signed OTPs, completed packages' },
+    { key:'upload',    label:'Uploaded',          icon:'📁', color:'#eef2ff', desc:'Manually uploaded files — title deeds, certificates, IDs' },
+    { key:'generated', label:'Generated',         icon:'📊', color:'#fffbeb', desc:'DOCX and PDF outputs generated from templates' },
+    { key:'notetaker', label:'Meeting Notes',     icon:'🎙', color:'#f0fdf4', desc:'Transcripts and action item exports from Notetaker' },
+  ];
+
+  const SOURCE_META = {
+    formflow:  { label:'FormFlow',  cls:'src-formflow',  bg:'#f0fdfa' },
+    signflow:  { label:'SignFlow',  cls:'src-signflow',  bg:'#f5f3ff' },
+    upload:    { label:'Uploaded',  cls:'src-upload',    bg:'#eef2ff' },
+    generated: { label:'Generated', cls:'src-generated', bg:'#fffbeb' },
+    notetaker: { label:'Notetaker', cls:'src-notetaker', bg:'#f0fdf4' },
+  };
+
+  const HUB_COLORS = {
+    Sales:'#0e7490', Deals:'#1a5c3a', HR:'#1d4ed8',
+    Legal:'#6d28d9', Finance:'#b45309', Marketing:'#c2410c'
+  };
+
+  const FILE_TYPES = {
+    pdf:  {label:'PDF',         icon:'📄',cls:'ft-pdf',  group:'pdf'},
+    doc:  {label:'Word',        icon:'📝',cls:'ft-word', group:'word'},
+    docx: {label:'Word',        icon:'📝',cls:'ft-word', group:'word'},
+    odt:  {label:'Document',    icon:'📝',cls:'ft-word', group:'word'},
+    rtf:  {label:'Rich Text',   icon:'📝',cls:'ft-word', group:'word'},
+    txt:  {label:'Text',        icon:'📄',cls:'ft-word', group:'word'},
+    md:   {label:'Markdown',    icon:'📄',cls:'ft-word', group:'word'},
+    xls:  {label:'Excel',       icon:'📊',cls:'ft-sheet',group:'sheet'},
+    xlsx: {label:'Excel',       icon:'📊',cls:'ft-sheet',group:'sheet'},
+    csv:  {label:'CSV',         icon:'📊',cls:'ft-sheet',group:'sheet'},
+    ods:  {label:'Spreadsheet', icon:'📊',cls:'ft-sheet',group:'sheet'},
+    jpg:  {label:'Image',       icon:'🖼',cls:'ft-image',group:'image'},
+    jpeg: {label:'Image',       icon:'🖼',cls:'ft-image',group:'image'},
+    png:  {label:'Image',       icon:'🖼',cls:'ft-image',group:'image'},
+    gif:  {label:'Image',       icon:'🖼',cls:'ft-image',group:'image'},
+    webp: {label:'Image',       icon:'🖼',cls:'ft-image',group:'image'},
+    heic: {label:'Photo',       icon:'🖼',cls:'ft-image',group:'image'},
+    tiff: {label:'Image',       icon:'🖼',cls:'ft-image',group:'image'},
+    bmp:  {label:'Image',       icon:'🖼',cls:'ft-image',group:'image'},
+    svg:  {label:'SVG',         icon:'🖼',cls:'ft-image',group:'image'},
+    ppt:  {label:'PowerPoint',  icon:'📑',cls:'ft-ppt',  group:'ppt'},
+    pptx: {label:'PowerPoint',  icon:'📑',cls:'ft-ppt',  group:'ppt'},
+    key:  {label:'Keynote',     icon:'📑',cls:'ft-ppt',  group:'ppt'},
+    eml:  {label:'Email',       icon:'✉️',cls:'ft-email',group:'email'},
+    msg:  {label:'Email',       icon:'✉️',cls:'ft-email',group:'email'},
+    zip:  {label:'Archive',     icon:'🗜',cls:'ft-other',group:'other'},
+    json: {label:'JSON',        icon:'📋',cls:'ft-other',group:'other'},
+    xml:  {label:'XML',         icon:'📋',cls:'ft-other',group:'other'},
+  };
+
+  function getFileType(name) {
+    const ext = (name||'').split('.').pop().toLowerCase();
+    return FILE_TYPES[ext] || {label:ext.toUpperCase()||'File',icon:'📎',cls:'ft-other',group:'other'};
+  }
 
   const demoDocs = [
-    { id:'d1', name:'12 Main Road — OTP v3.pdf',      type:'formflow', source:'FormFlow Collection', ws:'12 Main Road — Purchase',  size:'248 KB', date:'Today, 09:22',    icon:'📋' },
-    { id:'d2', name:'John Smith — FICA Pack.pdf',      type:'formflow', source:'FormFlow Collection', ws:'12 Main Road — Purchase',  size:'1.2 MB', date:'Today, 09:20',    icon:'📋' },
-    { id:'d3', name:'Acme Corp Lease — Signed.pdf',    type:'signflow', source:'SignFlow Package',    ws:'Acme Corp — Lease',        size:'384 KB', date:'Yesterday, 14:55', icon:'✍️' },
-    { id:'d4', name:'Mary Jacobs — ID Document.pdf',   type:'uploads',  source:'Uploaded',            ws:'Sandy Close — Sale',       size:'892 KB', date:'Mon, 11:03',       icon:'📄' },
-    { id:'d5', name:'Trust Account May 2025.xlsx',     type:'uploads',  source:'Uploaded',            ws:'General',                  size:'56 KB',  date:'Mon, 09:14',       icon:'📊' },
-    { id:'d6', name:'Thabo Nkosi — Contract.docx',     type:'formflow', source:'FormFlow Collection', ws:'HR Hub',                   size:'120 KB', date:'Fri, 16:30',       icon:'📋' },
-    { id:'d7', name:'Sandton Block — Mandate.pdf',     type:'uploads',  source:'Uploaded',            ws:'General',                  size:'210 KB', date:'Fri, 10:45',       icon:'📄' },
-    { id:'d8', name:'Lease Agreement — Signed v2.pdf', type:'signflow', source:'SignFlow Package',    ws:'12 Main Road — Purchase',  size:'445 KB', date:'Thu, 15:20',       icon:'✍️' },
+    {id:'d1', name:'OTP v3 — Signed.pdf',              source:'signflow',  hub:'Deals',    ws:'12 Main Road — Purchase',          folder:'',          size:'248 KB', ts:Date.now()-7200000},
+    {id:'d2', name:'John Smith — FICA Pack.pdf',        source:'formflow',  hub:'Deals',    ws:'12 Main Road — Purchase',          folder:'Buyer FICA',size:'1.2 MB', ts:Date.now()-7500000},
+    {id:'d3', name:'Bond Application — ABSA.pdf',       source:'formflow',  hub:'Deals',    ws:'12 Main Road — Purchase',          folder:'',          size:'340 KB', ts:Date.now()-86400000},
+    {id:'d4', name:'Title Deed.pdf',                    source:'upload',    hub:'Deals',    ws:'12 Main Road — Purchase',          folder:'Title Docs',size:'720 KB', ts:Date.now()-172800000},
+    {id:'d5', name:'Rates Certificate 2025.pdf',        source:'upload',    hub:'Deals',    ws:'12 Main Road — Purchase',          folder:'Rates & Levies',size:'180 KB',ts:Date.now()-180000000},
+    {id:'d6', name:'Van der Merwe — FICA Pack.pdf',     source:'formflow',  hub:'Deals',    ws:'Van der Merwe — Bond Application', folder:'',          size:'980 KB', ts:Date.now()-259200000},
+    {id:'d7', name:'Acme Corp Lease — Signed.pdf',      source:'signflow',  hub:'Legal',    ws:'Acme Corp — Lease Agreement',      folder:'',          size:'384 KB', ts:Date.now()-90000000},
+    {id:'d8', name:'Sarah Nkosi — ID Document.pdf',     source:'upload',    hub:'Legal',    ws:'Sarah Nkosi — FICA Pack',          folder:'',          size:'892 KB', ts:Date.now()-345600000},
+    {id:'d9', name:'Employment Contract — Signed.docx', source:'signflow',  hub:'HR',       ws:'Employee Onboarding — Thabo M.',   folder:'',          size:'145 KB', ts:Date.now()-86400000},
+    {id:'d10',name:'Onboarding Form — Completed.pdf',   source:'formflow',  hub:'HR',       ws:'Employee Onboarding — Thabo M.',   folder:'',          size:'220 KB', ts:Date.now()-90000000},
+    {id:'d11',name:'Trust Account May 2025.xlsx',        source:'upload',    hub:'Finance',  ws:'Trust Account — May 2025',         folder:'',          size:'56 KB',  ts:Date.now()-172800000},
+    {id:'d12',name:'May 2025 Recon Report.pdf',          source:'generated', hub:'Finance',  ws:'Trust Account — May 2025',         folder:'',          size:'128 KB', ts:Date.now()-180000000},
+    {id:'d13',name:'Q3 Campaign Brief.pdf',              source:'upload',    hub:'Marketing',ws:'Winter Campaign Q3',               folder:'Briefs',    size:'210 KB', ts:Date.now()-432000000},
+    {id:'d14',name:'Greenfield Devs — Proposal v2.pdf', source:'generated', hub:'Sales',    ws:'Greenfield Devs — Proposal',       folder:'',          size:'312 KB', ts:Date.now()-10800000},
+    {id:'d15',name:'Site Visit Notes.pdf',               source:'notetaker', hub:'Sales',    ws:'Sandton Block — Lead',             folder:'',          size:'64 KB',  ts:Date.now()-21600000},
+  ];
+
+  const demoFolders = [
+    {id:'f1',name:'Buyer FICA',    hub:'Deals',   ws:'12 Main Road — Purchase',source:'formflow',parentFolder:'',ts:Date.now()-7600000},
+    {id:'f2',name:'Seller FICA',   hub:'Deals',   ws:'12 Main Road — Purchase',source:'formflow',parentFolder:'',ts:Date.now()-7600000},
+    {id:'f3',name:'Title Docs',    hub:'Deals',   ws:'12 Main Road — Purchase',source:'upload',  parentFolder:'',ts:Date.now()-173000000},
+    {id:'f4',name:'Rates & Levies',hub:'Deals',   ws:'12 Main Road — Purchase',source:'upload',  parentFolder:'',ts:Date.now()-173000000},
+    {id:'f5',name:'Briefs',        hub:'Marketing',ws:'Winter Campaign Q3',    source:'upload',  parentFolder:'',ts:Date.now()-432100000},
   ];
 
   function initDocuments() {
-    try { docFiles = JSON.parse(localStorage.getItem(DOCS_KEY)) || demoDocs; } catch(e) { docFiles = demoDocs; }
-    setupDocDropzone();
-    renderDocuments();
+    try { docFiles   = JSON.parse(localStorage.getItem(DOCS_KEY))    || demoDocs;    } catch(e) { docFiles   = demoDocs;    }
+    try { docFolders = JSON.parse(localStorage.getItem(FOLDERS_KEY)) || demoFolders; } catch(e) { docFolders = demoFolders; }
+    renderDocTree();
+    setDocView({type:'all', label:'All Documents'});
+    setupDocDrop();
   }
 
-  function setupDocDropzone() {
-    const zone = document.getElementById('doc-dropzone');
-    const page = document.getElementById('view-documents');
-    if (!zone || !page || page._dropBound) return;
-    page._dropBound = true;
+  function saveDocData() {
+    try { localStorage.setItem(DOCS_KEY,    JSON.stringify(docFiles));   } catch(e) {}
+    try { localStorage.setItem(FOLDERS_KEY, JSON.stringify(docFolders)); } catch(e) {}
+  }
 
-    page.addEventListener('dragover', e => { e.preventDefault(); zone.style.display = 'block'; zone.style.borderColor = 'var(--indigo)'; zone.style.background = 'var(--indigo-light)'; });
-    page.addEventListener('dragleave', e => { if (!page.contains(e.relatedTarget)) { zone.style.display = 'none'; } });
-    page.addEventListener('drop', e => {
-      e.preventDefault();
-      zone.style.display = 'none';
-      const files = [...e.dataTransfer.files];
-      addUploadedFiles(files);
+  // ── TREE ─────────────────────────────────────────────────────
+  function renderDocTree() {
+    const tree = document.getElementById('doc-tree');
+    if (!tree) return;
+    const allHubs = [...new Set([...demoHubs.map(h=>h.name), ...docFiles.map(f=>f.hub)])];
+
+    let html = `<div class="doc-tree-item ${docView.type==='all'?'active':''}" onclick="setDocView({type:'all',label:'All Documents'})">
+      <span>🗂</span><span style="flex:1">All Documents</span>
+      <span style="font-size:10px;color:var(--ink-4)">${docFiles.length}</span>
+    </div>`;
+
+    allHubs.forEach(hub => {
+      const hubKey   = 'hub:' + hub;
+      const expanded = isExpanded(hubKey);
+      const hubFiles = docFiles.filter(f=>f.hub===hub);
+      const color    = HUB_COLORS[hub] || '#374151';
+      const icon     = demoHubs.find(h=>h.name===hub)?.icon || '🗂';
+      const hubActive = docView.hub===hub && !docView.ws;
+
+      html += `<div style="margin-top:2px">
+        <div class="doc-tree-item ${hubActive?'active':''}" style="${hubActive?`border-left-color:${color}`:''}">
+          <span onclick="toggleTree('${hubKey}',event)" style="cursor:pointer;font-size:10px;color:var(--ink-4);width:16px;flex-shrink:0;text-align:center;padding-right:2px">${expanded?'▾':'▸'}</span>
+          <span style="font-size:13px">${icon}</span>
+          <span style="flex:1;cursor:pointer" onclick="setDocView({type:'hub',hub:'${hub}',label:'${hub}'})">${hub}</span>
+          <span style="font-size:10px;color:var(--ink-4)">${hubFiles.length}</span>
+        </div>`;
+
+      if (expanded) {
+        const wsNames = [...new Set(hubFiles.map(f=>f.ws).filter(Boolean))].sort();
+        wsNames.forEach(ws => {
+          const wsKey    = 'ws:' + ws;
+          const wsOpen   = isExpanded(wsKey);
+          const wsFiles  = hubFiles.filter(f=>f.ws===ws);
+          const wsActive = docView.ws===ws;
+          const short    = ws.length>22 ? ws.substring(0,20)+'…' : ws;
+
+          html += `<div class="doc-tree-ws ${wsActive&&!docView.source?'active':''}" style="${wsActive&&!docView.source?`border-left-color:${color}`:''}">
+            <span onclick="toggleTree('${wsKey}',event)" style="cursor:pointer;font-size:10px;color:var(--ink-4);width:16px;flex-shrink:0;text-align:center">${wsOpen?'▾':'▸'}</span>
+            <span style="flex:1;overflow:hidden;text-overflow:ellipsis;cursor:pointer" title="${escapeHTML(ws)}" onclick="setDocView({type:'ws',hub:'${hub}',ws:'${escapeHTML(ws)}',label:'${escapeHTML(ws)}'})">
+              ${escapeHTML(short)}
+            </span>
+            <span style="font-size:10px;color:var(--ink-4)">${wsFiles.length}</span>
+          </div>`;
+
+          if (wsOpen) {
+            WS_FOLDERS.forEach(sf => {
+              const sfFiles   = wsFiles.filter(f=>f.source===sf.key);
+              const sfFolders = docFolders.filter(f=>f.hub===hub&&f.ws===ws&&f.source===sf.key);
+              if (!sfFiles.length && !sfFolders.length) return;
+              const sfActive = docView.ws===ws && docView.source===sf.key;
+              html += `<div class="doc-tree-ws ${sfActive&&!docView.folder?'active':''}"
+                onclick="setDocView({type:'source',hub:'${hub}',ws:'${escapeHTML(ws)}',source:'${sf.key}',label:'${sf.label}'})"
+                style="padding-left:46px;${sfActive&&!docView.folder?`border-left-color:${color}`:''}">
+                <span>${sf.icon}</span><span style="flex:1">${sf.label}</span>
+                <span style="font-size:10px;color:var(--ink-4)">${sfFiles.length}</span>
+              </div>`;
+              sfFolders.forEach(fld => {
+                const fActive = docView.folder===fld.name && docView.source===sf.key && docView.ws===ws;
+                html += `<div class="doc-tree-ws ${fActive?'active':''}"
+                  onclick="setDocView({type:'folder',hub:'${hub}',ws:'${escapeHTML(ws)}',source:'${sf.key}',folder:'${escapeHTML(fld.name)}',label:'${escapeHTML(fld.name)}'})"
+                  style="padding-left:60px;${fActive?`border-left-color:${color}`:''}">
+                  <span>📂</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis">${escapeHTML(fld.name)}</span>
+                  <span style="font-size:10px;color:var(--ink-4)">${docFiles.filter(f=>f.ws===ws&&f.source===sf.key&&f.folder===fld.name).length}</span>
+                </div>`;
+              });
+            });
+          }
+        });
+      }
+      html += `</div>`;
     });
+    tree.innerHTML = html;
   }
 
-  function handleDocUpload(e) {
-    const files = [...e.target.files];
-    addUploadedFiles(files);
-    e.target.value = '';
+  // ── NAVIGATION ────────────────────────────────────────────────
+  function setDocView(v) {
+    docView = {type:'all',hub:'',ws:'',source:'',folder:'',label:'All Documents',...v};
+    const bc = document.getElementById('doc-breadcrumb');
+    if (bc) bc.innerHTML = buildBreadcrumb();
+    renderDocTree();
+    renderFileList();
   }
 
-  function addUploadedFiles(files) {
-    files.forEach(f => {
-      const kb = Math.round(f.size / 1024);
-      const size = kb > 1024 ? (kb/1024).toFixed(1)+' MB' : kb+' KB';
-      docFiles.unshift({
-        id: 'd'+Date.now()+Math.random(),
-        name: f.name, type: 'uploads',
-        source: 'Uploaded', ws: 'General',
-        size, date: 'Just now', icon: getDocIcon(f.name)
-      });
-    });
-    try { localStorage.setItem(DOCS_KEY, JSON.stringify(docFiles)); } catch(e) {}
-    renderDocuments();
-    showToast(`${files.length} file${files.length>1?'s':''} uploaded ✓`);
+  function buildBreadcrumb() {
+    const p = [];
+    p.push(`<span style="cursor:pointer;color:var(--indigo)" onclick="setDocView({type:'all',label:'All Documents'})">All Documents</span>`);
+    if (docView.hub)    p.push(`<span style="cursor:pointer;color:var(--indigo)" onclick="setDocView({type:'hub',hub:'${docView.hub}',label:'${docView.hub}'})">${docView.hub}</span>`);
+    if (docView.ws)     p.push(`<span style="cursor:pointer;color:var(--indigo)" onclick="setDocView({type:'ws',hub:'${docView.hub}',ws:'${escapeHTML(docView.ws)}',label:'${escapeHTML(docView.ws)}'})"> ${escapeHTML(docView.ws)}</span>`);
+    if (docView.source) { const sf=WS_FOLDERS.find(f=>f.key===docView.source); p.push(`<span style="cursor:pointer;color:var(--indigo)" onclick="setDocView({type:'source',hub:'${docView.hub}',ws:'${escapeHTML(docView.ws)}',source:'${docView.source}',label:'${sf?.label||docView.source}'})">${sf?.icon||''} ${sf?.label||docView.source}</span>`); }
+    if (docView.folder) p.push(`<span style="color:var(--ink-2)">📂 ${escapeHTML(docView.folder)}</span>`);
+    return p.join(' <span style="color:var(--ink-4)">›</span> ');
   }
 
-  function getDocIcon(name) {
-    const ext = name.split('.').pop().toLowerCase();
-    if (['pdf'].includes(ext)) return '📄';
-    if (['doc','docx'].includes(ext)) return '📝';
-    if (['xls','xlsx','csv'].includes(ext)) return '📊';
-    if (['png','jpg','jpeg','gif','webp'].includes(ext)) return '🖼';
-    return '📎';
-  }
-
-  function setDocFilter(btn, filter) {
-    document.querySelectorAll('#view-documents .filter-btn').forEach(b => b.classList.remove('active'));
+  // ── FILE LIST ─────────────────────────────────────────────────
+  function setDocTypeFilter(btn, filter) {
+    document.querySelectorAll('#view-documents .filter-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
-    docFilter = filter;
-    renderDocuments();
+    docTypeFilter = filter;
+    renderFileList();
   }
 
-  function renderDocuments() {
-    const search = (document.getElementById('doc-search')?.value || '').toLowerCase();
-    let data = docFiles;
-    if (docFilter !== 'all') data = data.filter(d => d.type === docFilter);
-    if (search) data = data.filter(d => d.name.toLowerCase().includes(search) || (d.ws||'').toLowerCase().includes(search));
-
-    // stats
-    document.getElementById('doc-stat-total').textContent = docFiles.length;
-    document.getElementById('doc-stat-ff').textContent    = docFiles.filter(d=>d.type==='formflow').length;
-    document.getElementById('doc-stat-sf').textContent    = docFiles.filter(d=>d.type==='signflow').length;
-    document.getElementById('doc-stat-up').textContent    = docFiles.filter(d=>d.type==='uploads').length;
-
-    const labelMap = { all:'All documents', formflow:'FormFlow collections', signflow:'SignFlow packages', uploads:'Uploaded files' };
-    document.getElementById('doc-list-label').textContent = labelMap[docFilter] || 'All documents';
-    document.getElementById('doc-list-count').textContent = data.length + ' file' + (data.length !== 1 ? 's' : '');
-
-    const list = document.getElementById('doc-list');
+  function renderFileList() {
+    const list   = document.getElementById('doc-list');
+    const search = (document.getElementById('doc-search')?.value||'').toLowerCase();
     if (!list) return;
 
-    if (data.length === 0) {
-      list.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink-4);font-size:13px">No documents found. Upload a file or check FormFlow for collections.</div>';
+    // Stats always from full set
+    const setStat = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+    setStat('dstat-total', docFiles.length);
+    setStat('dstat-ff',    docFiles.filter(f=>f.source==='formflow').length);
+    setStat('dstat-sf',    docFiles.filter(f=>f.source==='signflow').length);
+    setStat('dstat-up',    docFiles.filter(f=>f.source==='upload').length);
+    setStat('dstat-gen',   docFiles.filter(f=>f.source==='generated').length);
+
+    let files = docFiles;
+    if (docView.hub)    files = files.filter(f=>f.hub===docView.hub);
+    if (docView.ws)     files = files.filter(f=>f.ws===docView.ws);
+    if (docView.source) files = files.filter(f=>f.source===docView.source);
+    if (docView.folder) files = files.filter(f=>f.folder===docView.folder);
+    else if (docView.source) files = files.filter(f=>!f.folder);
+    if (search) files = files.filter(f=>f.name.toLowerCase().includes(search)||(f.ws||'').toLowerCase().includes(search));
+    if (docTypeFilter !== 'all') files = files.filter(f=>getFileType(f.name).group===docTypeFilter);
+
+    // Hub → workspace cards
+    if (docView.type==='hub') {
+      const wsNames  = [...new Set(docFiles.filter(f=>f.hub===docView.hub).map(f=>f.ws).filter(Boolean))].sort();
+      const hubColor = HUB_COLORS[docView.hub]||'#374151';
+      list.innerHTML = wsNames.length ? wsNames.map(ws=>{
+        const wsF = docFiles.filter(f=>f.hub===docView.hub&&f.ws===ws);
+        const last = wsF.sort((a,b)=>(b.ts||0)-(a.ts||0))[0];
+        const badges = [...new Set(wsF.map(f=>f.source))].map(s=>{ const m=SOURCE_META[s]||{}; return `<span class="doc-source-badge ${m.cls||''}">${m.label||s}</span>`; }).join('');
+        return `<div class="doc-folder-card" onclick="setDocView({type:'ws',hub:'${docView.hub}',ws:'${escapeHTML(ws)}',label:'${escapeHTML(ws)}'})">
+          <div style="width:36px;height:36px;border-radius:8px;background:${hubColor}14;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📂</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHTML(ws)}</div>
+            <div style="font-size:11px;color:var(--ink-4);margin-top:2px">${wsF.length} file${wsF.length!==1?'s':''} · ${stickyTimeLabel(last?.ts||0)}</div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end">${badges}</div>
+          <span style="color:var(--ink-4);font-size:16px;margin-left:6px">›</span>
+        </div>`;
+      }).join('') : emptyState();
       return;
     }
 
-    const typeColors = { formflow:'#f0fdfa', signflow:'#f5f3ff', uploads:'var(--indigo-light)' };
-    const typeBadge  = { formflow:['FormFlow','#0d9488','#f0fdfa'], signflow:['SignFlow','#7c3aed','#f5f3ff'], uploads:['Uploaded','var(--indigo)','var(--indigo-light)'] };
-
-    list.innerHTML = data.map(d => {
-      const [badgeLabel, badgeColor, badgeBg] = typeBadge[d.type] || ['File','var(--ink-4)','var(--surface-2)'];
-      const isFF = d.type === 'formflow';
-      const isSF = d.type === 'signflow';
-      return `
-        <div style="display:flex;align-items:center;gap:14px;padding:12px 20px;border-bottom:0.5px solid var(--border);transition:background 0.12s" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">
-          <div style="width:36px;height:36px;border-radius:8px;background:${typeColors[d.type]||'var(--surface-2)'};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${d.icon}</div>
+    // Workspace → source subfolder cards
+    if (docView.type==='ws') {
+      list.innerHTML = WS_FOLDERS.map(sf=>{
+        const sfFiles   = docFiles.filter(f=>f.ws===docView.ws&&f.source===sf.key);
+        const sfFolders = docFolders.filter(f=>f.ws===docView.ws&&f.source===sf.key);
+        return `<div class="doc-folder-card" onclick="setDocView({type:'source',hub:'${docView.hub}',ws:'${escapeHTML(docView.ws)}',source:'${sf.key}',label:'${sf.label}'})">
+          <div style="width:36px;height:36px;border-radius:8px;background:${sf.color};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${sf.icon}</div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHTML(d.name)}</div>
-            <div style="font-size:11px;color:var(--ink-4);margin-top:2px;display:flex;align-items:center;gap:6px">
-              <span>${escapeHTML(d.ws || 'General')}</span>
-              <span>·</span><span>${d.size}</span>
-              <span>·</span><span>${d.date}</span>
-            </div>
+            <div style="font-size:13px;font-weight:600;color:var(--ink)">${sf.label}</div>
+            <div style="font-size:11px;color:var(--ink-4);margin-top:2px">${sf.desc}</div>
           </div>
-          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:${badgeBg};color:${badgeColor};flex-shrink:0">${badgeLabel}</span>
-          <div style="display:flex;gap:6px;flex-shrink:0">
-            ${isFF ? `<button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="showView('formflow')">Open in FormFlow</button>` : ''}
-            ${isSF ? `<button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="showView('signflow')">Open in SignFlow</button>` : ''}
-            <button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="deleteDoc('${d.id}')">Remove</button>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:13px;font-weight:700;color:var(--ink)">${sfFiles.length}</div>
+            ${sfFolders.length?`<div style="font-size:10px;color:var(--ink-4)">${sfFolders.length} folder${sfFolders.length!==1?'s':''}</div>`:''}
+          </div>
+          <span style="color:var(--ink-4);font-size:16px;margin-left:6px">›</span>
+        </div>`;
+      }).join('');
+      return;
+    }
+
+    // Source subfolder → user folders + root files
+    if (docView.type==='source') {
+      const sf      = WS_FOLDERS.find(f=>f.key===docView.source);
+      const folders = docFolders.filter(f=>f.ws===docView.ws&&f.source===docView.source);
+      const rootFiles = docFiles.filter(f=>f.ws===docView.ws&&f.source===docView.source&&!f.folder);
+      const srch = search ? rootFiles.filter(f=>f.name.toLowerCase().includes(search)) : rootFiles;
+      list.innerHTML =
+        (folders.length ? `<div style="padding:12px 16px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-4)">Folders</div>`+
+          folders.map(fld=>{
+            const fldFiles = docFiles.filter(f=>f.ws===docView.ws&&f.source===docView.source&&f.folder===fld.name);
+            return `<div class="doc-folder-card" onclick="setDocView({type:'folder',hub:'${docView.hub}',ws:'${escapeHTML(docView.ws)}',source:'${docView.source}',folder:'${escapeHTML(fld.name)}',label:'${escapeHTML(fld.name)}'})">
+              <div style="width:36px;height:36px;border-radius:8px;background:${sf?.color||'var(--surface-2)'};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📂</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:600;color:var(--ink)">${escapeHTML(fld.name)}</div>
+                <div style="font-size:11px;color:var(--ink-4);margin-top:2px">${fldFiles.length} file${fldFiles.length!==1?'s':''}</div>
+              </div>
+              <button class="btn-ghost" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();deleteFolder('${fld.id}')">Delete</button>
+              <span style="color:var(--ink-4);font-size:16px;margin-left:6px">›</span>
+            </div>`;
+          }).join('') : '') +
+        (srch.length ? `<div style="padding:12px 16px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-4)">${folders.length?'Files (unfiled)':'Files'}</div>`+renderFileRows(srch) : (!folders.length ? emptyState() : ''));
+      return;
+    }
+
+    // Folder / all view
+    list.innerHTML = files.length ? renderFileRows(files) : emptyState();
+  }
+
+  function emptyState() {
+    return `<div style="padding:60px;text-align:center;color:var(--ink-4)">
+      <div style="font-size:36px;margin-bottom:12px">📂</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:6px">No files here yet</div>
+      <div style="font-size:12px;margin-bottom:16px">Files from FormFlow, SignFlow and uploads will appear here automatically.</div>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <label class="btn-primary" style="cursor:pointer;display:inline-block">↑ Upload a file<input type="file" multiple hidden onchange="handleDocUpload(event)"></label>
+        <button class="btn-ghost" onclick="promptNewFolder()">+ New folder</button>
+      </div>
+    </div>`;
+  }
+
+  function renderFileRows(data) {
+    return [...data].sort((a,b)=>(b.ts||0)-(a.ts||0)).map(f=>{
+      const ft  = getFileType(f.name);
+      const src = SOURCE_META[f.source]||{label:f.source||'File',cls:'src-upload',bg:'#f1f5f9'};
+      const isImg = ft.group==='image', isPdf = ft.group==='pdf';
+      const canPreview = isImg || isPdf;
+      const thumb = isImg && f.dataUrl
+        ? `<img src="${f.dataUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;flex-shrink:0;cursor:pointer" onclick="openLightbox('${f.id}')" alt="${escapeHTML(f.name)}">`
+        : `<div class="doc-file-icon" style="background:${src.bg};flex-shrink:0">${ft.icon}</div>`;
+      return `<div class="doc-file-row" id="frow-${f.id}">
+        ${thumb}
+        <div style="flex:1;min-width:0;cursor:${canPreview?'pointer':'default'}" onclick="${canPreview?`openFilePreview('${f.id}')`:''}" >
+          <div style="font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHTML(f.name)}</div>
+          <div style="font-size:11px;color:var(--ink-4);margin-top:2px;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+            <span class="doc-source-badge ${src.cls}" style="font-size:9px">${src.label}</span>
+            <span style="background:var(--surface-2);color:var(--ink-3);font-size:9px;font-weight:600;padding:1px 5px;border-radius:8px;text-transform:uppercase">${ft.label}</span>
+            ${f.hub?`<span>·</span><span>${escapeHTML(f.hub)}</span>`:''}
+            ${f.folder?`<span>·</span><span>📂 ${escapeHTML(f.folder)}</span>`:''}
+            <span>·</span><span>${f.size||'—'}</span>
+            <span>·</span><span>${stickyTimeLabel(f.ts||0)}</span>
           </div>
         </div>
-      `;
+        <div style="display:flex;gap:5px;flex-shrink:0;margin-left:8px;align-items:center">
+          ${canPreview?`<button class="btn-ghost" style="font-size:11px;padding:3px 8px" onclick="openFilePreview('${f.id}')">👁 Preview</button>`:''}
+          ${isImg?`<button class="btn-ghost" style="font-size:11px;padding:3px 8px" onclick="openLightbox('${f.id}')">🔍</button>`:''}
+          <button class="btn-ghost" style="font-size:11px;padding:3px 8px" onclick="deleteDoc('${f.id}')">✕</button>
+        </div>
+      </div>`;
     }).join('');
   }
 
-  function deleteDoc(id) {
-    docFiles = docFiles.filter(d => d.id !== id);
-    try { localStorage.setItem(DOCS_KEY, JSON.stringify(docFiles)); } catch(e) {}
-    renderDocuments();
-    showToast('Document removed');
+  // ── FOLDERS ───────────────────────────────────────────────────
+  function promptNewFolder() {
+    const name = prompt('Folder name:');
+    if (!name || !name.trim()) return;
+    if (!docView.ws || !docView.source) { showToast('Navigate into a workspace subfolder first'); return; }
+    if (docFolders.some(f=>f.ws===docView.ws&&f.source===docView.source&&f.name===name.trim())) { showToast('Folder already exists'); return; }
+    docFolders.push({id:'f'+Date.now(), name:name.trim(), hub:docView.hub, ws:docView.ws, source:docView.source, parentFolder:'', ts:Date.now()});
+    saveDocData(); renderDocTree(); renderFileList();
+    showToast(`Folder "${name.trim()}" created ✓`);
   }
 
-  // init documents when navigating to that view
-  document.querySelectorAll('.nav-item').forEach(n => {
-    if (n.textContent.includes('Documents')) {
-      const orig = n.getAttribute('onclick');
-      n.setAttribute('onclick', (orig||'') + ';initDocuments()');
+  function deleteFolder(id) {
+    const fld = docFolders.find(f=>f.id===id);
+    if (!fld) return;
+    docFiles.forEach(f=>{ if(f.folder===fld.name&&f.ws===fld.ws&&f.source===fld.source) f.folder=''; });
+    docFolders = docFolders.filter(f=>f.id!==id);
+    saveDocData(); renderDocTree(); renderFileList();
+    showToast(`Folder "${fld.name}" deleted`);
+  }
+
+  // ── UPLOAD ────────────────────────────────────────────────────
+  function handleDocUpload(e) {
+    const fileObjs = [...(e.target?.files || e.dataTransfer?.files || [])];
+    if (!fileObjs.length) return;
+    let done = 0;
+    fileObjs.forEach(file => {
+      const kb = Math.round(file.size/1024);
+      const ft = getFileType(file.name);
+      const rec = {
+        id:'d'+Date.now()+Math.random(), name:file.name,
+        source: docView.source||'upload',
+        hub:    docView.hub||'General',
+        ws:     docView.ws||'',
+        folder: docView.folder||'',
+        size:   kb>1024?(kb/1024).toFixed(1)+' MB':kb+' KB',
+        ts:     Date.now(), dataUrl:null
+      };
+      if (ft.group==='image'||ft.group==='pdf') {
+        const reader = new FileReader();
+        reader.onload = ev => { rec.dataUrl = ev.target.result; if(++done===fileObjs.length){saveDocData();renderDocTree();renderFileList();} };
+        reader.readAsDataURL(file);
+      } else { if(++done===fileObjs.length){saveDocData();renderDocTree();renderFileList();} }
+      docFiles.unshift(rec);
+    });
+    showToast(`${fileObjs.length} file${fileObjs.length>1?'s':''} uploaded ✓`);
+    if (e.target) e.target.value='';
+  }
+
+  function deleteDoc(id) {
+    docFiles = docFiles.filter(d=>d.id!==id);
+    saveDocData(); renderDocTree(); renderFileList();
+    closePreview(); showToast('File removed');
+  }
+
+  function setupDocDrop() {
+    const area = document.getElementById('doc-file-area');
+    const zone = document.getElementById('doc-dropzone');
+    if (!area||area._dropBound) return;
+    area._dropBound = true;
+    area.addEventListener('dragover',  e=>{e.preventDefault();if(zone)zone.style.display='block';});
+    area.addEventListener('dragleave', e=>{if(!area.contains(e.relatedTarget)&&zone)zone.style.display='none';});
+    area.addEventListener('drop', e=>{
+      e.preventDefault();
+      if(zone) zone.style.display='none';
+      handleDocUpload(e);
+    });
+  }
+
+  // ── PREVIEW ───────────────────────────────────────────────────
+  let activePreviewId = null;
+
+  function openFilePreview(id) {
+    const f = docFiles.find(d=>d.id===id);
+    if (!f) return;
+    const ft    = getFileType(f.name);
+    const panel = document.getElementById('doc-preview-panel');
+    const body  = document.getElementById('preview-body');
+    const foot  = document.getElementById('preview-footer');
+    if (!panel) return;
+
+    document.getElementById('preview-filename').textContent = f.name;
+    activePreviewId = id;
+    document.querySelectorAll('.doc-file-row').forEach(r=>r.style.background='');
+    const row = document.getElementById('frow-'+id);
+    if (row) row.style.background='var(--indigo-light)';
+
+    if (ft.group==='image' && f.dataUrl) {
+      body.innerHTML = `<div style="flex:1;overflow:auto;padding:16px;display:flex;align-items:center;justify-content:center;background:#0f1117"><img src="${f.dataUrl}" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:6px;cursor:zoom-in" onclick="openLightbox('${id}')"></div><div style="padding:10px 16px;font-size:11px;color:var(--ink-4);border-top:1px solid var(--border)">${escapeHTML(f.name)} · ${f.size||'—'}</div>`;
+    } else if (ft.group==='pdf' && f.dataUrl) {
+      body.innerHTML = `<iframe style="flex:1;border:none;width:100%;height:100%;background:#f1f5f9" src="${f.dataUrl}"></iframe>`;
+    } else {
+      const msgs = {word:'Word docs will render as PDF previews once conversion service is connected.',sheet:'Spreadsheets will open in a read-only viewer once connected.',ppt:'Presentations will render as PDF previews once connected.',email:'Email files will render inline once connected.',image:'Image preview available after Supabase Storage is connected.',pdf:'PDF preview available once Supabase Storage is connected.',other:'This file type will be available for download once connected.'};
+      body.innerHTML = `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:32px;color:var(--ink-4)"><div style="font-size:48px">${ft.icon}</div><div style="font-size:13px;font-weight:600;color:var(--ink);text-align:center">${escapeHTML(f.name)}</div><div style="font-size:11px;text-align:center;line-height:1.7">${msgs[ft.group]||msgs.other}</div></div>`;
+    }
+    foot.innerHTML = `<button class="btn-ghost" style="flex:1;font-size:12px" onclick="closePreview()">Close</button><button class="btn-primary" style="flex:1;font-size:12px" onclick="showToast('Download available once Supabase Storage is connected')">↓ Download</button>`;
+    panel.style.width = '360px';
+    panel.style.minWidth = '360px';
+  }
+
+  function closePreview() {
+    const panel = document.getElementById('doc-preview-panel');
+    if (panel) { panel.style.width='0'; panel.style.minWidth='0'; }
+    document.querySelectorAll('.doc-file-row').forEach(r=>r.style.background='');
+    activePreviewId = null;
+  }
+
+  // ── LIGHTBOX ──────────────────────────────────────────────────
+  function openLightbox(id) {
+    const f = docFiles.find(d=>d.id===id);
+    if (!f) return;
+    const lb=document.getElementById('img-lightbox'), img=document.getElementById('lightbox-img'), cap=document.getElementById('lightbox-caption');
+    if (!lb) return;
+    img.src = f.dataUrl || `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='400'><rect width='600' height='400' fill='%231e293b'/><text x='300' y='200' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%2394a3b8'>${encodeURIComponent(f.name)}</text></svg>`;
+    cap.textContent = f.name + (f.size?' · '+f.size:'');
+    lb.style.display='flex';
+    document.body.style.overflow='hidden';
+  }
+
+  function closeLightbox() {
+    const lb=document.getElementById('img-lightbox');
+    if(lb) lb.style.display='none';
+    document.body.style.overflow='';
+  }
+
+  // ── CREATE FILE MODAL ─────────────────────────────────────────
+  function openCreateFileModal() {
+    const hubSel=document.getElementById('create-file-hub'), wsSel=document.getElementById('create-file-ws');
+    if (hubSel) hubSel.innerHTML='<option value="">— Choose hub —</option>'+demoHubs.map(h=>`<option value="${h.name}" ${docView.hub===h.name?'selected':''}>${h.icon} ${h.name}</option>`).join('');
+    if (wsSel)  wsSel.innerHTML='<option value="">— General hub folder —</option>'+[...new Set(docFiles.map(f=>f.ws).filter(Boolean))].sort().map(ws=>`<option value="${escapeHTML(ws)}" ${docView.ws===ws?'selected':''}>${escapeHTML(ws)}</option>`).join('');
+    const el=document.getElementById('create-file-name'); if(el) el.value='';
+    document.getElementById('create-file-modal')?.classList.add('open');
+  }
+
+  function selectCreateType(el, type) {
+    document.querySelectorAll('#create-file-type-grid .hub-type-btn').forEach(b=>b.classList.remove('selected'));
+    el.classList.add('selected');
+    createFileType = type;
+  }
+
+  function saveCreatedFile() {
+    const name=document.getElementById('create-file-name').value.trim();
+    const hub=document.getElementById('create-file-hub').value;
+    const ws=document.getElementById('create-file-ws').value;
+    if (!name) { showToast('Enter a file name'); return; }
+    if (createFileType==='folder') {
+      if (!ws) { showToast('Choose a workspace'); return; }
+      docFolders.push({id:'f'+Date.now(), name, hub:hub||docView.hub||'General', ws, source:docView.source||'upload', parentFolder:'', ts:Date.now()});
+      saveDocData(); renderDocTree(); renderFileList();
+      closeModal('create-file-modal'); showToast(`Folder "${name}" created ✓`); return;
+    }
+    const ext = {pdf:'.pdf',docx:'.docx',sheet:'.xlsx',note:'.md',template:'.pdf'}[createFileType]||'';
+    const fullName = name.includes('.') ? name : name+ext;
+    docFiles.unshift({id:'d'+Date.now(), name:fullName, source:'generated', hub:hub||'General', ws:ws||'', folder:docView.folder||'', size:'—', ts:Date.now()});
+    saveDocData(); renderDocTree(); renderFileList();
+    closeModal('create-file-modal'); showToast(`"${fullName}" created ✓`);
+  }
+
+  // Escape key: close lightbox or preview
+  document.addEventListener('keydown', e=>{
+    if (e.key==='Escape') {
+      if (document.getElementById('img-lightbox')?.style.display==='flex') { closeLightbox(); return; }
+      if (document.getElementById('doc-preview-panel')?.style.width!=='0px') { closePreview(); }
     }
   });
 
+  // ── STICKY NOTES ─────────────────────────────────────────────
   // ── STICKY NOTES ─────────────────────────────────────────────
   const STICKY_KEY = 'flow_stickies_v1';
   let stickyNotes = [];

@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notetaker — Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --chrome:       #0f1117;
+    --chrome-text:  rgba(255,255,255,0.85);
+    --chrome-muted: rgba(255,255,255,0.35);
+    --chrome-border:rgba(255,255,255,0.08);
+    --indigo:       #4f46e5;
+    --indigo-mid:   #4338ca;
+    --indigo-light: #eef2ff;
+    --surface:      #ffffff;
+    --surface-2:    #f8f7f4;
+    --border:       #e8e5df;
+    --border-2:     #d4d0c8;
+    --ink:          #1a1a1a;
+    --ink-2:        #374151;
+    --ink-3:        #6b7280;
+    --ink-4:        #9ca3af;
+    --success:      #16a34a;
+    --danger:       #dc2626;
+    --radius:       9px;
+    --radius-lg:    14px;
+    --shadow:       0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md:    0 4px 12px rgba(0,0,0,0.08);
+    --shadow-lg:    0 10px 40px rgba(0,0,0,0.12);
+    --sidebar-w:    220px;
+    --header-h:     56px;
+    --nt-teal:      #0d9488;
+  }
+
+  body {
+    font-family: 'Instrument Sans', sans-serif;
+    background: var(--surface-2);
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.5;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+  }
+
+  /* ── SIDEBAR ─────────────────────────────────────────────── */
+  .sidebar {
+    width: var(--sidebar-w);
+    min-width: var(--sidebar-w);
+    background: var(--chrome);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow-y: auto;
+    scrollbar-width: none;
+    flex-shrink: 0;
+  }
+  .sidebar::-webkit-scrollbar { display: none; }
+
+  .sidebar-header {
+    padding: 18px 16px 14px;
+    border-bottom: 1px solid var(--chrome-border);
+  }
+
+  .wordmark {
+    font-family: 'Instrument Serif', serif;
+    font-size: 22px; color: white;
+    letter-spacing: -0.3px;
+    margin-bottom: 4px;
+  }
+  .wordmark span { color: var(--nt-teal); }
+  .wordmark-sub {
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--chrome-muted);
+  }
+
+  .back-btn {
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 14px; padding: 7px 10px;
+    border-radius: 8px; border: 1px solid var(--chrome-border);
+    background: transparent; color: var(--chrome-muted);
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    font-family: 'Instrument Sans', sans-serif;
+    text-decoration: none; transition: all 0.15s;
+    width: 100%;
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.06); color: white; }
+
+  .sidebar-nav { padding: 12px 8px; flex: 1; }
+  .nav-label {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--chrome-muted);
+    padding: 8px 8px 4px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 10px; border-radius: 8px;
+    font-size: 12px; font-weight: 600;
+    color: var(--chrome-muted); cursor: pointer;
+    transition: all 0.12s; margin-bottom: 1px;
+    border: none; background: transparent;
+    font-family: 'Instrument Sans', sans-serif;
+    width: 100%; text-align: left;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.06); color: white; }
+  .nav-item.active { background: rgba(13,148,136,0.18); color: #5eead4; }
+  .nav-icon { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; }
+
+  .sidebar-footer {
+    padding: 12px;
+    border-top: 1px solid var(--chrome-border);
+  }
+  .user-tile {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 10px; border-radius: 8px; cursor: pointer;
+  }
+  .user-tile:hover { background: rgba(255,255,255,0.06); }
+  .user-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--indigo), #7c3aed);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: white; flex-shrink: 0;
+  }
+  .user-name { font-size: 12px; font-weight: 600; color: var(--chrome-text); }
+  .user-role { font-size: 10px; color: var(--chrome-muted); }
+
+  /* ── MAIN ────────────────────────────────────────────────── */
+  .main-wrap {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column;
+    height: 100vh; overflow: hidden;
+  }
+
+  .topbar {
+    height: var(--header-h);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 24px; gap: 12px;
+    flex-shrink: 0;
+  }
+  .topbar-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: 20px; color: var(--ink); flex: 1;
+  }
+  .topbar-actions { display: flex; align-items: center; gap: 8px; }
+
+  .page-scroll {
+    flex: 1; overflow-y: auto; overflow-x: hidden;
+    padding: 28px; min-width: 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  /* ── BUTTONS ─────────────────────────────────────────────── */
+  .btn-primary {
+    background: var(--indigo); color: white;
+    border: none; border-radius: var(--radius);
+    padding: 8px 16px; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit; transition: background 0.15s;
+    white-space: nowrap;
+  }
+  .btn-primary:hover { background: var(--indigo-mid); }
+
+  .btn-ghost {
+    background: var(--surface); color: var(--ink-2);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 8px 14px; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit; transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn-ghost:hover { border-color: var(--indigo); color: var(--indigo); background: var(--indigo-light); }
+
+  .filter-btn {
+    background: var(--surface); color: var(--ink-3);
+    border: 1px solid var(--border); border-radius: 20px;
+    padding: 4px 12px; font-size: 12px; font-weight: 600;
+    cursor: pointer; font-family: inherit; transition: all 0.12s;
+  }
+  .filter-btn:hover { border-color: var(--indigo); color: var(--indigo); }
+  .filter-btn.active { background: var(--indigo); color: white; border-color: var(--indigo); }
+
+  /* ── PANELS ──────────────────────────────────────────────── */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    width: 100%; min-width: 0;
+  }
+
+  .section-header {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-bottom: 12px;
+    width: 100%; min-width: 0;
+  }
+  .section-title {
+    font-size: 13px; font-weight: 700; color: var(--ink);
+  }
+  .section-link {
+    font-size: 12px; color: var(--indigo); cursor: pointer;
+    font-weight: 600; background: none; border: none;
+    font-family: inherit; padding: 0;
+  }
+
+  /* ── FORMS ───────────────────────────────────────────────── */
+  .form-input {
+    width: 100%; border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 9px 12px;
+    font-size: 13px; font-family: inherit;
+    color: var(--ink); background: var(--surface);
+    outline: none; transition: border-color 0.15s;
+  }
+  .form-input:focus { border-color: var(--indigo); }
+  .form-label {
+    font-size: 11px; font-weight: 700; color: var(--ink-3);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    display: block; margin-bottom: 6px;
+  }
+  .form-row { margin-bottom: 16px; }
+
+  /* ── MODALS ──────────────────────────────────────────────── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.35); backdrop-filter: blur(3px);
+    z-index: 500; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border-radius: 18px;
+    box-shadow: var(--shadow-lg); width: 100%; max-width: 520px;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .modal-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: 20px; color: var(--ink);
+  }
+  .modal-close {
+    width: 28px; height: 28px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--ink-4);
+    font-size: 14px; background: var(--surface-2);
+    border: 1px solid var(--border);
+  }
+  .modal-close:hover { color: var(--ink); }
+  .modal-body { padding: 20px 24px; }
+  .modal-footer {
+    padding: 14px 24px;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: flex-end; gap: 8px;
+  }
+
+  /* ── TOAST ───────────────────────────────────────────────── */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--chrome); color: white;
+    border-radius: 10px; padding: 10px 18px;
+    font-size: 13px; font-weight: 600;
+    opacity: 0; pointer-events: none;
+    transition: 0.25s; z-index: 999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── NOTETAKER LAYOUT ────────────────────────────────────── */
+  .nt-header {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-bottom: 24px;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .nt-header-left p {
+    font-size: 13px; color: var(--ink-3); margin: 0;
+  }
+
+  .nt-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 24px;
+    width: 100%; min-width: 0;
+    align-items: start;
+  }
+  @media (max-width: 900px) { .nt-grid { grid-template-columns: 1fr; } }
+
+  .nt-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+  /* ── STICKIES ────────────────────────────────────────────── */
+  .stickies-section { margin-bottom: 24px; }
+
+  .stickies-bar {
+    display: flex; align-items: flex-start;
+    gap: 12px; flex-wrap: wrap;
+    width: 100%; min-width: 0;
+  }
+
+  .sticky-note {
+    width: 154px; min-height: 134px;
+    border-radius: 2px; padding: 11px 11px 0;
+    display: flex; flex-direction: column;
+    position: relative; cursor: default;
+    transition: transform 0.15s, box-shadow 0.15s;
+    flex-shrink: 0;
+  }
+  .sticky-note:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 6px 20px rgba(0,0,0,0.13); }
+
+  .sn-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 7px; }
+  .sn-ctx { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.5; }
+  .sn-del {
+    width: 17px; height: 17px; border-radius: 4px; border: none;
+    background: rgba(0,0,0,0.1); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; opacity: 0; transition: opacity 0.15s; color: inherit;
+  }
+  .sticky-note:hover .sn-del { opacity: 1; }
+  .sn-body { font-size: 12px; line-height: 1.5; flex: 1; color: inherit; cursor: pointer; }
+  .sn-foot {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0 7px; border-top: 1px solid rgba(0,0,0,0.07); margin-top: 7px;
+  }
+  .sn-time { font-size: 9px; opacity: 0.4; }
+  .sticky-dog {
+    position: absolute; bottom: 0; right: 0; width: 0; height: 0;
+    border-style: solid; border-width: 0 0 14px 14px;
+    border-color: transparent transparent rgba(0,0,0,0.12) transparent;
+  }
+
+  .sn-yellow { background: #FAC775; color: #412402; }
+  .sn-blue   { background: #B5D4F4; color: #042C53; }
+  .sn-green  { background: #C0DD97; color: #173404; }
+  .sn-pink   { background: #F4C0D1; color: #4B1528; }
+  .sn-purple { background: #CECBF6; color: #26215C; }
+  .sn-r1 { transform: rotate(-1.2deg); }
+  .sn-r2 { transform: rotate(0.9deg); }
+  .sn-r3 { transform: rotate(-0.5deg); }
+  .sn-r4 { transform: rotate(1.4deg); }
+  .sn-r5 { transform: rotate(-0.8deg); }
+
+  .sticky-add-btn {
+    width: 154px; min-height: 134px; border-radius: 2px;
+    border: 2px dashed var(--border-2); background: var(--surface-2);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 6px; cursor: pointer; color: var(--ink-4); font-size: 12px;
+    transition: all 0.15s; flex-shrink: 0;
+  }
+  .sticky-add-btn:hover { border-color: var(--indigo); color: var(--indigo); background: var(--indigo-light); }
+
+  /* ── STICKY MODAL ────────────────────────────────────────── */
+  .sticky-modal-note {
+    border-radius: 4px; padding: 20px;
+    min-height: 140px; margin-bottom: 16px;
+  }
+  .sticky-modal-note textarea {
+    width: 100%; border: none; background: transparent;
+    font-size: 15px; font-family: inherit;
+    color: inherit; resize: none; outline: none;
+    line-height: 1.65; min-height: 100px;
+  }
+  .sticky-modal-note textarea::placeholder { opacity: 0.45; }
+  .color-picker-row { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; }
+  .cp-dot {
+    width: 22px; height: 22px; border-radius: 50%;
+    cursor: pointer; border: 2.5px solid transparent; transition: transform 0.1s;
+  }
+  .cp-dot:hover { transform: scale(1.15); }
+  .cp-dot.active { border-color: var(--ink); }
+
+  /* ── NOTE CARDS ──────────────────────────────────────────── */
+  .note-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 14px 16px;
+    box-shadow: var(--shadow); transition: box-shadow 0.15s;
+    width: 100%; min-width: 0; overflow: hidden;
+  }
+  .note-card:hover { box-shadow: var(--shadow-md); }
+  .note-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 7px; }
+  .note-card-ctx { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-4); }
+  .note-card-time { font-size: 10px; color: var(--ink-4); }
+  .note-card-body {
+    font-size: 13px; color: var(--ink-2); line-height: 1.6; margin-bottom: 10px;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+    overflow-wrap: break-word; word-break: break-word;
+  }
+  .note-card-actions { display: flex; gap: 10px; border-top: 1px solid var(--border); padding-top: 9px; flex-wrap: wrap; }
+  .note-action-btn {
+    font-size: 11px; font-weight: 500; color: var(--ink-3); cursor: pointer;
+    background: none; border: none; font-family: inherit; padding: 0;
+  }
+  .note-action-btn:hover { color: var(--indigo); }
+  .note-action-btn.danger:hover { color: var(--danger); }
+
+  /* ── TASK ROWS ───────────────────────────────────────────── */
+  .task-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 16px; border-bottom: 0.5px solid var(--border);
+  }
+  .task-row:last-child { border-bottom: none; }
+  .task-check {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid var(--border-2); flex-shrink: 0;
+    margin-top: 1px; cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center; font-size: 9px;
+  }
+  .task-check:hover { border-color: var(--indigo); }
+  .task-check.done { background: var(--success); border-color: var(--success); color: white; }
+  .task-body { flex: 1; min-width: 0; }
+  .task-title { font-size: 13px; color: var(--ink-2); overflow-wrap: break-word; }
+  .task-due { font-size: 11px; margin-top: 2px; }
+  .task-due.overdue { color: var(--danger); font-weight: 600; }
+  .task-due.today   { color: #d97706; font-weight: 600; }
+  .task-due.soon    { color: var(--ink-4); }
+
+  /* ── MEETING ROWS ────────────────────────────────────────── */
+  .meeting-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px 16px; border-bottom: 0.5px solid var(--border);
+    cursor: pointer; transition: background 0.12s;
+    min-width: 0; overflow: hidden;
+  }
+  .meeting-row:last-child { border-bottom: none; }
+  .meeting-row:hover { background: var(--surface-2); }
+  .meeting-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+  .meeting-info { flex: 1; min-width: 0; }
+  .meeting-title {
+    font-size: 13px; font-weight: 600; color: var(--ink);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .meeting-meta { font-size: 11px; color: var(--ink-4); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .meeting-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; white-space: nowrap; flex-shrink: 0; }
+  .mb-actions  { background: #f0fdf4; color: #166534; }
+  .mb-pending  { background: #fef9c3; color: #854d0e; }
+  .mb-reviewed { background: var(--surface-2); color: var(--ink-4); }
+
+  .meeting-detail {
+    display: none; padding: 16px;
+    border-top: 1px solid var(--border);
+    background: var(--surface-2);
+  }
+  .meeting-detail.open { display: block; }
+  .meeting-transcript {
+    font-size: 12px; color: var(--ink-2); line-height: 1.7;
+    white-space: pre-wrap; overflow-wrap: break-word; word-break: break-word;
+    max-height: 180px; overflow-y: auto; overflow-x: hidden;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px; margin-bottom: 12px;
+    width: 100%;
+  }
+  .meeting-action-items { list-style: none; padding: 0; margin: 0; }
+  .meeting-action-item {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 6px 0; border-bottom: 1px solid var(--border);
+    font-size: 12px; color: var(--ink-2);
+  }
+  .meeting-action-item:last-child { border-bottom: none; }
+  .meeting-action-check {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 1.5px solid var(--border-2); flex-shrink: 0;
+    margin-top: 1px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 9px;
+  }
+  .meeting-action-check:hover { border-color: var(--indigo); }
+  .meeting-action-check.done { background: var(--success); border-color: var(--success); color: white; }
+</style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ──────────────────────────────────────────────── -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="wordmark">note<span>taker</span></div>
+    <div class="wordmark-sub">capture · store · use</div>
+    <a href="./flow.html" class="back-btn">← Back to Flow</a>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-label">Notetaker</div>
+    <button class="nav-item active" onclick="scrollTo(0,0)">
+      <span class="nav-icon">📝</span> Overview
+    </button>
+    <button class="nav-item" onclick="focusSection('stickies-section')">
+      <span class="nav-icon">📌</span> Sticky notes
+    </button>
+    <button class="nav-item" onclick="focusSection('scratchpad-section')">
+      <span class="nav-icon">✏️</span> Scratchpad
+    </button>
+    <button class="nav-item" onclick="focusSection('notes-section')">
+      <span class="nav-icon">🗒</span> Saved notes
+    </button>
+    <div class="nav-label" style="margin-top:12px">Tasks & Meetings</div>
+    <button class="nav-item" onclick="focusSection('tasks-section')">
+      <span class="nav-icon">✓</span> Today's tasks
+    </button>
+    <button class="nav-item" onclick="focusSection('meetings-section')">
+      <span class="nav-icon">🎙</span> Meeting notes
+    </button>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-tile">
+      <div class="user-avatar" id="sidebar-avatar">DU</div>
+      <div>
+        <div class="user-name" id="sidebar-name">Demo User</div>
+        <div class="user-role">Flow workspace</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ── MAIN ─────────────────────────────────────────────────── -->
+<div class="main-wrap">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-title">Notetaker</div>
+    <div class="topbar-actions">
+      <button class="btn-ghost" style="font-size:12px;padding:6px 12px" onclick="openStickyModal()">📌 New sticky</button>
+      <button class="btn-ghost" style="font-size:12px;padding:6px 12px" onclick="openNewMeetingModal()">🎙 Log meeting</button>
+      <button class="btn-primary" style="font-size:12px;padding:6px 14px" onclick="openNewNoteModal()">+ New note</button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="page-scroll">
+
+    <!-- ── STICKY NOTES ─────────────────────────────────── -->
+    <div class="stickies-section" id="stickies-section">
+      <div class="section-header">
+        <div class="section-title">📌 Sticky notes</div>
+        <button class="section-link" onclick="openStickyModal()">+ Add sticky →</button>
+      </div>
+      <div class="stickies-bar" id="stickies-bar"></div>
+    </div>
+
+    <!-- ── TWO-COLUMN GRID ──────────────────────────────── -->
+    <div class="nt-grid">
+
+      <!-- LEFT: Scratchpad + Saved Notes -->
+      <div class="nt-col">
+
+        <!-- Scratchpad -->
+        <div id="scratchpad-section">
+          <div class="section-header">
+            <div class="section-title">Scratchpad</div>
+            <span style="font-size:11px;color:var(--ink-4)">Auto-saved locally</span>
+          </div>
+          <div class="panel">
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+                <span style="font-size:11px;font-weight:700;color:var(--ink-4);text-transform:uppercase;letter-spacing:0.06em">Context</span>
+                <select id="scratchpad-ctx" class="form-input" style="width:auto;padding:4px 10px;font-size:12px">
+                  <option value="General">General</option>
+                </select>
+              </div>
+              <textarea id="scratchpad-body"
+                style="width:100%;border:none;background:transparent;font-size:14px;font-family:inherit;color:var(--ink);resize:none;outline:none;line-height:1.7;min-height:120px;overflow-wrap:break-word;word-break:break-word"
+                placeholder="Start typing — capture a thought, a to-do, a follow-up…"></textarea>
+            </div>
+            <div style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+              <span style="font-size:11px;color:var(--ink-4)" id="scratchpad-saved-label">Start typing to capture a note</span>
+              <div style="display:flex;gap:7px">
+                <button class="btn-ghost" style="font-size:12px;padding:5px 12px" onclick="promoteToTask()">→ To task</button>
+                <button class="btn-ghost" style="font-size:12px;padding:5px 12px" onclick="promoteToSticky()">📌 To sticky</button>
+                <button class="btn-primary" style="font-size:12px;padding:5px 12px" onclick="saveScratchpad()">Save note</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Saved Notes -->
+        <div id="notes-section">
+          <div class="section-header">
+            <div class="section-title">Saved notes</div>
+            <div style="display:flex;gap:6px">
+              <button class="filter-btn active" onclick="filterNotes(this,'all')">All</button>
+              <button class="filter-btn" onclick="filterNotes(this,'General')">General</button>
+              <button class="filter-btn" onclick="filterNotes(this,'workspace')">Workspace</button>
+            </div>
+          </div>
+          <div id="notes-list" style="display:flex;flex-direction:column;gap:10px"></div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: Tasks + Meetings -->
+      <div class="nt-col">
+
+        <!-- Today's tasks -->
+        <div id="tasks-section">
+          <div class="section-header">
+            <div class="section-title">Today's tasks</div>
+            <a href="./flow.html" class="section-link">View all in Flow →</a>
+          </div>
+          <div class="panel">
+            <div id="nt-task-list" style="min-height:50px"></div>
+            <div style="padding:10px 16px;border-top:1px solid var(--border)">
+              <button class="btn-ghost" style="font-size:12px;width:100%" onclick="addQuickTask()">+ Add task</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Meeting notes -->
+        <div id="meetings-section">
+          <div class="section-header">
+            <div class="section-title">Meeting notes</div>
+            <button class="section-link" onclick="openNewMeetingModal()">+ Log meeting</button>
+          </div>
+          <div class="panel" id="meetings-panel"></div>
+          <div style="margin-top:10px;padding:12px 14px;background:var(--surface);border:1.5px dashed var(--border-2);border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px">🎙 Connect notetaker bot</div>
+              <div style="font-size:11px;color:var(--ink-4)">Auto-transcribe Google Meet, Teams & Zoom</div>
+            </div>
+            <button class="btn-primary" style="font-size:12px;padding:6px 12px;white-space:nowrap" onclick="showToast('Notetaker bot integration coming soon')">Connect</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── STICKY MODAL ──────────────────────────────────────────── -->
+<div class="modal-overlay" id="sticky-modal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title" id="sticky-modal-title">New sticky note</div>
+      <div class="modal-close" onclick="closeModal('sticky-modal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="sticky-modal-note sn-yellow" id="sticky-modal-note">
+        <textarea id="sticky-modal-text" placeholder="Write your note here…" rows="4"></textarea>
+      </div>
+      <div class="color-picker-row">
+        <span style="font-size:11px;color:var(--ink-4);font-weight:600;margin-right:4px">Colour:</span>
+        <div class="cp-dot active" style="background:#FAC775" data-color="sn-yellow" onclick="selectStickyColor(this)"></div>
+        <div class="cp-dot" style="background:#B5D4F4" data-color="sn-blue"   onclick="selectStickyColor(this)"></div>
+        <div class="cp-dot" style="background:#C0DD97" data-color="sn-green"  onclick="selectStickyColor(this)"></div>
+        <div class="cp-dot" style="background:#F4C0D1" data-color="sn-pink"   onclick="selectStickyColor(this)"></div>
+        <div class="cp-dot" style="background:#CECBF6" data-color="sn-purple" onclick="selectStickyColor(this)"></div>
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label">Context</label>
+        <select class="form-input" id="sticky-modal-ctx">
+          <option value="General">General</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('sticky-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveStickyModal()">Save sticky</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── NEW NOTE MODAL ────────────────────────────────────────── -->
+<div class="modal-overlay" id="new-note-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="new-note-title">New note</div>
+      <div class="modal-close" onclick="closeModal('new-note-modal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label">Context</label>
+        <select class="form-input" id="new-note-ctx">
+          <option value="General">General</option>
+        </select>
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label">Note</label>
+        <textarea class="form-input" id="new-note-body" rows="6" style="resize:vertical;line-height:1.6" placeholder="Write your note here…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('new-note-modal')">Cancel</button>
+      <button class="btn-primary" id="new-note-save-btn" onclick="saveNewNote()">Save note</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── NEW MEETING MODAL ─────────────────────────────────────── -->
+<div class="modal-overlay" id="new-meeting-modal">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-header">
+      <div class="modal-title">Log meeting notes</div>
+      <div class="modal-close" onclick="closeModal('new-meeting-modal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label">Meeting title</label>
+        <input class="form-input" id="new-meeting-title" placeholder="e.g. Bond discussion — ABSA">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-row">
+          <label class="form-label">Date & time</label>
+          <input class="form-input" id="new-meeting-date" type="datetime-local">
+        </div>
+        <div class="form-row">
+          <label class="form-label">Workspace (optional)</label>
+          <select class="form-input" id="new-meeting-ws"><option value="">— None —</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Notes / transcript</label>
+        <textarea class="form-input" id="new-meeting-notes" rows="5" style="resize:vertical;line-height:1.6" placeholder="Paste transcript or write meeting notes here…"></textarea>
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label">Action items (one per line)</label>
+        <textarea class="form-input" id="new-meeting-actions" rows="3" style="resize:vertical;line-height:1.6" placeholder="e.g. Follow up with ABSA&#10;Send updated OTP&#10;Book next meeting"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('new-meeting-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveNewMeeting()">Save meeting</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── STORAGE KEYS ─────────────────────────────────────────────
+  const NOTES_KEY    = 'flow_notes_v1';
+  const MEETINGS_KEY = 'flow_meetings_v1';
+  const SCRATCH_KEY  = 'flow_scratchpad_v1';
+  const STICKIES_KEY = 'flow_stickies_v1';
+  const TASKS_KEY    = 'flow_tasks_nt_v1';
+
+  // ── STATE ─────────────────────────────────────────────────────
+  let notesList    = [];
+  let meetingsList = [];
+  let stickyNotes  = [];
+  let tasksList    = [];
+  let notesFilter  = 'all';
+  let editingNoteId   = null;
+  let editingStickyId = null;
+  let selectedStickyColor = 'sn-yellow';
+
+  const rotations = ['sn-r1','sn-r2','sn-r3','sn-r4','sn-r5'];
+
+  // ── DEMO DATA ─────────────────────────────────────────────────
+  const demoNotes = [
+    { id:'n1', ctx:'Acme Corp — Lease', body:'Tenant wants to extend by 6 months. Check if landlord is open — needs to happen before the 30th. Also ask about parking bay allocation.', ts: Date.now()-4000000 },
+    { id:'n2', ctx:'General', body:'Ask Karen about the updated FICA template. Also check if the DocuSign integration is live yet.', ts: Date.now()-86400000 },
+    { id:'n3', ctx:'12 Main Road', body:'Bond originator confirmed ABSA is ready. Need the ref number before we can register. Follow up EOD.', ts: Date.now()-172800000 },
+  ];
+
+  const demoMeetings = [
+    { id:'m1', title:'Bond discussion — ABSA', ws:'12 Main Road', date:'Today, 10:00', actions:['Call ABSA for ref number before EOD','Update OTP clause 8.2','Send bond instruction to conveyancer'], notes:'Spoke with Pieter at ABSA. Bond approved in principle. Waiting on formal ref number. Discussed occupation date and transfer timeline.', status:'actions' },
+    { id:'m2', title:'Lease review — Acme Corp', ws:'Acme Corp — Lease', date:'Yesterday, 14:30', actions:['Get landlord approval on extension','Clarify parking bay clause 4'], notes:'Tenant raised 6-month extension option. Landlord not yet consulted. Parking bay allocation in clause 4 is ambiguous.', status:'pending' },
+    { id:'m3', title:'Team standup', ws:'', date:'Mon, 09:00', actions:['Amanda: pull May trust statement','Karen: finalise FICA template','Rick: chase DocuSign timeline'], notes:'Weekly standup. Covered active deals, deadlines, tool updates.', status:'actions' },
+    { id:'m4', title:'FICA walkthrough — Mary J.', ws:'Sandy Close', date:'Fri, 11:15', actions:[], notes:'Walked Mary through FICA requirements. All documents collected.', status:'reviewed' },
+  ];
+
+  const demoStickies = [
+    { id:'s1', text:'Ask Karen about the updated FICA template — she said it changed last week.', color:'sn-yellow', ctx:'General', ts: Date.now()-3600000 },
+    { id:'s2', text:'Check if DocuSign integration is live — Rick said it was deploying this week.', color:'sn-blue',   ctx:'General', ts: Date.now()-86400000 },
+    { id:'s3', text:'Trust account recon due Friday. Remind Amanda to pull the May statement.', color:'sn-green',  ctx:'Finance', ts: Date.now()-172800000 },
+  ];
+
+  const demoTasks = [
+    { id:'t1', title:'Review FICA — John Smith',  due:'Overdue',    type:'overdue', done:false },
+    { id:'t2', title:'Upload ID — Mary Jacobs',   due:'Due today',  type:'today',   done:false },
+    { id:'t3', title:'Sign OTP — 12 Main Road',   due:'Due today',  type:'today',   done:false },
+    { id:'t4', title:'Confirm banking details',   due:'Due tomorrow',type:'soon',   done:false },
+  ];
+
+  // ── INIT ──────────────────────────────────────────────────────
+  function init() {
+    try { notesList    = JSON.parse(localStorage.getItem(NOTES_KEY))    || demoNotes;    } catch(e){ notesList    = demoNotes;    }
+    try { meetingsList = JSON.parse(localStorage.getItem(MEETINGS_KEY)) || demoMeetings; } catch(e){ meetingsList = demoMeetings; }
+    try { stickyNotes  = JSON.parse(localStorage.getItem(STICKIES_KEY)) || demoStickies; } catch(e){ stickyNotes  = demoStickies; }
+    try { tasksList    = JSON.parse(localStorage.getItem(TASKS_KEY))    || demoTasks;    } catch(e){ tasksList    = demoTasks;    }
+
+    // Restore scratchpad draft
+    const scratch = localStorage.getItem(SCRATCH_KEY) || '';
+    const ta = document.getElementById('scratchpad-body');
+    if (ta && scratch) {
+      ta.value = scratch;
+      document.getElementById('scratchpad-saved-label').textContent = 'Draft restored';
+    }
+    if (ta) {
+      ta.addEventListener('input', () => {
+        localStorage.setItem(SCRATCH_KEY, ta.value);
+        document.getElementById('scratchpad-saved-label').textContent = 'Saved just now';
+      });
+    }
+
+    renderStickies();
+    renderNotesList();
+    renderTasks();
+    renderMeetings();
+    populateContexts();
+  }
+
+  // ── HELPERS ───────────────────────────────────────────────────
+  function save(key, data) { try { localStorage.setItem(key, JSON.stringify(data)); } catch(e){} }
+
+  function timeLabel(ts) {
+    if (!ts) return '';
+    const diff = Date.now() - ts;
+    const mins = Math.floor(diff/60000), hrs = Math.floor(mins/60), days = Math.floor(hrs/24);
+    const d = new Date(ts), t = d.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+    if (mins < 2) return 'Just now';
+    if (hrs  < 1) return `${mins}m ago`;
+    if (hrs < 24) return 'Today ' + t;
+    if (days === 1) return 'Yesterday';
+    return d.toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'});
+  }
+
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
+
+  function populateContexts() {
+    const opts = ['<option value="General">General</option>'];
+    // Static context options (can be extended when connected to Flow data)
+    ['12 Main Road — Purchase','Acme Corp — Lease','Sandy Close — Sale','HR Hub','Finance Hub','Marketing Hub','Sales Hub'].forEach(ws => {
+      opts.push(`<option value="${esc(ws)}">${esc(ws)}</option>`);
+    });
+    ['scratchpad-ctx','new-note-ctx','sticky-modal-ctx'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = opts.join('');
+    });
+    // Meeting ws dropdown
+    const mws = document.getElementById('new-meeting-ws');
+    if (mws) mws.innerHTML = '<option value="">— None —</option>' + opts.slice(1).join('');
+  }
+
+  function focusSection(id) {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ── STICKIES ──────────────────────────────────────────────────
+  function renderStickies() {
+    const bar = document.getElementById('stickies-bar');
+    if (!bar) return;
+    bar.innerHTML = stickyNotes.slice(0,6).map((n,i) => `
+      <div class="sticky-note ${n.color} ${rotations[i%5]}" onclick="openEditSticky('${n.id}')">
+        <div class="sn-top">
+          <span class="sn-ctx">${esc(n.ctx||'General')}</span>
+          <button class="sn-del" onclick="event.stopPropagation();deleteSticky('${n.id}')">✕</button>
+        </div>
+        <div class="sn-body">${esc(n.text)}</div>
+        <div class="sn-foot">
+          <span class="sn-time">${timeLabel(n.ts)}</span>
+          <span>📌</span>
+        </div>
+        <div class="sticky-dog"></div>
+      </div>`).join('') + `
+      <div class="sticky-add-btn" onclick="openStickyModal()">
+        <span style="font-size:22px;font-weight:300">+</span>
+        <span>New sticky</span>
+      </div>`;
+  }
+
+  function openStickyModal(id) {
+    editingStickyId = id || null;
+    const ta  = document.getElementById('sticky-modal-text');
+    const ctx = document.getElementById('sticky-modal-ctx');
+    const title = document.getElementById('sticky-modal-title');
+    if (id) {
+      const n = stickyNotes.find(s=>s.id===id);
+      if (!n) return;
+      ta.value = n.text;
+      ctx.value = n.ctx || 'General';
+      setStickyColor(n.color);
+      title.textContent = 'Edit sticky note';
+    } else {
+      ta.value = '';
+      setStickyColor('sn-yellow');
+      title.textContent = 'New sticky note';
+    }
+    document.getElementById('sticky-modal').classList.add('open');
+    setTimeout(() => ta.focus(), 80);
+  }
+
+  function openEditSticky(id) { openStickyModal(id); }
+
+  function setStickyColor(color) {
+    selectedStickyColor = color;
+    const note = document.getElementById('sticky-modal-note');
+    ['sn-yellow','sn-blue','sn-green','sn-pink','sn-purple'].forEach(c => note.classList.remove(c));
+    note.classList.add(color);
+    document.querySelectorAll('#sticky-modal .cp-dot').forEach(d => d.classList.toggle('active', d.dataset.color === color));
+  }
+
+  function selectStickyColor(el) { setStickyColor(el.dataset.color); }
+
+  function saveStickyModal() {
+    const text = document.getElementById('sticky-modal-text').value.trim();
+    const ctx  = document.getElementById('sticky-modal-ctx').value;
+    if (!text) { showToast('Write something first!'); return; }
+    if (editingStickyId) {
+      const n = stickyNotes.find(s=>s.id===editingStickyId);
+      if (n) { n.text = text; n.color = selectedStickyColor; n.ctx = ctx; }
+      showToast('Sticky updated ✓');
+    } else {
+      stickyNotes.unshift({ id:'s'+Date.now(), text, color:selectedStickyColor, ctx, ts:Date.now() });
+      showToast('Sticky saved 📌');
+    }
+    save(STICKIES_KEY, stickyNotes);
+    renderStickies();
+    closeModal('sticky-modal');
+  }
+
+  function deleteSticky(id) {
+    stickyNotes = stickyNotes.filter(s=>s.id!==id);
+    save(STICKIES_KEY, stickyNotes);
+    renderStickies();
+    showToast('Sticky removed');
+  }
+
+  // ── SCRATCHPAD ────────────────────────────────────────────────
+  function saveScratchpad() {
+    const body = document.getElementById('scratchpad-body').value.trim();
+    const ctx  = document.getElementById('scratchpad-ctx').value || 'General';
+    if (!body) { showToast('Nothing to save!'); return; }
+    notesList.unshift({ id:'n'+Date.now(), body, ctx, ts:Date.now() });
+    save(NOTES_KEY, notesList);
+    document.getElementById('scratchpad-body').value = '';
+    localStorage.removeItem(SCRATCH_KEY);
+    document.getElementById('scratchpad-saved-label').textContent = 'Saved as note ✓';
+    renderNotesList();
+    showToast('Note saved ✓');
+  }
+
+  function promoteToTask() {
+    const body = document.getElementById('scratchpad-body').value.trim();
+    if (!body) { showToast('Write something first!'); return; }
+    tasksList.unshift({ id:'t'+Date.now(), title:body.substring(0,80), due:'No due date', type:'soon', done:false });
+    save(TASKS_KEY, tasksList);
+    document.getElementById('scratchpad-body').value = '';
+    localStorage.removeItem(SCRATCH_KEY);
+    renderTasks();
+    showToast('Added to tasks ✓');
+  }
+
+  function promoteToSticky() {
+    const body = document.getElementById('scratchpad-body').value.trim();
+    if (!body) { showToast('Write something first!'); return; }
+    const colors = ['sn-yellow','sn-blue','sn-green','sn-pink','sn-purple'];
+    stickyNotes.unshift({ id:'s'+Date.now(), text:body.substring(0,140), color:colors[Math.floor(Math.random()*5)], ctx:document.getElementById('scratchpad-ctx').value||'General', ts:Date.now() });
+    save(STICKIES_KEY, stickyNotes);
+    document.getElementById('scratchpad-body').value = '';
+    localStorage.removeItem(SCRATCH_KEY);
+    renderStickies();
+    showToast('Pinned as sticky 📌');
+  }
+
+  // ── NOTES ─────────────────────────────────────────────────────
+  function renderNotesList(filter) {
+    if (filter !== undefined) notesFilter = filter;
+    const list = document.getElementById('notes-list');
+    if (!list) return;
+    let data = notesList;
+    if (notesFilter === 'General')   data = data.filter(n=>n.ctx==='General');
+    if (notesFilter === 'workspace') data = data.filter(n=>n.ctx!=='General');
+    if (!data.length) {
+      list.innerHTML = '<div style="padding:28px;text-align:center;color:var(--ink-4);font-size:13px;background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border)">No notes yet. Type in the scratchpad and save.</div>';
+      return;
+    }
+    list.innerHTML = data.map(n => `
+      <div class="note-card">
+        <div class="note-card-top">
+          <div style="display:flex;align-items:center;gap:7px">
+            <span class="note-card-ctx">${esc(n.ctx||'General')}</span>
+            ${n.ctx&&n.ctx!=='General'?`<span style="font-size:10px;background:var(--indigo-light);color:var(--indigo);border-radius:4px;padding:1px 6px;font-weight:600">WS</span>`:''}
+          </div>
+          <span class="note-card-time">${timeLabel(n.ts)}</span>
+        </div>
+        <div class="note-card-body">${esc(n.body)}</div>
+        <div class="note-card-actions">
+          <button class="note-action-btn" onclick="promoteNoteToTask('${n.id}')">→ To task</button>
+          <button class="note-action-btn" onclick="promoteNoteToSticky('${n.id}')">📌 To sticky</button>
+          <button class="note-action-btn" onclick="editNote('${n.id}')">Edit</button>
+          <button class="note-action-btn danger" onclick="deleteNote('${n.id}')">Delete</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function filterNotes(btn, filter) {
+    document.querySelectorAll('#notes-section .filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    renderNotesList(filter);
+  }
+
+  function openNewNoteModal() {
+    editingNoteId = null;
+    document.getElementById('new-note-body').value = '';
+    document.getElementById('new-note-ctx').value  = 'General';
+    document.getElementById('new-note-title').textContent = 'New note';
+    document.getElementById('new-note-save-btn').textContent = 'Save note';
+    document.getElementById('new-note-save-btn').onclick = saveNewNote;
+    document.getElementById('new-note-modal').classList.add('open');
+    setTimeout(() => document.getElementById('new-note-body').focus(), 80);
+  }
+
+  function saveNewNote() {
+    const body = document.getElementById('new-note-body').value.trim();
+    const ctx  = document.getElementById('new-note-ctx').value;
+    if (!body) { showToast('Write something first!'); return; }
+    if (editingNoteId) {
+      const n = notesList.find(n=>n.id===editingNoteId);
+      if (n) { n.body = body; n.ctx = ctx; }
+      showToast('Note updated ✓');
+    } else {
+      notesList.unshift({ id:'n'+Date.now(), body, ctx, ts:Date.now() });
+      showToast('Note saved ✓');
+    }
+    save(NOTES_KEY, notesList);
+    renderNotesList();
+    closeModal('new-note-modal');
+  }
+
+  function editNote(id) {
+    const n = notesList.find(n=>n.id===id);
+    if (!n) return;
+    editingNoteId = id;
+    document.getElementById('new-note-body').value = n.body;
+    document.getElementById('new-note-ctx').value  = n.ctx;
+    document.getElementById('new-note-title').textContent    = 'Edit note';
+    document.getElementById('new-note-save-btn').textContent = 'Update note';
+    document.getElementById('new-note-save-btn').onclick     = saveNewNote;
+    document.getElementById('new-note-modal').classList.add('open');
+  }
+
+  function deleteNote(id) {
+    notesList = notesList.filter(n=>n.id!==id);
+    save(NOTES_KEY, notesList);
+    renderNotesList();
+    showToast('Note deleted');
+  }
+
+  function promoteNoteToTask(id) {
+    const n = notesList.find(n=>n.id===id);
+    if (!n) return;
+    tasksList.unshift({ id:'t'+Date.now(), title:n.body.substring(0,80), due:'No due date', type:'soon', done:false });
+    save(TASKS_KEY, tasksList);
+    renderTasks();
+    showToast('Added to tasks ✓');
+  }
+
+  function promoteNoteToSticky(id) {
+    const n = notesList.find(n=>n.id===id);
+    if (!n) return;
+    const colors = ['sn-yellow','sn-blue','sn-green','sn-pink','sn-purple'];
+    stickyNotes.unshift({ id:'s'+Date.now(), text:n.body.substring(0,140), color:colors[Math.floor(Math.random()*5)], ctx:n.ctx, ts:Date.now() });
+    save(STICKIES_KEY, stickyNotes);
+    renderStickies();
+    showToast('Added to stickies 📌');
+  }
+
+  // ── TASKS ─────────────────────────────────────────────────────
+  function renderTasks() {
+    const list = document.getElementById('nt-task-list');
+    if (!list) return;
+    const urgent = tasksList.filter(t=>t.type==='overdue'||t.type==='today').slice(0,5);
+    if (!urgent.length) {
+      list.innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-4);font-size:12px">No urgent tasks today 🎉</div>';
+      return;
+    }
+    list.innerHTML = urgent.map(t => `
+      <div class="task-row">
+        <div class="task-check ${t.done?'done':''}" onclick="toggleTask('${t.id}')">${t.done?'✓':''}</div>
+        <div class="task-body">
+          <div class="task-title" style="${t.done?'text-decoration:line-through;color:var(--ink-4)':''}">${esc(t.title)}</div>
+          <div class="task-due ${t.type}">${t.due}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  function toggleTask(id) {
+    const t = tasksList.find(t=>t.id===id);
+    if (t) { t.done = !t.done; save(TASKS_KEY, tasksList); renderTasks(); }
+  }
+
+  function addQuickTask() {
+    const title = prompt('Task title:');
+    if (!title?.trim()) return;
+    tasksList.unshift({ id:'t'+Date.now(), title:title.trim(), due:'No due date', type:'soon', done:false });
+    save(TASKS_KEY, tasksList);
+    renderTasks();
+    showToast('Task added ✓');
+  }
+
+  // ── MEETINGS ──────────────────────────────────────────────────
+  function renderMeetings() {
+    const panel = document.getElementById('meetings-panel');
+    if (!panel) return;
+    if (!meetingsList.length) {
+      panel.innerHTML = '<div style="padding:28px;text-align:center;color:var(--ink-4);font-size:13px">No meeting notes yet. Log your first meeting above.</div>';
+      return;
+    }
+    panel.innerHTML = meetingsList.map(m => {
+      const sc = m.status==='actions'?'mb-actions':m.status==='pending'?'mb-pending':'mb-reviewed';
+      const sl = m.status==='actions'?`${m.actions.length} action items`:m.status==='pending'?'Pending review':'Reviewed';
+      const ai = (m.actions||[]).map((a,i)=>`
+        <li class="meeting-action-item">
+          <div class="meeting-action-check" onclick="toggleAction('${m.id}',${i},this)"></div>
+          <span>${esc(a)}</span>
+        </li>`).join('');
+      return `
+        <div class="meeting-row" onclick="toggleMeetingDetail('${m.id}')">
+          <div class="meeting-icon">🎙</div>
+          <div class="meeting-info">
+            <div class="meeting-title">${esc(m.title)}</div>
+            <div class="meeting-meta">
+              <span>${m.date}</span>
+              ${m.ws?`<span>·</span><span>${esc(m.ws)}</span>`:''}
+            </div>
+          </div>
+          <span class="meeting-badge ${sc}">${sl}</span>
+        </div>
+        <div class="meeting-detail" id="md-${m.id}">
+          ${m.notes?`<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-4);margin-bottom:8px">Notes</div><div class="meeting-transcript">${esc(m.notes)}</div>`:''}
+          ${ai?`<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-4);margin-bottom:8px">Action items</div><ul class="meeting-action-items">${ai}</ul>
+          <button class="btn-ghost" style="font-size:12px;margin-top:10px;padding:5px 12px" onclick="event.stopPropagation();promoteActions('${m.id}')">→ Send all to tasks</button>`
+          :'<div style="font-size:12px;color:var(--ink-4)">No action items.</div>'}
+          <div style="margin-top:12px;display:flex;gap:8px">
+            <button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();deleteMeeting('${m.id}')">Delete</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function toggleMeetingDetail(id) {
+    document.getElementById('md-'+id)?.classList.toggle('open');
+  }
+
+  function toggleAction(meetingId, idx, el) {
+    el.classList.toggle('done');
+    el.textContent = el.classList.contains('done') ? '✓' : '';
+    event.stopPropagation();
+  }
+
+  function promoteActions(id) {
+    const m = meetingsList.find(m=>m.id===id);
+    if (!m) return;
+    m.actions.forEach(a => tasksList.unshift({id:'t'+Date.now()+Math.random(), title:a, due:'From meeting', type:'soon', done:false}));
+    save(TASKS_KEY, tasksList);
+    renderTasks();
+    showToast(`${m.actions.length} action items added to tasks ✓`);
+  }
+
+  function deleteMeeting(id) {
+    meetingsList = meetingsList.filter(m=>m.id!==id);
+    save(MEETINGS_KEY, meetingsList);
+    renderMeetings();
+    showToast('Meeting deleted');
+  }
+
+  function openNewMeetingModal() {
+    document.getElementById('new-meeting-title').value   = '';
+    document.getElementById('new-meeting-notes').value   = '';
+    document.getElementById('new-meeting-actions').value = '';
+    const now = new Date(); now.setMinutes(0,0,0);
+    document.getElementById('new-meeting-date').value = now.toISOString().slice(0,16);
+    document.getElementById('new-meeting-modal').classList.add('open');
+  }
+
+  function saveNewMeeting() {
+    const title  = document.getElementById('new-meeting-title').value.trim();
+    const notes  = document.getElementById('new-meeting-notes').value.trim();
+    const actRaw = document.getElementById('new-meeting-actions').value.trim();
+    const ws     = document.getElementById('new-meeting-ws').value;
+    const dateV  = document.getElementById('new-meeting-date').value;
+    if (!title) { showToast('Enter a meeting title'); return; }
+    const actions = actRaw ? actRaw.split('\n').map(s=>s.trim()).filter(Boolean) : [];
+    const d = dateV ? new Date(dateV) : new Date();
+    const dateStr = d.toLocaleDateString('en-ZA',{weekday:'short',hour:'2-digit',minute:'2-digit'});
+    meetingsList.unshift({ id:'m'+Date.now(), title, ws, notes, actions, date:dateStr, status:actions.length?'actions':'reviewed' });
+    save(MEETINGS_KEY, meetingsList);
+    renderMeetings();
+    closeModal('new-meeting-modal');
+    showToast('Meeting saved ✓');
+  }
+
+  // ── MODAL BACKDROP CLOSE ──────────────────────────────────────
+  document.querySelectorAll('.modal-overlay').forEach(o => {
+    o.addEventListener('click', e => { if (e.target===o) o.classList.remove('open'); });
+  });
+
+  // ── KEYBOARD SHORTCUTS ────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.key==='Escape') document.querySelectorAll('.modal-overlay.open').forEach(o=>o.classList.remove('open'));
+    if ((e.metaKey||e.ctrlKey) && e.key==='k') {
+      e.preventDefault();
+      document.getElementById('scratchpad-body')?.focus();
+      focusSection('scratchpad-section');
+    }
+  });
+
+  // ── START ─────────────────────────────────────────────────────
+  init();
+</script>
+</body>
+</html>
