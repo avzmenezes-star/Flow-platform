@@ -1412,6 +1412,261 @@
       height: 1px; background: var(--border);
       margin: 4px 0;
     }
+
+    /* ── STICKY NOTES ──────────────────────────────────────────── */
+    .stickies-bar {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 28px; flex-wrap: wrap;
+    }
+
+    .sticky-note {
+      width: 160px; min-height: 140px;
+      border-radius: 2px;
+      padding: 12px 12px 0;
+      display: flex; flex-direction: column;
+      position: relative; cursor: default;
+      transition: transform 0.15s, box-shadow 0.15s;
+      flex-shrink: 0;
+    }
+
+    .sticky-note:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 6px 20px rgba(0,0,0,0.13); }
+
+    .sticky-note .sn-top {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 7px;
+    }
+
+    .sticky-note .sn-ctx {
+      font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      opacity: 0.5; line-height: 1.3;
+    }
+
+    .sticky-note .sn-del {
+      width: 18px; height: 18px; border-radius: 4px; border: none;
+      background: rgba(0,0,0,0.1); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; opacity: 0; transition: opacity 0.15s;
+      color: inherit; flex-shrink: 0;
+    }
+
+    .sticky-note:hover .sn-del { opacity: 1; }
+
+    .sticky-note .sn-body {
+      font-size: 12.5px; line-height: 1.55; flex: 1;
+      color: inherit; cursor: pointer;
+    }
+
+    .sticky-note .sn-foot {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 0 8px; border-top: 1px solid rgba(0,0,0,0.07);
+      margin-top: 8px;
+    }
+
+    .sticky-note .sn-time { font-size: 9px; opacity: 0.45; }
+
+    .sticky-note .sn-scope {
+      font-size: 9px; opacity: 0.45;
+      display: flex; align-items: center; gap: 3px;
+    }
+
+    .sticky-dog {
+      position: absolute; bottom: 0; right: 0; width: 0; height: 0;
+      border-style: solid;
+      border-width: 0 0 16px 16px;
+      border-color: transparent transparent rgba(0,0,0,0.12) transparent;
+    }
+
+    .sn-yellow { background: #FAC775; color: #412402; }
+    .sn-blue   { background: #B5D4F4; color: #042C53; }
+    .sn-green  { background: #C0DD97; color: #173404; }
+    .sn-pink   { background: #F4C0D1; color: #4B1528; }
+    .sn-purple { background: #CECBF6; color: #26215C; }
+
+    .sn-r1 { transform: rotate(-1.2deg); }
+    .sn-r2 { transform: rotate(0.9deg); }
+    .sn-r3 { transform: rotate(-0.5deg); }
+    .sn-r4 { transform: rotate(1.4deg); }
+    .sn-r5 { transform: rotate(-0.8deg); }
+
+    .sticky-add-btn {
+      width: 160px; min-height: 140px; border-radius: 2px;
+      border: 2px dashed var(--border-2);
+      background: var(--surface-2);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 6px; cursor: pointer;
+      color: var(--ink-4); font-size: 12px;
+      transition: all 0.15s; flex-shrink: 0;
+    }
+
+    .sticky-add-btn:hover { border-color: var(--indigo); color: var(--indigo); background: var(--indigo-light); }
+    .sticky-add-icon { font-size: 22px; font-weight: 300; line-height: 1; }
+
+    /* ── STICKY SLIDE-OVER PANEL ───────────────────────────────── */
+    .sticky-panel {
+      position: fixed; top: 0; right: -420px;
+      width: 400px; height: 100vh;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      box-shadow: var(--shadow-lg);
+      z-index: 700;
+      display: flex; flex-direction: column;
+      transition: right 0.28s cubic-bezier(0.16,1,0.3,1);
+    }
+
+    .sticky-panel.open { right: 0; }
+
+    .sticky-panel-header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      flex-shrink: 0;
+    }
+
+    .sticky-panel-title {
+      font-family: 'Instrument Serif', serif;
+      font-size: 20px; color: var(--ink);
+    }
+
+    .sticky-panel-body {
+      flex: 1; overflow-y: auto; padding: 20px 24px;
+      scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+    }
+
+    .sp-section-label {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.09em;
+      color: var(--ink-4); margin-bottom: 12px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .sp-notes-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 12px; margin-bottom: 24px;
+    }
+
+    .sp-sticky {
+      border-radius: 2px; padding: 12px;
+      font-size: 12px; line-height: 1.55;
+      position: relative; cursor: pointer;
+      min-height: 100px;
+      transition: transform 0.15s;
+    }
+
+    .sp-sticky:hover { transform: scale(1.03); }
+
+    .sp-sticky-ctx {
+      font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      opacity: 0.5; margin-bottom: 5px;
+    }
+
+    .sp-sticky-body { color: inherit; }
+
+    .sp-sticky-time {
+      font-size: 9px; opacity: 0.4;
+      margin-top: 8px;
+    }
+
+    .sp-sticky-del {
+      position: absolute; top: 6px; right: 6px;
+      width: 16px; height: 16px; border-radius: 3px;
+      border: none; background: rgba(0,0,0,0.12);
+      font-size: 10px; cursor: pointer; opacity: 0;
+      transition: opacity 0.12s; display: flex;
+      align-items: center; justify-content: center;
+      color: inherit;
+    }
+
+    .sp-sticky:hover .sp-sticky-del { opacity: 1; }
+
+    /* quick capture textarea */
+    .sp-capture {
+      background: var(--surface-2);
+      border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 14px 16px;
+      margin-bottom: 20px;
+    }
+
+    .sp-capture textarea {
+      width: 100%; border: none; background: transparent;
+      font-size: 13px; font-family: 'Instrument Sans', sans-serif;
+      color: var(--ink); resize: none; outline: none;
+      line-height: 1.6; min-height: 70px;
+    }
+
+    .sp-capture textarea::placeholder { color: var(--ink-4); }
+
+    .sp-capture-footer {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 10px;
+      padding-top: 10px; border-top: 1px solid var(--border);
+    }
+
+    .sp-color-row { display: flex; gap: 6px; }
+
+    .sp-color-dot {
+      width: 16px; height: 16px; border-radius: 50%;
+      cursor: pointer; border: 2px solid transparent;
+      transition: transform 0.1s;
+    }
+
+    .sp-color-dot:hover { transform: scale(1.2); }
+    .sp-color-dot.active { border-color: var(--ink); }
+
+    .sp-save-btn {
+      padding: 6px 16px; border-radius: 7px; border: none;
+      background: var(--indigo); color: white;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      font-family: 'Instrument Sans', sans-serif;
+      transition: background 0.15s;
+    }
+
+    .sp-save-btn:hover { background: var(--indigo-mid); }
+
+    /* ── STICKY MODAL ──────────────────────────────────────────── */
+    .sticky-modal-note {
+      border-radius: 4px; padding: 24px;
+      min-height: 180px; margin-bottom: 20px;
+    }
+
+    .sticky-modal-note textarea {
+      width: 100%; border: none; background: transparent;
+      font-size: 15px; font-family: 'Instrument Sans', sans-serif;
+      color: inherit; resize: none; outline: none;
+      line-height: 1.65; min-height: 130px;
+    }
+
+    .sticky-modal-note textarea::placeholder { opacity: 0.5; }
+
+    .color-picker-row {
+      display: flex; gap: 8px; align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .color-picker-label {
+      font-size: 11px; color: var(--ink-3); font-weight: 500; margin-right: 4px;
+    }
+
+    .cp-dot {
+      width: 22px; height: 22px; border-radius: 50%;
+      cursor: pointer; border: 2.5px solid transparent;
+      transition: transform 0.1s;
+    }
+
+    .cp-dot:hover { transform: scale(1.15); }
+    .cp-dot.active { border-color: var(--ink); }
+
+    /* topbar notepad btn pulse indicator */
+    .sticky-btn-dot {
+      position: absolute; top: 5px; right: 5px;
+      width: 7px; height: 7px;
+      background: var(--indigo); border-radius: 50%;
+      border: 1.5px solid white; display: none;
+    }
+
+    .sticky-btn-dot.show { display: block; }
   </style>
 </head>
 <body>
@@ -1522,6 +1777,9 @@
 
       <div class="nav-section">
         <div class="nav-section-label">Tools</div>
+        <div class="nav-item" onclick="toggleStickyPanel()">
+          <div class="nav-icon">📝</div> Notetaker
+        </div>
         <div class="nav-item" onclick="showView('formflow')">
           <div class="nav-icon">📋</div> FormFlow
         </div>
@@ -1573,6 +1831,9 @@
         <input class="search-input" placeholder="Search workspaces, documents, contacts...">
       </div>
       <div class="topbar-actions">
+        <div class="icon-btn" title="Sticky notes &amp; quick capture (⌘K)" onclick="toggleStickyPanel()" id="sticky-btn" style="position:relative">
+          📝 <div class="sticky-btn-dot" id="sticky-btn-dot"></div>
+        </div>
         <div class="icon-btn" title="Notifications" onclick="toggleNotifications()" id="notif-btn">
           🔔 <div class="notif-dot" id="notif-dot"></div>
         </div>
@@ -1616,6 +1877,23 @@
             <div class="stat-label">Completed this month</div>
             <div class="stat-value" style="color:var(--hub-deals)">10</div>
             <div class="stat-sub"><span class="stat-delta up">↑ 2</span> vs last month</div>
+          </div>
+        </div>
+
+        <!-- Sticky Notes Bar -->
+        <div class="fade-up" id="stickies-dashboard-section" style="margin-bottom:28px">
+          <div class="section-header">
+            <div class="section-title">📌 My sticky notes</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <button class="section-link" onclick="toggleStickyPanel()">View all & add →</button>
+            </div>
+          </div>
+          <div class="stickies-bar" id="stickies-bar">
+            <!-- rendered by JS -->
+            <div class="sticky-add-btn" onclick="openStickyModal()">
+              <div class="sticky-add-icon">+</div>
+              <div>New sticky</div>
+            </div>
           </div>
         </div>
 
@@ -2203,6 +2481,86 @@
 
     </div><!-- end page-scroll -->
   </div><!-- end main-wrap -->
+<!-- ── STICKY NOTES SLIDE PANEL ──────────────────────────────── -->
+<div class="sticky-panel" id="sticky-panel">
+  <div class="sticky-panel-header">
+    <div class="sticky-panel-title">Sticky notes</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="btn-primary" style="font-size:12px;padding:6px 14px" onclick="openStickyModal()">+ New sticky</button>
+      <div class="modal-close" onclick="toggleStickyPanel()">✕</div>
+    </div>
+  </div>
+  <div class="sticky-panel-body">
+
+    <!-- Quick capture -->
+    <div class="sp-section-label" style="margin-bottom:10px">Quick capture</div>
+    <div class="sp-capture">
+      <textarea id="sp-textarea" placeholder="Jot something down… it'll appear as a sticky note."></textarea>
+      <div class="sp-capture-footer">
+        <div class="sp-color-row">
+          <div class="sp-color-dot active" style="background:#FAC775" data-color="sn-yellow" onclick="selectPanelColor(this)" title="Yellow"></div>
+          <div class="sp-color-dot" style="background:#B5D4F4" data-color="sn-blue" onclick="selectPanelColor(this)" title="Blue"></div>
+          <div class="sp-color-dot" style="background:#C0DD97" data-color="sn-green" onclick="selectPanelColor(this)" title="Green"></div>
+          <div class="sp-color-dot" style="background:#F4C0D1" data-color="sn-pink" onclick="selectPanelColor(this)" title="Pink"></div>
+          <div class="sp-color-dot" style="background:#CECBF6" data-color="sn-purple" onclick="selectPanelColor(this)" title="Purple"></div>
+        </div>
+        <button class="sp-save-btn" onclick="savePanelNote()">Save note</button>
+      </div>
+    </div>
+
+    <!-- All notes -->
+    <div class="sp-section-label">
+      <span>All stickies</span>
+      <span id="sp-count" style="font-size:11px;font-weight:400;color:var(--ink-4)">0 notes</span>
+    </div>
+    <div class="sp-notes-grid" id="sp-notes-grid">
+      <div style="grid-column:1/-1;padding:32px;text-align:center;color:var(--ink-4);font-size:13px">No sticky notes yet. Add one above!</div>
+    </div>
+
+  </div>
+</div>
+<div id="sticky-panel-backdrop" onclick="toggleStickyPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.2);z-index:699;backdrop-filter:blur(1px)"></div>
+
+<!-- ── STICKY NOTE MODAL ──────────────────────────────────────── -->
+<div class="modal-overlay" id="sticky-modal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title" id="sticky-modal-title">New sticky note</div>
+      <div class="modal-close" onclick="closeModal('sticky-modal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="sticky-modal-note sn-yellow" id="sticky-modal-note">
+        <textarea id="sticky-modal-text" placeholder="Write your note here…" rows="5"></textarea>
+      </div>
+      <div class="color-picker-row">
+        <span class="color-picker-label">Colour:</span>
+        <div class="cp-dot active" style="background:#FAC775" data-color="sn-yellow" onclick="selectModalColor(this)"></div>
+        <div class="cp-dot" style="background:#B5D4F4" data-color="sn-blue" onclick="selectModalColor(this)"></div>
+        <div class="cp-dot" style="background:#C0DD97" data-color="sn-green" onclick="selectModalColor(this)"></div>
+        <div class="cp-dot" style="background:#F4C0D1" data-color="sn-pink" onclick="selectModalColor(this)"></div>
+        <div class="cp-dot" style="background:#CECBF6" data-color="sn-purple" onclick="selectModalColor(this)"></div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Context (optional)</label>
+        <select class="form-input" id="sticky-modal-ctx">
+          <option value="General">General</option>
+        </select>
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label">Visibility</label>
+        <select class="form-input" id="sticky-modal-vis">
+          <option value="private">Just me</option>
+          <option value="shared">Whole team</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('sticky-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveStickyModal()">Save sticky</button>
+    </div>
+  </div>
+</div>
+
 </div><!-- end app -->
 
 <!-- NEW WORKSPACE MODAL -->
@@ -2514,6 +2872,7 @@
 
     setGreeting(firstName);
     setDate();
+    loadStickies();
 
     if (isDemo) {
       // Use demo data
@@ -2882,7 +3241,7 @@
 
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     const map = { dashboard:'⊞ Dashboard', hubs:'◫ Hubs', workspaces:'🗂 Workspaces', tasks:'✓ Tasks', documents:'📄 Documents', formflow:'📋 FormFlow', signflow:'✍️ SignFlow', contacts:'👥 Contacts', flowmail:'✉ FlowMail', reports:'↗ Reports', settings:'⚙ Settings', plugins:'🔌 Apps & Plugins' };
-    const titles = { dashboard:'Dashboard', hubs:'Hubs', workspaces:'Workspaces', tasks:'Tasks', activity:'Recent Activity', documents:'Documents', formflow:'FormFlow', signflow:'SignFlow', contacts:'Contacts', flowmail:'FlowMail', reports:'Reports', settings:'Settings', plugins:'Apps & Plugins' };
+    const titles = { dashboard:'Dashboard', hubs:'Hubs', workspaces:'Workspaces', tasks:'Tasks', activity:'Recent Activity', documents:'Documents', formflow:'FormFlow', signflow:'SignFlow', contacts:'Contacts', flowmail:'FlowMail', reports:'Reports', settings:'Settings', plugins:'Apps & Plugins', notetaker:'Notetaker' };
     document.getElementById('topbar-title').textContent = titles[id] || id;
 
     document.querySelectorAll('.nav-item').forEach(n => {
@@ -3951,6 +4310,233 @@
       if (e.target === overlay) overlay.classList.remove('open');
     });
   });
+
+  // ── STICKY NOTES ─────────────────────────────────────────────
+  const STICKY_KEY = 'flow_stickies_v1';
+  let stickyNotes = [];
+  let stickyPanelOpen = false;
+  let panelSelectedColor = 'sn-yellow';
+  let modalSelectedColor = 'sn-yellow';
+  let editingStickyId = null;
+
+  const colorBgs = {
+    'sn-yellow': '#FAC775', 'sn-blue': '#B5D4F4',
+    'sn-green': '#C0DD97', 'sn-pink': '#F4C0D1', 'sn-purple': '#CECBF6'
+  };
+  const rotations = ['sn-r1','sn-r2','sn-r3','sn-r4','sn-r5'];
+
+  function loadStickies() {
+    try {
+      const raw = localStorage.getItem(STICKY_KEY);
+      stickyNotes = raw ? JSON.parse(raw) : getDefaultStickies();
+    } catch(e) {
+      stickyNotes = getDefaultStickies();
+    }
+    renderStickies();
+  }
+
+  function saveStickiesToStorage() {
+    try { localStorage.setItem(STICKY_KEY, JSON.stringify(stickyNotes)); } catch(e) {}
+  }
+
+  function getDefaultStickies() {
+    return [
+      { id: 's1', text: 'Ask Karen about the updated FICA template — she said it changed last week.', color: 'sn-yellow', ctx: 'General', time: 'Today 08:30', ts: Date.now() - 3600000 },
+      { id: 's2', text: 'Check if DocuSign integration is live — Rick said it was deploying this week.', color: 'sn-blue', ctx: 'General', time: 'Yesterday', ts: Date.now() - 86400000 },
+      { id: 's3', text: 'Trust account recon due Friday. Remind Amanda to pull the May statement.', color: 'sn-green', ctx: 'Finance', time: 'Mon 14:12', ts: Date.now() - 172800000 },
+    ];
+  }
+
+  function stickyTimeLabel(ts) {
+    if (!ts) return '';
+    const diff = Date.now() - ts;
+    const mins = Math.floor(diff / 60000);
+    const hrs  = Math.floor(mins / 60);
+    const days = Math.floor(hrs / 24);
+    const d = new Date(ts);
+    const t = d.toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit' });
+    if (mins < 2)  return 'Just now';
+    if (hrs  < 1)  return `${mins}m ago`;
+    if (hrs  < 24) return 'Today ' + t;
+    if (days === 1) return 'Yesterday';
+    return d.toLocaleDateString('en-ZA', { weekday:'short', hour:'2-digit', minute:'2-digit' });
+  }
+
+  function renderStickies() {
+    renderDashboardStickies();
+    renderPanelStickies();
+    updateStickyDot();
+  }
+
+  function renderDashboardStickies() {
+    const bar = document.getElementById('stickies-bar');
+    if (!bar) return;
+    const notes = stickyNotes.slice(0, 5);
+    bar.innerHTML = notes.map((n, i) => `
+      <div class="sticky-note ${n.color} ${rotations[i % 5]}" onclick="openEditSticky('${n.id}')">
+        <div class="sn-top">
+          <span class="sn-ctx">${escapeHTML(n.ctx || 'General')}</span>
+          <button class="sn-del" onclick="event.stopPropagation();deleteSticky('${n.id}')" title="Delete">✕</button>
+        </div>
+        <div class="sn-body">${escapeHTML(n.text)}</div>
+        <div class="sn-foot">
+          <span class="sn-time">${n.time || stickyTimeLabel(n.ts)}</span>
+          <span class="sn-scope">📌</span>
+        </div>
+        <div class="sticky-dog"></div>
+      </div>
+    `).join('') + `
+      <div class="sticky-add-btn" onclick="openStickyModal()">
+        <div class="sticky-add-icon">+</div>
+        <div>New sticky</div>
+      </div>
+    `;
+  }
+
+  function renderPanelStickies() {
+    const grid = document.getElementById('sp-notes-grid');
+    const count = document.getElementById('sp-count');
+    if (!grid) return;
+    if (count) count.textContent = stickyNotes.length + ' note' + (stickyNotes.length !== 1 ? 's' : '');
+    if (stickyNotes.length === 0) {
+      grid.innerHTML = '<div style="grid-column:1/-1;padding:32px;text-align:center;color:var(--ink-4);font-size:13px">No sticky notes yet. Add one above!</div>';
+      return;
+    }
+    grid.innerHTML = stickyNotes.map(n => `
+      <div class="sp-sticky ${n.color}" onclick="openEditSticky('${n.id}')">
+        <div class="sp-sticky-ctx">${escapeHTML(n.ctx || 'General')}</div>
+        <button class="sp-sticky-del" onclick="event.stopPropagation();deleteSticky('${n.id}')" title="Delete">✕</button>
+        <div class="sp-sticky-body">${escapeHTML(n.text)}</div>
+        <div class="sp-sticky-time">${n.time || stickyTimeLabel(n.ts)}</div>
+      </div>
+    `).join('');
+  }
+
+  function updateStickyDot() {
+    const dot = document.getElementById('sticky-btn-dot');
+    if (dot) dot.classList.toggle('show', stickyNotes.length > 0);
+  }
+
+  function toggleStickyPanel() {
+    stickyPanelOpen = !stickyPanelOpen;
+    const panel = document.getElementById('sticky-panel');
+    const bd    = document.getElementById('sticky-panel-backdrop');
+    panel.classList.toggle('open', stickyPanelOpen);
+    if (bd) bd.style.display = stickyPanelOpen ? 'block' : 'none';
+    if (stickyPanelOpen) renderPanelStickies();
+  }
+
+  function selectPanelColor(el) {
+    document.querySelectorAll('#sticky-panel .sp-color-dot').forEach(d => d.classList.remove('active'));
+    el.classList.add('active');
+    panelSelectedColor = el.dataset.color;
+  }
+
+  function savePanelNote() {
+    const ta = document.getElementById('sp-textarea');
+    const text = ta.value.trim();
+    if (!text) { showToast('Write something first!'); return; }
+    const note = {
+      id: 'sn-' + Date.now(),
+      text, color: panelSelectedColor,
+      ctx: 'General', ts: Date.now(),
+      time: stickyTimeLabel(Date.now())
+    };
+    stickyNotes.unshift(note);
+    saveStickiesToStorage();
+    renderStickies();
+    ta.value = '';
+    showToast('Sticky note saved 📌');
+  }
+
+  function openStickyModal(id) {
+    editingStickyId = id || null;
+    const modal = document.getElementById('sticky-modal');
+    const titleEl = document.getElementById('sticky-modal-title');
+    const ta = document.getElementById('sticky-modal-text');
+    const ctxSel = document.getElementById('sticky-modal-ctx');
+
+    // Populate context options
+    const workspaces = liveWorkspaces.length ? liveWorkspaces : demoWorkspaces;
+    ctxSel.innerHTML = '<option value="General">General</option>' +
+      workspaces.map(w => `<option value="${escapeHTML(w.name)}">${escapeHTML(w.name)}</option>`).join('');
+
+    if (id) {
+      const note = stickyNotes.find(n => n.id === id);
+      if (!note) return;
+      titleEl.textContent = 'Edit sticky note';
+      ta.value = note.text;
+      ctxSel.value = note.ctx || 'General';
+      setModalColor(note.color);
+    } else {
+      titleEl.textContent = 'New sticky note';
+      ta.value = '';
+      ctxSel.value = 'General';
+      setModalColor('sn-yellow');
+    }
+
+    modal.classList.add('open');
+    setTimeout(() => ta.focus(), 100);
+  }
+
+  function openEditSticky(id) { openStickyModal(id); }
+
+  function setModalColor(color) {
+    modalSelectedColor = color;
+    const noteEl = document.getElementById('sticky-modal-note');
+    const colors = ['sn-yellow','sn-blue','sn-green','sn-pink','sn-purple'];
+    colors.forEach(c => noteEl.classList.remove(c));
+    noteEl.classList.add(color);
+    document.querySelectorAll('#sticky-modal .cp-dot').forEach(d => {
+      d.classList.toggle('active', d.dataset.color === color);
+    });
+  }
+
+  function selectModalColor(el) { setModalColor(el.dataset.color); }
+
+  function saveStickyModal() {
+    const text = document.getElementById('sticky-modal-text').value.trim();
+    const ctx  = document.getElementById('sticky-modal-ctx').value;
+    if (!text) { showToast('Write something first!'); return; }
+
+    if (editingStickyId) {
+      const idx = stickyNotes.findIndex(n => n.id === editingStickyId);
+      if (idx > -1) {
+        stickyNotes[idx] = { ...stickyNotes[idx], text, color: modalSelectedColor, ctx };
+      }
+      showToast('Sticky updated ✓');
+    } else {
+      stickyNotes.unshift({
+        id: 'sn-' + Date.now(), text,
+        color: modalSelectedColor, ctx,
+        ts: Date.now(), time: stickyTimeLabel(Date.now())
+      });
+      showToast('Sticky note saved 📌');
+    }
+
+    saveStickiesToStorage();
+    renderStickies();
+    closeModal('sticky-modal');
+    editingStickyId = null;
+  }
+
+  function deleteSticky(id) {
+    stickyNotes = stickyNotes.filter(n => n.id !== id);
+    saveStickiesToStorage();
+    renderStickies();
+    showToast('Sticky removed');
+  }
+
+  // ⌘K / Ctrl+K keyboard shortcut to open sticky panel
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      if (!stickyPanelOpen) toggleStickyPanel();
+      else document.getElementById('sp-textarea')?.focus();
+    }
+  });
+
+  // Close sticky panel on outside click is handled by backdrop div
 
   // Close notification panel on outside click
   document.addEventListener('click', (e) => {
