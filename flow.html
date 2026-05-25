@@ -1413,6 +1413,142 @@
       margin: 4px 0;
     }
 
+    /* ── NOTETAKER VIEW ────────────────────────────────────────── */
+    .nt-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 24px;
+    }
+
+    @media (max-width: 1000px) { .nt-grid { grid-template-columns: 1fr; } }
+
+    .note-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      box-shadow: var(--shadow);
+      transition: box-shadow 0.15s;
+    }
+
+    .note-card:hover { box-shadow: var(--shadow-md); }
+
+    .note-card-top {
+      display: flex; justify-content: space-between;
+      align-items: flex-start; margin-bottom: 8px;
+    }
+
+    .note-card-ctx {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--ink-4);
+    }
+
+    .note-card-time { font-size: 10px; color: var(--ink-4); }
+
+    .note-card-body {
+      font-size: 13px; color: var(--ink-2);
+      line-height: 1.6; margin-bottom: 12px;
+      display: -webkit-box; -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical; overflow: hidden;
+    }
+
+    .note-card-actions {
+      display: flex; gap: 12px;
+      border-top: 1px solid var(--border);
+      padding-top: 10px;
+    }
+
+    .note-action-btn {
+      font-size: 11px; font-weight: 500;
+      color: var(--ink-3); cursor: pointer;
+      display: flex; align-items: center; gap: 4px;
+      background: none; border: none;
+      font-family: 'Instrument Sans', sans-serif;
+      padding: 0; transition: color 0.12s;
+    }
+
+    .note-action-btn:hover { color: var(--indigo); }
+    .note-action-btn.danger:hover { color: var(--danger); }
+
+    .meeting-row {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer; transition: background 0.12s;
+    }
+
+    .meeting-row:last-child { border-bottom: none; }
+    .meeting-row:hover { background: var(--surface-2); }
+
+    .meeting-icon {
+      width: 34px; height: 34px; border-radius: 8px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+
+    .meeting-info { flex: 1; min-width: 0; }
+
+    .meeting-title {
+      font-size: 13px; font-weight: 600; color: var(--ink);
+      margin-bottom: 2px; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .meeting-meta {
+      font-size: 11px; color: var(--ink-4);
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    .meeting-badge {
+      font-size: 10px; font-weight: 600;
+      padding: 2px 7px; border-radius: 10px;
+      white-space: nowrap; flex-shrink: 0;
+    }
+
+    .mb-actions { background: #f0fdf4; color: #166534; }
+    .mb-pending  { background: #fef9c3; color: #854d0e; }
+    .mb-reviewed { background: var(--surface-2); color: var(--ink-4); }
+
+    /* meeting detail panel */
+    .meeting-detail {
+      display: none; padding: 20px;
+      border-top: 1px solid var(--border);
+      background: var(--surface-2);
+    }
+
+    .meeting-detail.open { display: block; }
+
+    .meeting-transcript {
+      font-size: 12px; color: var(--ink-2);
+      line-height: 1.7; white-space: pre-wrap;
+      max-height: 200px; overflow-y: auto;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;
+    }
+
+    .meeting-action-items { list-style: none; padding: 0; margin: 0; }
+
+    .meeting-action-item {
+      display: flex; align-items: flex-start; gap: 9px;
+      padding: 7px 0; border-bottom: 1px solid var(--border);
+      font-size: 12px; color: var(--ink-2);
+    }
+
+    .meeting-action-item:last-child { border-bottom: none; }
+
+    .meeting-action-check {
+      width: 15px; height: 15px; border-radius: 50%;
+      border: 1.5px solid var(--border-2); flex-shrink: 0;
+      margin-top: 1px; cursor: pointer; transition: all 0.15s;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px;
+    }
+
+    .meeting-action-check:hover { border-color: var(--indigo); }
+    .meeting-action-check.done { background: var(--success); border-color: var(--success); color: white; }
+
     /* ── STICKY NOTES ──────────────────────────────────────────── */
     .stickies-bar {
       display: flex; align-items: center; gap: 12px;
@@ -1777,7 +1913,7 @@
 
       <div class="nav-section">
         <div class="nav-section-label">Tools</div>
-        <div class="nav-item" onclick="toggleStickyPanel()">
+        <div class="nav-item" onclick="showView('notetaker')">
           <div class="nav-icon">📝</div> Notetaker
         </div>
         <div class="nav-item" onclick="showView('formflow')">
@@ -2479,8 +2615,183 @@
         </div>
       </div>
 
+      <!-- ── NOTETAKER VIEW ──────────────────────────────────────── -->
+      <div class="view" id="view-notetaker">
+
+        <div style="margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <h2 style="font-family:'Instrument Serif',serif;font-size:26px;margin-bottom:4px;letter-spacing:-0.3px">Notetaker</h2>
+            <p style="font-size:13px;color:var(--ink-3)">Capture thoughts, manage tasks, and review meeting transcripts — all in one place.</p>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-ghost" onclick="openStickyModal()" style="font-size:13px">📌 New sticky</button>
+            <button class="btn-primary" onclick="openNewNoteModal()">+ New note</button>
+          </div>
+        </div>
+
+        <!-- ⌘K shortcut hint -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:24px;padding:10px 16px;background:var(--indigo-light);border-radius:9px;border:1px solid #c7d2fe">
+          <span style="font-size:13px;color:var(--indigo-mid)">💡 Quick tip: press <kbd style="background:white;border:1px solid #c7d2fe;border-radius:4px;padding:1px 6px;font-size:11px;font-family:monospace">⌘K</kbd> from anywhere in Flow to instantly open the sticky panel for a quick capture.</span>
+        </div>
+
+        <div class="nt-grid">
+
+          <!-- LEFT: Scratchpad + Notes -->
+          <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
+
+            <!-- Scratchpad -->
+            <div>
+              <div class="section-header">
+                <div class="section-title">Scratchpad</div>
+                <span style="font-size:11px;color:var(--ink-4)">Auto-saved locally</span>
+              </div>
+              <div class="panel" style="overflow:visible">
+                <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+                    <span style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.07em">Context</span>
+                    <select id="scratchpad-ctx" class="form-input" style="width:auto;padding:4px 10px;font-size:12px;height:auto">
+                      <option value="General">General</option>
+                    </select>
+                  </div>
+                  <textarea id="scratchpad-body" style="width:100%;border:none;background:transparent;font-size:14px;font-family:'Instrument Sans',sans-serif;color:var(--ink);resize:none;outline:none;line-height:1.7;min-height:100px" placeholder="Start typing — capture a thought, a to-do, a follow-up…"></textarea>
+                </div>
+                <div style="padding:12px 20px;display:flex;justify-content:space-between;align-items:center">
+                  <span style="font-size:11px;color:var(--ink-4)" id="scratchpad-saved-label">Start typing to capture a note</span>
+                  <div style="display:flex;gap:8px">
+                    <button class="btn-ghost" style="font-size:12px;padding:6px 14px" onclick="promoteToTask()">→ Promote to task</button>
+                    <button class="btn-primary" style="font-size:12px;padding:6px 14px" onclick="saveScratchpad()">Save note</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Notes list -->
+            <div>
+              <div class="section-header">
+                <div class="section-title">Recent notes</div>
+                <div style="display:flex;gap:6px">
+                  <button class="filter-btn active" id="notes-filter-all" onclick="filterNotes(this,'all')" style="font-size:11px;padding:4px 10px">All</button>
+                  <button class="filter-btn" id="notes-filter-general" onclick="filterNotes(this,'General')" style="font-size:11px;padding:4px 10px">General</button>
+                  <button class="filter-btn" id="notes-filter-ws" onclick="filterNotes(this,'workspace')" style="font-size:11px;padding:4px 10px">Workspace</button>
+                </div>
+              </div>
+              <div id="notes-list" style="display:flex;flex-direction:column;gap:10px">
+                <!-- rendered by JS -->
+              </div>
+            </div>
+
+          </div>
+
+          <!-- RIGHT: Tasks today + Meeting notes -->
+          <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
+
+            <!-- Today's tasks -->
+            <div>
+              <div class="section-header">
+                <div class="section-title">Today's tasks</div>
+                <button class="section-link" onclick="showView('tasks')">View all →</button>
+              </div>
+              <div class="panel">
+                <div class="task-list" id="nt-task-list" style="min-height:60px"></div>
+                <div style="padding:12px 20px;border-top:1px solid var(--border)">
+                  <button class="btn-ghost" style="font-size:12px;width:100%" onclick="openNewTaskModal()">+ Add task</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Meeting notes -->
+            <div>
+              <div class="section-header">
+                <div class="section-title">Meeting notes</div>
+                <button class="section-link" onclick="openNewMeetingModal()">+ New meeting</button>
+              </div>
+              <div class="panel" id="meetings-panel">
+                <!-- rendered by JS -->
+              </div>
+              <!-- Connect bot CTA -->
+              <div style="margin-top:10px;padding:14px 18px;background:var(--surface);border:1.5px dashed var(--border-2);border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:space-between;gap:16px">
+                <div>
+                  <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px">🎙 Connect a notetaker bot</div>
+                  <div style="font-size:11px;color:var(--ink-4)">Automatically transcribe Google Meet, Teams & Zoom calls</div>
+                </div>
+                <button class="btn-primary" style="font-size:12px;padding:7px 14px;white-space:nowrap" onclick="showToast('Notetaker bot integration coming soon')">Connect</button>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+      <!-- END NOTETAKER -->
+
     </div><!-- end page-scroll -->
   </div><!-- end main-wrap -->
+<!-- ── NEW NOTE MODAL ─────────────────────────────────────────── -->
+<div class="modal-overlay" id="new-note-modal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <div class="modal-title">New note</div>
+      <div class="modal-close" onclick="closeModal('new-note-modal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label">Context</label>
+        <select class="form-input" id="new-note-ctx">
+          <option value="General">General</option>
+        </select>
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label">Note</label>
+        <textarea class="form-input" id="new-note-body" rows="6" style="resize:vertical;line-height:1.6" placeholder="Write your note here…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('new-note-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveNewNote()">Save note</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── NEW MEETING MODAL ──────────────────────────────────────── -->
+<div class="modal-overlay" id="new-meeting-modal">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-header">
+      <div class="modal-title">Log meeting notes</div>
+      <div class="modal-close" onclick="closeModal('new-meeting-modal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label">Meeting title</label>
+        <input class="form-input" id="new-meeting-title" placeholder="e.g. Bond discussion — ABSA">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-row">
+          <label class="form-label">Date &amp; time</label>
+          <input class="form-input" id="new-meeting-date" type="datetime-local">
+        </div>
+        <div class="form-row">
+          <label class="form-label">Link to workspace</label>
+          <select class="form-input" id="new-meeting-ws">
+            <option value="">— None —</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Notes / transcript</label>
+        <textarea class="form-input" id="new-meeting-notes" rows="5" style="resize:vertical;line-height:1.6" placeholder="Paste transcript or write your meeting notes here…"></textarea>
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label">Action items (one per line)</label>
+        <textarea class="form-input" id="new-meeting-actions" rows="3" style="resize:vertical;line-height:1.6" placeholder="e.g. Follow up with ABSA on ref number&#10;Send updated OTP to John&#10;Book next meeting for Thursday"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('new-meeting-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveNewMeeting()">Save meeting</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── STICKY NOTES SLIDE PANEL ──────────────────────────────── -->
 <div class="sticky-panel" id="sticky-panel">
   <div class="sticky-panel-header">
@@ -4310,6 +4621,348 @@
       if (e.target === overlay) overlay.classList.remove('open');
     });
   });
+
+  // ── NOTETAKER ────────────────────────────────────────────────
+  const NOTES_KEY    = 'flow_notes_v1';
+  const MEETINGS_KEY = 'flow_meetings_v1';
+  const SCRATCH_KEY  = 'flow_scratchpad_v1';
+
+  let notesList     = [];
+  let meetingsList  = [];
+  let notesFilter   = 'all';
+
+  const demoNotes = [
+    { id:'n1', ctx:'Acme Corp — Lease Agreement', body:'Tenant wants to extend by 6 months. Check if landlord is open — needs to happen before the 30th. Also ask about parking bay allocation.', time:'Today, 09:14', ts: Date.now()-4000000 },
+    { id:'n2', ctx:'General', body:'Remember to ask Karen about the new FICA template — she said it was updated last week. Also check if the DocuSign integration is live yet.', time:'Yesterday, 16:42', ts: Date.now()-86400000 },
+    { id:'n3', ctx:'12 Main Road — Purchase', body:'Bond originator confirmed ABSA is ready to proceed. Need the ref number before we can register. Follow up EOD if nothing received.', time:'Mon, 11:20', ts: Date.now()-172800000 },
+  ];
+
+  const demoMeetings = [
+    { id:'m1', title:'Bond discussion — ABSA', ws:'12 Main Road — Purchase', date:'Today, 10:00', actions:['Call ABSA for ref number before EOD','Update OTP clause 8.2','Send updated bond instruction to conveyancer'], notes:'Spoke with Pieter at ABSA. Bond approved in principle. Still waiting on formal ref number from their system — they promised EOD today. Discussed occupation date and transfer timeline. Conveyancer to be looped in once ref received.', status:'actions' },
+    { id:'m2', title:'Lease review — Acme Corp', ws:'Acme Corp — Lease Agreement', date:'Yesterday, 14:30', actions:['Get landlord approval on 6-month extension','Clarify parking bay allocation in clause 4','Schedule next review for end of month'], notes:'Tenant (Mike Dlamini) raised the possibility of a 6-month extension option. Landlord has not yet been consulted. Also flagged that parking bay allocation in clause 4 is ambiguous — needs to be reworded before signing.', status:'pending' },
+    { id:'m3', title:'Team standup', ws:'', date:'Mon, 09:00', actions:['Amanda to pull May trust account statement','Karen to finalise FICA template update','Rick to chase DocuSign deployment timeline','Thabo contract to be countersigned by legal','Review Q3 pipeline by Wednesday'], notes:'Weekly standup. Covered active deals, upcoming deadlines, and tool updates. Rick flagged DocuSign delays. Amanda confirmed trust account recon is due Friday.', status:'actions' },
+    { id:'m4', title:'FICA walkthrough — Mary J.', ws:'Sandy Close — Sale', date:'Fri, 11:15', actions:[], notes:'Walked Mary through the FICA requirements. All documents collected. Marked as complete.', status:'reviewed' },
+  ];
+
+  function initNotetaker() {
+    try { notesList    = JSON.parse(localStorage.getItem(NOTES_KEY))    || demoNotes; }    catch(e){ notesList    = demoNotes; }
+    try { meetingsList = JSON.parse(localStorage.getItem(MEETINGS_KEY)) || demoMeetings; } catch(e){ meetingsList = demoMeetings; }
+
+    const scratch = localStorage.getItem(SCRATCH_KEY) || '';
+    const ta = document.getElementById('scratchpad-body');
+    if (ta && scratch) { ta.value = scratch; document.getElementById('scratchpad-saved-label').textContent = 'Draft restored'; }
+
+    // auto-save scratchpad as user types
+    if (ta) {
+      ta.addEventListener('input', () => {
+        localStorage.setItem(SCRATCH_KEY, ta.value);
+        document.getElementById('scratchpad-saved-label').textContent = 'Saved just now';
+      });
+    }
+
+    populateNoteContexts();
+    renderNotesList();
+    renderMeetingsPanel();
+    renderNTTasks();
+  }
+
+  function populateNoteContexts() {
+    const wss = liveWorkspaces.length ? liveWorkspaces : demoWorkspaces;
+    const wsOptions = wss.map(w => `<option value="${escapeHTML(w.name)}">${escapeHTML(w.name)}</option>`).join('');
+
+    ['scratchpad-ctx','new-note-ctx','new-meeting-ws'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (id === 'new-meeting-ws') {
+        el.innerHTML = '<option value="">— None —</option>' + wsOptions;
+      } else {
+        el.innerHTML = '<option value="General">General</option>' + wsOptions;
+      }
+    });
+  }
+
+  function renderNotesList(filter) {
+    if (filter !== undefined) notesFilter = filter;
+    const list = document.getElementById('notes-list');
+    if (!list) return;
+
+    let data = notesList;
+    if (notesFilter === 'General') data = data.filter(n => n.ctx === 'General');
+    else if (notesFilter === 'workspace') data = data.filter(n => n.ctx !== 'General');
+
+    if (data.length === 0) {
+      list.innerHTML = '<div style="padding:32px;text-align:center;color:var(--ink-4);font-size:13px;background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border)">No notes yet. Start typing in the scratchpad above and save!</div>';
+      return;
+    }
+
+    list.innerHTML = data.map(n => `
+      <div class="note-card">
+        <div class="note-card-top">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="note-card-ctx">${escapeHTML(n.ctx || 'General')}</span>
+            ${n.ctx !== 'General' ? `<span style="font-size:10px;background:var(--indigo-light);color:var(--indigo);border-radius:4px;padding:1px 6px;font-weight:600">Workspace</span>` : ''}
+          </div>
+          <span class="note-card-time">${n.time || stickyTimeLabel(n.ts)}</span>
+        </div>
+        <div class="note-card-body">${escapeHTML(n.body)}</div>
+        <div class="note-card-actions">
+          <button class="note-action-btn" onclick="promoteNoteToTask('${n.id}')">→ To task</button>
+          <button class="note-action-btn" onclick="promoteNoteToSticky('${n.id}')">📌 To sticky</button>
+          <button class="note-action-btn" onclick="editNote('${n.id}')">Edit</button>
+          <button class="note-action-btn danger" onclick="deleteNote('${n.id}')">Delete</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function filterNotes(btn, filter) {
+    document.querySelectorAll('#view-notetaker .filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderNotesList(filter);
+  }
+
+  function renderMeetingsPanel() {
+    const panel = document.getElementById('meetings-panel');
+    if (!panel) return;
+
+    if (meetingsList.length === 0) {
+      panel.innerHTML = '<div style="padding:32px;text-align:center;color:var(--ink-4);font-size:13px">No meeting notes yet. Log your first meeting using the button above.</div>';
+      return;
+    }
+
+    panel.innerHTML = meetingsList.map((m, i) => {
+      const statusClass = m.status === 'actions' ? 'mb-actions' : m.status === 'pending' ? 'mb-pending' : 'mb-reviewed';
+      const statusLabel = m.status === 'actions' ? `${m.actions.length} action items` : m.status === 'pending' ? 'Pending review' : 'Reviewed';
+      const actionItems = (m.actions || []).map((a,ai) => `
+        <li class="meeting-action-item">
+          <div class="meeting-action-check" onclick="toggleMeetingAction('${m.id}',${ai},this)" title="Mark done"></div>
+          <span>${escapeHTML(a)}</span>
+        </li>
+      `).join('');
+
+      return `
+        <div class="meeting-row" onclick="toggleMeetingDetail('${m.id}')">
+          <div class="meeting-icon">🎙</div>
+          <div class="meeting-info">
+            <div class="meeting-title">${escapeHTML(m.title)}</div>
+            <div class="meeting-meta">
+              <span>${m.date}</span>
+              ${m.ws ? `<div class="ws-meta-dot"></div><span>${escapeHTML(m.ws)}</span>` : ''}
+            </div>
+          </div>
+          <span class="meeting-badge ${statusClass}">${statusLabel}</span>
+        </div>
+        <div class="meeting-detail" id="meeting-detail-${m.id}">
+          ${m.notes ? `
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-4);margin-bottom:8px">Notes / transcript</div>
+            <div class="meeting-transcript">${escapeHTML(m.notes)}</div>
+          ` : ''}
+          ${m.actions && m.actions.length > 0 ? `
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-4);margin-bottom:8px">Action items</div>
+            <ul class="meeting-action-items">${actionItems}</ul>
+            <button class="btn-ghost" style="font-size:12px;margin-top:12px;padding:6px 14px" onclick="event.stopPropagation();promoteAllActions('${m.id}')">→ Send all to Tasks</button>
+          ` : '<div style="font-size:12px;color:var(--ink-4)">No action items recorded.</div>'}
+          <div style="margin-top:14px;display:flex;gap:8px">
+            <button class="btn-ghost" style="font-size:12px;padding:5px 12px" onclick="event.stopPropagation();deleteMeeting('${m.id}')">Delete</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderNTTasks() {
+    const list = document.getElementById('nt-task-list');
+    if (!list) return;
+    const tasks = liveWorkspaces.length ? liveTasks : demoTasks;
+    const today = tasks.filter(t => t.type === 'today' || t.type === 'overdue').slice(0, 5);
+    if (today.length === 0) {
+      list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--ink-4);font-size:12px">No urgent tasks today 🎉</div>';
+      return;
+    }
+    list.innerHTML = today.map(t => {
+      const done = t.status === 'completed';
+      const taskId = t.id || '';
+      return `
+        <div class="task-row">
+          <div class="task-check ${done ? 'done' : ''}" onclick="event.stopPropagation();${taskId ? `toggleGlobalTask('${taskId}',${!done})` : 'toggleInlineTask(this)'}">
+            ${done ? '✓' : ''}
+          </div>
+          <div class="task-body">
+            <div class="task-title" style="${done ? 'text-decoration:line-through;color:var(--ink-4)' : ''}">${escapeHTML(t.title)}</div>
+            <div class="task-due ${t.type || 'soon'}">${escapeHTML(t.due || '')}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function toggleMeetingDetail(id) {
+    const detail = document.getElementById('meeting-detail-' + id);
+    if (!detail) return;
+    detail.classList.toggle('open');
+  }
+
+  function toggleMeetingAction(meetingId, actionIndex, el) {
+    el.classList.toggle('done');
+    if (el.classList.contains('done')) el.textContent = '✓';
+    else el.textContent = '';
+    event.stopPropagation();
+  }
+
+  function promoteAllActions(meetingId) {
+    const m = meetingsList.find(m => m.id === meetingId);
+    if (!m || !m.actions.length) return;
+    m.actions.forEach(a => {
+      demoTasks.unshift({ id: Date.now() + Math.random(), title: a, due: 'From meeting', type:'soon', status:'open' });
+    });
+    renderTasks(demoTasks);
+    renderNTTasks();
+    showToast(`${m.actions.length} action items sent to Tasks ✓`);
+  }
+
+  function deleteMeeting(id) {
+    meetingsList = meetingsList.filter(m => m.id !== id);
+    try { localStorage.setItem(MEETINGS_KEY, JSON.stringify(meetingsList)); } catch(e){}
+    renderMeetingsPanel();
+    showToast('Meeting note deleted');
+  }
+
+  function openNewNoteModal() {
+    populateNoteContexts();
+    document.getElementById('new-note-body').value = '';
+    document.getElementById('new-note-ctx').value = 'General';
+    document.getElementById('new-note-modal').classList.add('open');
+    setTimeout(() => document.getElementById('new-note-body').focus(), 100);
+  }
+
+  function saveNewNote() {
+    const body = document.getElementById('new-note-body').value.trim();
+    const ctx  = document.getElementById('new-note-ctx').value;
+    if (!body) { showToast('Write something first!'); return; }
+    const note = { id:'n'+Date.now(), body, ctx, ts:Date.now(), time: stickyTimeLabel(Date.now()) };
+    notesList.unshift(note);
+    try { localStorage.setItem(NOTES_KEY, JSON.stringify(notesList)); } catch(e){}
+    renderNotesList();
+    closeModal('new-note-modal');
+    showToast('Note saved ✓');
+  }
+
+  function saveScratchpad() {
+    const body = document.getElementById('scratchpad-body').value.trim();
+    const ctx  = document.getElementById('scratchpad-ctx').value || 'General';
+    if (!body) { showToast('Nothing to save!'); return; }
+    const note = { id:'n'+Date.now(), body, ctx, ts:Date.now(), time:stickyTimeLabel(Date.now()) };
+    notesList.unshift(note);
+    try { localStorage.setItem(NOTES_KEY, JSON.stringify(notesList)); } catch(e){}
+    document.getElementById('scratchpad-body').value = '';
+    localStorage.removeItem(SCRATCH_KEY);
+    document.getElementById('scratchpad-saved-label').textContent = 'Saved as note ✓';
+    renderNotesList();
+    showToast('Note saved ✓');
+  }
+
+  function promoteToTask() {
+    const body = document.getElementById('scratchpad-body').value.trim();
+    if (!body) { showToast('Write something first!'); return; }
+    demoTasks.unshift({ id:Date.now(), title:body.substring(0,80), due:'No due date', type:'soon', status:'open' });
+    renderTasks(demoTasks);
+    renderNTTasks();
+    document.getElementById('scratchpad-body').value = '';
+    localStorage.removeItem(SCRATCH_KEY);
+    showToast('Added to Tasks ✓');
+  }
+
+  function promoteNoteToTask(noteId) {
+    const note = notesList.find(n => n.id === noteId);
+    if (!note) return;
+    demoTasks.unshift({ id:Date.now(), title:note.body.substring(0,80), due:'No due date', type:'soon', status:'open' });
+    renderTasks(demoTasks);
+    renderNTTasks();
+    showToast('Added to Tasks ✓');
+  }
+
+  function promoteNoteToSticky(noteId) {
+    const note = notesList.find(n => n.id === noteId);
+    if (!note) return;
+    const colors = ['sn-yellow','sn-blue','sn-green','sn-pink','sn-purple'];
+    stickyNotes.unshift({ id:'sn'+Date.now(), text:note.body.substring(0,120), color:colors[Math.floor(Math.random()*colors.length)], ctx:note.ctx, ts:Date.now(), time:stickyTimeLabel(Date.now()) });
+    saveStickiesToStorage();
+    renderStickies();
+    showToast('Added to sticky notes 📌');
+  }
+
+  function deleteNote(noteId) {
+    notesList = notesList.filter(n => n.id !== noteId);
+    try { localStorage.setItem(NOTES_KEY, JSON.stringify(notesList)); } catch(e){}
+    renderNotesList();
+    showToast('Note deleted');
+  }
+
+  function editNote(noteId) {
+    const note = notesList.find(n => n.id === noteId);
+    if (!note) return;
+    populateNoteContexts();
+    document.getElementById('new-note-body').value = note.body;
+    document.getElementById('new-note-ctx').value  = note.ctx;
+    document.getElementById('new-note-modal').classList.add('open');
+    // swap save to update
+    const btn = document.querySelector('#new-note-modal .btn-primary');
+    btn.textContent = 'Update note';
+    btn.onclick = () => {
+      note.body = document.getElementById('new-note-body').value.trim();
+      note.ctx  = document.getElementById('new-note-ctx').value;
+      try { localStorage.setItem(NOTES_KEY, JSON.stringify(notesList)); } catch(e){}
+      renderNotesList();
+      closeModal('new-note-modal');
+      btn.textContent = 'Save note';
+      btn.onclick = saveNewNote;
+      showToast('Note updated ✓');
+    };
+  }
+
+  function openNewMeetingModal() {
+    populateNoteContexts();
+    document.getElementById('new-meeting-title').value   = '';
+    document.getElementById('new-meeting-notes').value   = '';
+    document.getElementById('new-meeting-actions').value = '';
+    const now = new Date();
+    now.setMinutes(0,0,0);
+    document.getElementById('new-meeting-date').value = now.toISOString().slice(0,16);
+    document.getElementById('new-meeting-modal').classList.add('open');
+  }
+
+  function saveNewMeeting() {
+    const title   = document.getElementById('new-meeting-title').value.trim();
+    const notes   = document.getElementById('new-meeting-notes').value.trim();
+    const actRaw  = document.getElementById('new-meeting-actions').value.trim();
+    const ws      = document.getElementById('new-meeting-ws').value;
+    const dateVal = document.getElementById('new-meeting-date').value;
+    if (!title) { showToast('Please enter a meeting title'); return; }
+
+    const actions = actRaw ? actRaw.split('\n').map(s=>s.trim()).filter(Boolean) : [];
+    const d = dateVal ? new Date(dateVal) : new Date();
+    const dateStr = d.toLocaleDateString('en-ZA',{weekday:'short',hour:'2-digit',minute:'2-digit'});
+
+    const meeting = {
+      id: 'm'+Date.now(), title, ws, notes,
+      actions, date: dateStr,
+      status: actions.length > 0 ? 'actions' : 'reviewed'
+    };
+    meetingsList.unshift(meeting);
+    try { localStorage.setItem(MEETINGS_KEY, JSON.stringify(meetingsList)); } catch(e){}
+    renderMeetingsPanel();
+    closeModal('new-meeting-modal');
+    showToast('Meeting note saved ✓');
+  }
+
+  // Re-render notetaker tasks when switching to that view
+  const _origShowView = showView;
+  function showView(id) {
+    _origShowView(id);
+    if (id === 'notetaker') {
+      initNotetaker();
+    }
+  }
 
   // ── STICKY NOTES ─────────────────────────────────────────────
   const STICKY_KEY = 'flow_stickies_v1';
