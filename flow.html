@@ -40,6 +40,8 @@
       --hub-legal:    #6d28d9;
       --hub-finance:  #b45309;
       --hub-marketing:#c2410c;
+      --hub-sales:    #0e7490;
+      --hub-ops:      #374151;
       --hub-custom:   #374151;
 
       /* Status */
@@ -1413,6 +1415,85 @@
       margin: 4px 0;
     }
 
+    /* ── DOCUMENTS FILE SYSTEM ─────────────────────────────────── */
+    #view-documents { padding: 0; }
+
+    .doc-tree-hub {
+      padding: 6px 16px 4px;
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.09em;
+      color: var(--ink-4); margin-top: 8px;
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    .doc-tree-item {
+      display: flex; align-items: center; gap: 7px;
+      padding: 6px 16px; font-size: 12px; font-weight: 500;
+      color: var(--ink-2); cursor: pointer;
+      border-left: 2px solid transparent;
+      transition: all 0.12s; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .doc-tree-item:hover { background: var(--surface-2); color: var(--ink); }
+
+    .doc-tree-item.active {
+      background: var(--indigo-light);
+      color: var(--indigo);
+      border-left-color: var(--indigo);
+      font-weight: 600;
+    }
+
+    .doc-tree-ws {
+      padding: 5px 16px 5px 32px;
+      font-size: 11px; font-weight: 500;
+      color: var(--ink-3); cursor: pointer;
+      border-left: 2px solid transparent;
+      transition: all 0.12s; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    .doc-tree-ws:hover { background: var(--surface-2); color: var(--ink); }
+    .doc-tree-ws.active { background: var(--indigo-light); color: var(--indigo); border-left-color: var(--indigo); font-weight: 600; }
+
+    .doc-file-row {
+      display: flex; align-items: center; gap: 14px;
+      padding: 11px 20px;
+      border-bottom: 0.5px solid var(--border);
+      transition: background 0.1s; cursor: default;
+    }
+
+    .doc-file-row:hover { background: var(--surface-2); }
+
+    .doc-file-icon {
+      width: 36px; height: 36px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+
+    .doc-source-badge {
+      font-size: 9px; font-weight: 700;
+      padding: 2px 7px; border-radius: 10px;
+      white-space: nowrap; flex-shrink: 0;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+
+    .src-formflow  { background: #f0fdfa; color: #0d9488; }
+    .src-signflow  { background: #f5f3ff; color: #7c3aed; }
+    .src-upload    { background: var(--indigo-light); color: var(--indigo); }
+    .src-generated { background: #fffbeb; color: #b45309; }
+    .src-notetaker { background: #f0fdf4; color: #166534; }
+
+    .doc-folder-card {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 20px;
+      border-bottom: 0.5px solid var(--border);
+      cursor: pointer; transition: background 0.1s;
+    }
+
+    .doc-folder-card:hover { background: var(--surface-2); }
+
     /* ── NOTETAKER VIEW ────────────────────────────────────────── */
     .nt-grid {
       display: grid;
@@ -2426,39 +2507,65 @@
           </div>
         </div>
 
-        <!-- Search + filters -->
-        <div style="display:flex;gap:10px;margin-bottom:20px;align-items:center">
-          <input id="doc-search" class="form-input" placeholder="Search documents…" style="flex:1;max-width:360px" oninput="renderDocuments()">
-          <button class="filter-btn active" id="doc-filter-all" onclick="setDocFilter(this,'all')">All</button>
-          <button class="filter-btn" id="doc-filter-formflow" onclick="setDocFilter(this,'formflow')">FormFlow</button>
-          <button class="filter-btn" id="doc-filter-signflow" onclick="setDocFilter(this,'signflow')">SignFlow</button>
-          <button class="filter-btn" id="doc-filter-uploads" onclick="setDocFilter(this,'uploads')">Uploaded</button>
-        </div>
+        <!-- ── DOCUMENTS — full file system ──────────────────── -->
+        <div style="display:flex;gap:0;height:calc(100vh - 56px);margin:-24px;overflow:hidden">
 
-        <!-- Drop zone -->
-        <div id="doc-dropzone" style="border:2px dashed var(--border-2);border-radius:var(--radius-lg);padding:28px;text-align:center;margin-bottom:20px;background:var(--surface);transition:all 0.15s;display:none">
-          <div style="font-size:28px;margin-bottom:8px">📁</div>
-          <div style="font-size:14px;font-weight:600;color:var(--ink-2);margin-bottom:4px">Drop files here to upload</div>
-          <div style="font-size:12px;color:var(--ink-4)">PDF, DOCX, images and more</div>
-        </div>
-
-        <!-- Stats row -->
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px" id="doc-stats-row">
-          <div class="stat-card"><div class="stat-label">Total files</div><div class="stat-value" id="doc-stat-total">0</div></div>
-          <div class="stat-card"><div class="stat-label">FormFlow collections</div><div class="stat-value" style="color:var(--ff,#0d9488)" id="doc-stat-ff">0</div></div>
-          <div class="stat-card"><div class="stat-label">Signed packages</div><div class="stat-value" style="color:#7c3aed" id="doc-stat-sf">0</div></div>
-          <div class="stat-card"><div class="stat-label">Uploaded files</div><div class="stat-value" style="color:var(--indigo)" id="doc-stat-up">0</div></div>
-        </div>
-
-        <!-- Document list -->
-        <div class="panel" id="doc-list-panel">
-          <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid var(--border)">
-            <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4)" id="doc-list-label">All documents</span>
-            <span style="font-size:12px;color:var(--ink-4)" id="doc-list-count"></span>
+          <!-- Folder tree sidebar -->
+          <div id="doc-sidebar" style="width:240px;min-width:240px;border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow:hidden">
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;color:var(--ink-4)">File System</span>
+              <label style="cursor:pointer;font-size:18px;color:var(--ink-4);line-height:1" title="Upload file">
+                ＋
+                <input type="file" multiple hidden onchange="handleDocUpload(event)">
+              </label>
+            </div>
+            <div style="flex:1;overflow-y:auto;padding:8px 0;scrollbar-width:thin" id="doc-tree"></div>
+            <div style="padding:10px 12px;border-top:1px solid var(--border)">
+              <button class="btn-ghost" style="width:100%;font-size:12px;padding:7px" onclick="setDocView('all','All Documents','')">
+                🔍 Search all files
+              </button>
+            </div>
           </div>
-          <div id="doc-list"></div>
+
+          <!-- Main file area -->
+          <div style="flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden">
+
+            <!-- Toolbar -->
+            <div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--surface);flex-shrink:0">
+              <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">
+                <span style="font-size:12px;color:var(--ink-4)" id="doc-breadcrumb">All Documents</span>
+              </div>
+              <input id="doc-search" class="form-input" placeholder="Search files…" style="width:220px;padding:7px 12px;font-size:12px" oninput="renderFileList()">
+              <label class="btn-ghost" style="cursor:pointer;font-size:12px;padding:7px 14px">
+                ↑ Upload
+                <input type="file" multiple hidden onchange="handleDocUpload(event)">
+              </label>
+              <button class="btn-primary" style="font-size:12px;padding:7px 14px" onclick="openCreateFileModal()">+ Create</button>
+            </div>
+
+            <!-- Drop zone -->
+            <div id="doc-dropzone" style="display:none;margin:12px 20px;border:2px dashed var(--indigo);border-radius:10px;padding:20px;text-align:center;background:var(--indigo-light)">
+              <div style="font-size:13px;font-weight:600;color:var(--indigo)">📁 Drop files to upload into current folder</div>
+            </div>
+
+            <!-- Stats bar -->
+            <div style="display:flex;gap:0;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface)">
+              <div id="ds-total"  style="flex:1;padding:10px 20px;border-right:1px solid var(--border)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4)">Total files</div><div style="font-size:18px;font-family:'Instrument Serif',serif;color:var(--ink)" id="dstat-total">0</div></div>
+              <div id="ds-ff"     style="flex:1;padding:10px 20px;border-right:1px solid var(--border)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4)">FormFlow</div><div style="font-size:18px;font-family:'Instrument Serif',serif;color:#0d9488" id="dstat-ff">0</div></div>
+              <div id="ds-sf"     style="flex:1;padding:10px 20px;border-right:1px solid var(--border)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4)">SignFlow</div><div style="font-size:18px;font-family:'Instrument Serif',serif;color:#7c3aed" id="dstat-sf">0</div></div>
+              <div id="ds-up"     style="flex:1;padding:10px 20px;border-right:1px solid var(--border)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4)">Uploaded</div><div style="font-size:18px;font-family:'Instrument Serif',serif;color:var(--indigo)" id="dstat-up">0</div></div>
+              <div id="ds-gen"    style="flex:1;padding:10px 20px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4)">Generated</div><div style="font-size:18px;font-family:'Instrument Serif',serif;color:#b45309" id="dstat-gen">0</div></div>
+            </div>
+
+            <!-- File list -->
+            <div style="flex:1;overflow-y:auto;scrollbar-width:thin" id="doc-file-area">
+              <div id="doc-list" style="padding:0"></div>
+            </div>
+
+          </div>
+
         </div>
-      </div>
+
 
       <!-- ── CONTACTS STUB ──────────────────────────────────────── -->
       <div class="view" id="view-contacts">
@@ -2831,6 +2938,49 @@
   </div>
 </div>
 
+<!-- ── CREATE FILE MODAL ─────────────────────────────────────── -->
+<div class="modal-overlay" id="create-file-modal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title">Create new file</div>
+      <div class="modal-close" onclick="closeModal('create-file-modal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label">File name</label>
+        <input class="form-input" id="create-file-name" placeholder="e.g. Buyer Agreement — John Smith">
+      </div>
+      <div class="form-row">
+        <label class="form-label">File type</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px" id="create-file-type-grid">
+          <div class="hub-type-btn selected" onclick="selectCreateType(this,'pdf')">📄<span>PDF</span></div>
+          <div class="hub-type-btn" onclick="selectCreateType(this,'docx')">📝<span>Word doc</span></div>
+          <div class="hub-type-btn" onclick="selectCreateType(this,'sheet')">📊<span>Spreadsheet</span></div>
+          <div class="hub-type-btn" onclick="selectCreateType(this,'note')">🗒<span>Note</span></div>
+          <div class="hub-type-btn" onclick="selectCreateType(this,'template')">📋<span>From template</span></div>
+          <div class="hub-type-btn" onclick="selectCreateType(this,'folder')">📁<span>Folder</span></div>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Save to</label>
+        <select class="form-input" id="create-file-hub">
+          <option value="">— Choose hub —</option>
+        </select>
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label">Workspace (optional)</label>
+        <select class="form-input" id="create-file-ws">
+          <option value="">— General hub folder —</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('create-file-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveCreatedFile()">Create file</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── STICKY NOTES SLIDE PANEL ──────────────────────────────── -->
 <div class="sticky-panel" id="sticky-panel">
   <div class="sticky-panel-header">
@@ -2923,11 +3073,12 @@
     <div class="modal-body">
       <div class="form-row">
         <label class="form-label">Workspace name</label>
-        <input class="form-input" id="new-ws-name" placeholder="e.g. 12 Oak Street — Purchase">
+        <input class="form-input" id="new-ws-name" placeholder="e.g. Greenfield Devs — Proposal">
       </div>
       <div class="form-row">
         <label class="form-label">Hub</label>
-        <select class="form-input" id="new-ws-hub">
+        <select class="form-input" id="new-ws-hub" onchange="updateWsTypes()">
+          <option>Sales</option>
           <option>Deals</option>
           <option>HR</option>
           <option>Legal</option>
@@ -2937,18 +3088,16 @@
       </div>
       <div class="form-row">
         <label class="form-label">Type</label>
-        <div class="hub-type-grid">
-          <div class="hub-type-btn selected" onclick="selectType(this)">🏠<span>Deal</span></div>
-          <div class="hub-type-btn" onclick="selectType(this)">👤<span>Client</span></div>
-          <div class="hub-type-btn" onclick="selectType(this)">⚖️<span>Matter</span></div>
-          <div class="hub-type-btn" onclick="selectType(this)">👔<span>Employee</span></div>
-          <div class="hub-type-btn" onclick="selectType(this)">📋<span>Project</span></div>
-          <div class="hub-type-btn" onclick="selectType(this)">📁<span>Other</span></div>
-        </div>
+        <select class="form-input" id="new-ws-type">
+          <option>Lead</option>
+          <option>Proposal</option>
+          <option>Quote</option>
+          <option>Opportunity</option>
+        </select>
       </div>
       <div class="form-row">
         <label class="form-label">Client name (optional)</label>
-        <input class="form-input" id="new-ws-client" placeholder="e.g. John Smith">
+        <input class="form-input" id="new-ws-client" placeholder="e.g. Greenfield Developments">
       </div>
     </div>
     <div class="modal-footer">
@@ -3028,14 +3177,17 @@
 
   // ── DEMO DATA ───────────────────────────────────────────────
   const demoWorkspaces = [
-    { id:1, name:'12 Main Road — Purchase',        hub:'Deals',   type:'Deal',     client:'John Smith',    status:'progress',  updated:'2h ago',  icon:'🏠', progress:65 },
-    { id:2, name:'Sandy Close — Sale',             hub:'Deals',   type:'Deal',     client:'Mary Jacobs',   status:'docs',      updated:'5h ago',  icon:'🏠', progress:40 },
-    { id:3, name:'Employee Onboarding — Thabo M.', hub:'HR',      type:'Employee', client:'Thabo Mokoena', status:'progress',  updated:'1d ago',  icon:'👔', progress:30 },
-    { id:4, name:'Acme Corp — Lease Agreement',    hub:'Legal',   type:'Matter',   client:'Acme Corp',     status:'signature', updated:'1d ago',  icon:'⚖️', progress:85 },
-    { id:5, name:'Trust Account — May 2025',       hub:'Finance', type:'Other',    client:'Various',       status:'completed', updated:'2d ago',  icon:'💰', progress:100 },
-    { id:6, name:'Van der Merwe — Bond Application',hub:'Deals',  type:'Deal',     client:'P van der Merwe',status:'docs',     updated:'3d ago',  icon:'🏠', progress:55 },
-    { id:7, name:'Sarah Nkosi — FICA Pack',        hub:'Legal',   type:'Client',   client:'Sarah Nkosi',   status:'hold',      updated:'4d ago',  icon:'📋', progress:20 },
-    { id:8, name:'Winter Campaign Q3',             hub:'Marketing',type:'Project', client:'Internal',      status:'progress',  updated:'5d ago',  icon:'📣', progress:70 },
+    { id:1,  name:'12 Main Road — Purchase',        hub:'Deals',   type:'Purchase',    client:'John Smith',      status:'progress',  updated:'2h ago',  icon:'🏠', progress:65 },
+    { id:2,  name:'Sandy Close — Sale',             hub:'Deals',   type:'Sale',        client:'Mary Jacobs',     status:'docs',      updated:'5h ago',  icon:'🏠', progress:40 },
+    { id:3,  name:'Employee Onboarding — Thabo M.', hub:'HR',      type:'Employee',    client:'Thabo Mokoena',   status:'progress',  updated:'1d ago',  icon:'👔', progress:30 },
+    { id:4,  name:'Acme Corp — Lease Agreement',    hub:'Legal',   type:'Matter',      client:'Acme Corp',       status:'signature', updated:'1d ago',  icon:'⚖️', progress:85 },
+    { id:5,  name:'Trust Account — May 2025',       hub:'Finance', type:'Recon',       client:'Various',         status:'completed', updated:'2d ago',  icon:'💰', progress:100 },
+    { id:6,  name:'Van der Merwe — Bond Application',hub:'Deals',  type:'Bond Application',client:'P van der Merwe',status:'docs', updated:'3d ago',  icon:'🏠', progress:55 },
+    { id:7,  name:'Sarah Nkosi — FICA Pack',        hub:'Legal',   type:'FICA Pack',   client:'Sarah Nkosi',     status:'hold',      updated:'4d ago',  icon:'📋', progress:20 },
+    { id:8,  name:'Winter Campaign Q3',             hub:'Marketing',type:'Campaign',   client:'Internal',        status:'progress',  updated:'5d ago',  icon:'📣', progress:70 },
+    { id:9,  name:'Greenfield Devs — Proposal',    hub:'Sales',   type:'Proposal',    client:'Greenfield Devs', status:'progress',  updated:'3h ago',  icon:'📈', progress:50 },
+    { id:10, name:'Sandton Block — Lead',           hub:'Sales',   type:'Lead',        client:'Sipho Dlamini',   status:'progress',  updated:'6h ago',  icon:'📈', progress:20 },
+    { id:11, name:'Q3 Agency Retainer — Quote',    hub:'Sales',   type:'Quote',       client:'Blue Ocean Media',status:'docs',      updated:'1d ago',  icon:'📈', progress:75 },
   ];
 
   const demoTasks = [
@@ -3055,12 +3207,107 @@
   ];
 
   const demoHubs = [
-    { name:'Deals',     icon:'🏠', color:'var(--hub-deals)',     desc:'Property transactions, OTPs, mandates',       workspaces:32, active:24, completed:8  },
-    { name:'HR',        icon:'👔', color:'var(--hub-hr)',        desc:'Employee onboarding, contracts, policies',    workspaces:24, active:18, completed:6  },
-    { name:'Legal',     icon:'⚖️', color:'var(--hub-legal)',    desc:'Client matters, FICA/KYC, precedents',        workspaces:12, active:9,  completed:3  },
-    { name:'Finance',   icon:'💰', color:'var(--hub-finance)',   desc:'Trust accounts, bond applications, invoices', workspaces:16, active:11, completed:5  },
-    { name:'Marketing', icon:'📣', color:'var(--hub-marketing)', desc:'Campaigns, content, outreach sequences',     workspaces:12, active:10, completed:2  },
+    {
+      name: 'Sales',
+      icon: '📈',
+      color: 'var(--hub-sales)',
+      desc: 'Pipeline, leads, proposals and quotes',
+      workspaces: 18, active: 14, completed: 4,
+      wsTypes: ['Lead', 'Proposal', 'Quote', 'Opportunity'],
+      sections: [
+        { label: 'Pipeline',      icon: '📊', desc: 'Active leads and opportunities by stage' },
+        { label: 'Proposals',     icon: '📝', desc: 'Drafted, sent and accepted proposals' },
+        { label: 'Quotes',        icon: '💬', desc: 'Pricing quotes linked to clients' },
+        { label: 'Won / Lost',    icon: '🏆', desc: 'Closed deals and lost analysis' },
+      ],
+      tools: ['FormFlow intake', 'SignFlow', 'FlowMail sequences', 'CRM contacts'],
+      kpis: ['Pipeline value', 'Conversion rate', 'Avg deal size', 'Time to close'],
+    },
+    {
+      name: 'Deals',
+      icon: '🏠',
+      color: 'var(--hub-deals)',
+      desc: 'Property transactions, OTPs and mandates',
+      workspaces: 32, active: 24, completed: 8,
+      wsTypes: ['Purchase', 'Sale', 'Rental', 'Bond Application', 'Mandate'],
+      sections: [
+        { label: 'Active Deals',   icon: '🔄', desc: 'Transactions currently in progress' },
+        { label: 'FICA / KYC',    icon: '🛡', desc: 'Compliance documents per party' },
+        { label: 'Bond Tracker',  icon: '🏦', desc: 'Bond applications and bank statuses' },
+        { label: 'Conveyancing',  icon: '⚖️', desc: 'Transfer progress and attorney tasks' },
+      ],
+      tools: ['FormFlow FICA', 'SignFlow OTP', 'PFA card', 'Trust account'],
+      kpis: ['Active deals', 'Avg days to close', 'FICA completion %', 'Commission pipeline'],
+    },
+    {
+      name: 'HR',
+      icon: '👔',
+      color: 'var(--hub-hr)',
+      desc: 'People, onboarding, contracts and leave',
+      workspaces: 24, active: 18, completed: 6,
+      wsTypes: ['Employee', 'Contractor', 'Leave Request', 'Disciplinary', 'Recruitment'],
+      sections: [
+        { label: 'Onboarding',    icon: '🚀', desc: 'New hire checklists and document collection' },
+        { label: 'Contracts',     icon: '📄', desc: 'Employment agreements and amendments' },
+        { label: 'Leave',         icon: '🌴', desc: 'Leave requests, balances and approvals' },
+        { label: 'Performance',   icon: '📈', desc: 'Reviews, goals and disciplinary records' },
+      ],
+      tools: ['FormFlow onboarding', 'SignFlow contracts', 'Document vault', 'Notetaker 1-on-1s'],
+      kpis: ['Headcount', 'Open positions', 'Leave days taken', 'Onboarding completion'],
+    },
+    {
+      name: 'Legal',
+      icon: '⚖️',
+      color: 'var(--hub-legal)',
+      desc: 'Matters, FICA / KYC and compliance',
+      workspaces: 12, active: 9, completed: 3,
+      wsTypes: ['Matter', 'Client File', 'FICA Pack', 'Compliance Review', 'Dispute'],
+      sections: [
+        { label: 'Active Matters', icon: '📂', desc: 'Open legal matters and case tracking' },
+        { label: 'FICA Vault',    icon: '🛡', desc: 'KYC documents, expiry tracking, audit log' },
+        { label: 'Precedents',    icon: '📚', desc: 'Template library of legal documents' },
+        { label: 'Disputes',      icon: '⚠️', desc: 'Claims, tribunal and correspondence' },
+      ],
+      tools: ['FormFlow FICA', 'SignFlow', 'Document vault', 'CRM contacts'],
+      kpis: ['Open matters', 'FICA compliance %', 'Pending signatures', 'Overdue reviews'],
+    },
+    {
+      name: 'Finance',
+      icon: '💰',
+      color: 'var(--hub-finance)',
+      desc: 'Invoices, trust accounts and reporting',
+      workspaces: 16, active: 11, completed: 5,
+      wsTypes: ['Invoice', 'Trust Account', 'Bond Application', 'Budget', 'Recon'],
+      sections: [
+        { label: 'Invoicing',     icon: '🧾', desc: 'Issued invoices, payments and overdue' },
+        { label: 'Trust Account', icon: '🏦', desc: 'Deposits, releases and monthly reconciliation' },
+        { label: 'Budgets',       icon: '📊', desc: 'Departmental budgets vs actuals' },
+        { label: 'Reports',       icon: '📈', desc: 'P&L, cash flow and custom exports' },
+      ],
+      tools: ['FormFlow billing', 'Document vault', 'Reports', 'Notetaker meetings'],
+      kpis: ['Revenue MTD', 'Outstanding invoices', 'Trust balance', 'Expenses vs budget'],
+    },
+    {
+      name: 'Marketing',
+      icon: '📣',
+      color: 'var(--hub-marketing)',
+      desc: 'Campaigns, content and outreach',
+      workspaces: 12, active: 10, completed: 2,
+      wsTypes: ['Campaign', 'Content Piece', 'Email Sequence', 'Social', 'Event'],
+      sections: [
+        { label: 'Campaigns',     icon: '🎯', desc: 'Active and planned marketing campaigns' },
+        { label: 'Content',       icon: '✍️', desc: 'Blog, social and email content pipeline' },
+        { label: 'FlowMail',     icon: '✉️', desc: 'Email sequences, automation and analytics' },
+        { label: 'Analytics',     icon: '📊', desc: 'Campaign performance and lead sources' },
+      ],
+      tools: ['FlowMail', 'FormFlow lead capture', 'CRM contacts', 'Reports'],
+      kpis: ['Leads generated', 'Email open rate', 'Campaign ROI', 'Content published'],
+    },
   ];
+
+  // Hub workspace type map — used when creating a new workspace inside a hub
+  const HUB_WS_TYPES = Object.fromEntries(demoHubs.map(h => [h.name, h.wsTypes || []]));
+
 
   // ── AUTH ────────────────────────────────────────────────────
   async function sendOTP() {
@@ -3397,8 +3644,8 @@
     const hubSel = document.getElementById('new-ws-hub');
     const hub    = hubSel.value;
     const client = document.getElementById('new-ws-client').value.trim();
-    const typeEl = document.querySelector('#new-workspace-modal .hub-type-btn.selected span');
-    const type   = typeEl ? typeEl.textContent.toLowerCase() : 'client';
+    const typeSel = document.getElementById('new-ws-type');
+    const type   = typeSel ? typeSel.value : 'General';
 
     if (!name) { showToast('Please enter a workspace name'); return; }
 
@@ -3835,45 +4082,87 @@
     const grid = document.getElementById('hubs-full-grid');
     const data = hubs || demoHubs;
 
-    // Handle live hub records from ff_workspaces
     const formatted = data.map(h => {
       const isLive = !!h.organisation_id;
+      const hubDef = demoHubs.find(d => d.name === h.name) || {};
       return {
         name:       h.name,
         icon:       isLive ? (h.metadata?.icon || '🗂') : h.icon,
-        color:      isLive ? (h.metadata?.color || '#4f46e5') : h.color.replace('var(--hub-deals)','#1a5c3a').replace('var(--hub-hr)','#1d4ed8').replace('var(--hub-legal)','#6d28d9').replace('var(--hub-finance)','#b45309').replace('var(--hub-marketing)','#c2410c'),
+        color:      isLive ? (h.metadata?.color || '#4f46e5') : h.color.replace('var(--hub-deals)','#1a5c3a').replace('var(--hub-hr)','#1d4ed8').replace('var(--hub-legal)','#6d28d9').replace('var(--hub-finance)','#b45309').replace('var(--hub-marketing)','#c2410c').replace('var(--hub-sales)','#0e7490').replace('var(--hub-ops)','#374151'),
         desc:       isLive ? (h.metadata?.description || '') : h.desc,
         workspaces: isLive ? liveWorkspaces.filter(w => w.metadata?.hub === h.name).length : h.workspaces,
         active:     isLive ? liveWorkspaces.filter(w => w.metadata?.hub === h.name && w.status !== 'completed').length : h.active,
         completed:  isLive ? liveWorkspaces.filter(w => w.metadata?.hub === h.name && w.status === 'completed').length : h.completed,
+        sections:   hubDef.sections || [],
+        tools:      hubDef.tools    || [],
+        kpis:       hubDef.kpis     || [],
+        wsTypes:    hubDef.wsTypes  || [],
       };
     });
 
-    grid.innerHTML = formatted.map((h, i) => `
-      <div class="hub-full-card">
-        <div style="position:absolute;top:0;left:0;right:0;height:4px;background:${h.color};border-radius:14px 14px 0 0"></div>
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div class="hub-full-icon" style="background:${h.color}18;margin-bottom:14px">${h.icon}</div>
-          <div class="ws-menu" onclick="event.stopPropagation();showHubMenu(event,${i},'${h.name}')">⋯</div>
+    grid.innerHTML = formatted.map((h, i) => {
+      const sectionsHTML = h.sections.length ? `
+        <div style="margin:14px 0 8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-4)">Sections</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          ${h.sections.map(s => `
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface-2);border-radius:7px;font-size:12px;cursor:pointer" onclick="filterByHub('${h.name}')">
+              <span>${s.icon}</span>
+              <div>
+                <div style="font-weight:600;color:var(--ink)">${s.label}</div>
+                <div style="font-size:10px;color:var(--ink-4)">${s.desc}</div>
+              </div>
+            </div>
+          `).join('')}
         </div>
-        <div class="hub-full-name" onclick="filterByHub('${h.name}')" style="cursor:pointer">${h.name}</div>
-        <div class="hub-full-desc">${h.desc}</div>
-        <div class="hub-full-stats">
-          <div class="hub-stat">
-            <div class="hub-stat-val">${h.workspaces}</div>
-            <div class="hub-stat-lbl">Total</div>
+      ` : '';
+
+      const toolsHTML = h.tools.length ? `
+        <div style="margin:12px 0 6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-4)">Integrated tools</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          ${h.tools.map(t => `<span style="font-size:10px;font-weight:600;padding:3px 8px;background:${h.color}12;color:${h.color};border-radius:20px;border:1px solid ${h.color}30">${t}</span>`).join('')}
+        </div>
+      ` : '';
+
+      const wsTypesHTML = h.wsTypes.length ? `
+        <div style="margin:12px 0 6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-4)">Workspace types</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          ${h.wsTypes.map(t => `<span style="font-size:10px;font-weight:600;padding:3px 8px;background:var(--surface-2);color:var(--ink-3);border-radius:20px;border:1px solid var(--border)">${t}</span>`).join('')}
+        </div>
+      ` : '';
+
+      return `
+        <div class="hub-full-card">
+          <div style="position:absolute;top:0;left:0;right:0;height:4px;background:${h.color};border-radius:14px 14px 0 0"></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div class="hub-full-icon" style="background:${h.color}18;margin-bottom:10px">${h.icon}</div>
+            <div class="ws-menu" onclick="event.stopPropagation();showHubMenu(event,${i},'${h.name}')">⋯</div>
           </div>
-          <div class="hub-stat">
-            <div class="hub-stat-val">${h.active}</div>
-            <div class="hub-stat-lbl">Active</div>
+          <div class="hub-full-name" onclick="filterByHub('${h.name}')" style="cursor:pointer">${h.name}</div>
+          <div class="hub-full-desc">${h.desc}</div>
+          <div class="hub-full-stats">
+            <div class="hub-stat">
+              <div class="hub-stat-val">${h.workspaces}</div>
+              <div class="hub-stat-lbl">Total</div>
+            </div>
+            <div class="hub-stat">
+              <div class="hub-stat-val">${h.active}</div>
+              <div class="hub-stat-lbl">Active</div>
+            </div>
+            <div class="hub-stat">
+              <div class="hub-stat-val">${h.completed}</div>
+              <div class="hub-stat-lbl">Done</div>
+            </div>
           </div>
-          <div class="hub-stat">
-            <div class="hub-stat-val">${h.completed}</div>
-            <div class="hub-stat-lbl">Done</div>
+          ${sectionsHTML}
+          ${wsTypesHTML}
+          ${toolsHTML}
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:8px">
+            <button class="btn-ghost" style="flex:1;font-size:12px;padding:7px" onclick="filterByHub('${h.name}')">Open hub →</button>
+            <button class="btn-ghost" style="font-size:12px;padding:7px 12px" onclick="openNewWorkspaceModal()" title="New workspace in ${h.name}">+ WS</button>
           </div>
         </div>
-      </div>
-    `).join('') + `
+      `;
+    }).join('') + `
       <div class="hub-full-card hub-add" onclick="openNewHubModal()" style="min-height:180px">
         <div style="font-size:28px;margin-bottom:8px">+</div>
         <div style="font-size:14px;font-weight:600">Add Hub</div>
@@ -3970,7 +4259,7 @@
 
   // ── HELPERS ─────────────────────────────────────────────────
   function hubBg(hub) {
-    const m = { Deals:'#e8f3ed', HR:'#eff6ff', Legal:'#f5f3ff', Finance:'#fffbeb', Marketing:'#fff7ed', Other:'#f1f5f9' };
+    const m = { Sales:'#ecfeff', Deals:'#e8f3ed', HR:'#eff6ff', Legal:'#f5f3ff', Finance:'#fffbeb', Marketing:'#fff7ed', Other:'#f1f5f9' };
     return m[hub] || '#f1f5f9';
   }
 
@@ -3981,7 +4270,7 @@
     const formatted = data.map(h => {
       const isLive  = !!h.organisation_id;
       const icon    = isLive ? (h.metadata?.icon  || '🗂') : h.icon;
-      const color   = isLive ? (h.metadata?.color || '#4f46e5') : h.color.replace('var(--hub-deals)','#1a5c3a').replace('var(--hub-hr)','#1d4ed8').replace('var(--hub-legal)','#6d28d9').replace('var(--hub-finance)','#b45309').replace('var(--hub-marketing)','#c2410c').replace('var(--hub-custom)','#374151');
+      const color   = isLive ? (h.metadata?.color || '#4f46e5') : h.color.replace('var(--hub-deals)','#1a5c3a').replace('var(--hub-hr)','#1d4ed8').replace('var(--hub-legal)','#6d28d9').replace('var(--hub-finance)','#b45309').replace('var(--hub-marketing)','#c2410c').replace('var(--hub-sales)','#0e7490').replace('var(--hub-ops)','#374151').replace('var(--hub-custom)','#374151');
       const count   = isLive ? liveWorkspaces.filter(w => w.metadata?.hub === h.name).length : h.workspaces;
       return { name: h.name, icon, color, count };
     });
@@ -4016,6 +4305,15 @@
   // ── MODALS ──────────────────────────────────────────────────
   function openNewWorkspaceModal() {
     document.getElementById('new-workspace-modal').classList.add('open');
+    updateWsTypes(); // init type options for default hub
+  }
+
+  function updateWsTypes() {
+    const hub = document.getElementById('new-ws-hub')?.value;
+    const typeSel = document.getElementById('new-ws-type');
+    if (!typeSel) return;
+    const types = HUB_WS_TYPES[hub] || ['General'];
+    typeSel.innerHTML = types.map(t => `<option>${t}</option>`).join('');
   }
 
   function openNewHubModal() {
@@ -5054,147 +5352,359 @@
     showToast('Meeting note saved ✓');
   }
 
-  // ── DOCUMENTS ────────────────────────────────────────────────
-  const DOCS_KEY = 'flow_documents_v1';
-  let docFilter = 'all';
-  let docFiles  = [];
+  // ── DOCUMENTS FILE SYSTEM ────────────────────────────────────
+  const DOCS_KEY = 'flow_documents_v2';
+  let docFiles   = [];
+  let docView    = { type: 'all', hub: '', ws: '', label: 'All Documents' };
+  let createFileType = 'pdf';
+
+  // Standard subfolders every workspace gets
+  const WS_FOLDERS = [
+    { key: 'formflow',  label: 'FormFlow',         icon: '📋', color: '#f0fdfa', desc: 'Collected forms, FICA packs, onboarding submissions' },
+    { key: 'signflow',  label: 'Signed Documents',  icon: '✍️', color: '#f5f3ff', desc: 'Executed agreements, signed OTPs, completed packages' },
+    { key: 'upload',    label: 'Uploaded',           icon: '📁', color: '#eef2ff', desc: 'Manually uploaded files — title deeds, certificates, IDs' },
+    { key: 'generated', label: 'Generated',          icon: '📊', color: '#fffbeb', desc: 'DOCX and PDF outputs generated from templates' },
+    { key: 'notetaker', label: 'Meeting Notes',      icon: '🎙', color: '#f0fdf4', desc: 'Transcripts and action item exports from Notetaker' },
+  ];
+
+  const SOURCE_META = {
+    formflow:  { label: 'FormFlow',  cls: 'src-formflow',  icon: '📋', bg: '#f0fdfa' },
+    signflow:  { label: 'SignFlow',  cls: 'src-signflow',  icon: '✍️', bg: '#f5f3ff' },
+    upload:    { label: 'Uploaded',  cls: 'src-upload',    icon: '📄', bg: '#eef2ff' },
+    generated: { label: 'Generated', cls: 'src-generated', icon: '📊', bg: '#fffbeb' },
+    notetaker: { label: 'Notetaker', cls: 'src-notetaker', icon: '🎙', bg: '#f0fdf4' },
+  };
+
+  const HUB_COLORS = {
+    Sales: '#0e7490', Deals: '#1a5c3a', HR: '#1d4ed8',
+    Legal: '#6d28d9', Finance: '#b45309', Marketing: '#c2410c'
+  };
 
   const demoDocs = [
-    { id:'d1', name:'12 Main Road — OTP v3.pdf',      type:'formflow', source:'FormFlow Collection', ws:'12 Main Road — Purchase',  size:'248 KB', date:'Today, 09:22',    icon:'📋' },
-    { id:'d2', name:'John Smith — FICA Pack.pdf',      type:'formflow', source:'FormFlow Collection', ws:'12 Main Road — Purchase',  size:'1.2 MB', date:'Today, 09:20',    icon:'📋' },
-    { id:'d3', name:'Acme Corp Lease — Signed.pdf',    type:'signflow', source:'SignFlow Package',    ws:'Acme Corp — Lease',        size:'384 KB', date:'Yesterday, 14:55', icon:'✍️' },
-    { id:'d4', name:'Mary Jacobs — ID Document.pdf',   type:'uploads',  source:'Uploaded',            ws:'Sandy Close — Sale',       size:'892 KB', date:'Mon, 11:03',       icon:'📄' },
-    { id:'d5', name:'Trust Account May 2025.xlsx',     type:'uploads',  source:'Uploaded',            ws:'General',                  size:'56 KB',  date:'Mon, 09:14',       icon:'📊' },
-    { id:'d6', name:'Thabo Nkosi — Contract.docx',     type:'formflow', source:'FormFlow Collection', ws:'HR Hub',                   size:'120 KB', date:'Fri, 16:30',       icon:'📋' },
-    { id:'d7', name:'Sandton Block — Mandate.pdf',     type:'uploads',  source:'Uploaded',            ws:'General',                  size:'210 KB', date:'Fri, 10:45',       icon:'📄' },
-    { id:'d8', name:'Lease Agreement — Signed v2.pdf', type:'signflow', source:'SignFlow Package',    ws:'12 Main Road — Purchase',  size:'445 KB', date:'Thu, 15:20',       icon:'✍️' },
+    { id:'d1',  name:'12 Main Road — OTP v3.pdf',        source:'signflow',  hub:'Deals',     ws:'12 Main Road — Purchase',  size:'248 KB', ts: Date.now()-7200000  },
+    { id:'d2',  name:'John Smith — FICA Pack.pdf',        source:'formflow',  hub:'Deals',     ws:'12 Main Road — Purchase',  size:'1.2 MB', ts: Date.now()-7500000  },
+    { id:'d3',  name:'Bond Application — ABSA.pdf',       source:'formflow',  hub:'Deals',     ws:'12 Main Road — Purchase',  size:'340 KB', ts: Date.now()-86400000 },
+    { id:'d4',  name:'Van der Merwe — FICA Pack.pdf',     source:'formflow',  hub:'Deals',     ws:'Van der Merwe — Bond Application', size:'980 KB', ts: Date.now()-259200000 },
+    { id:'d5',  name:'Acme Corp Lease — Signed.pdf',      source:'signflow',  hub:'Legal',     ws:'Acme Corp — Lease Agreement', size:'384 KB', ts: Date.now()-90000000  },
+    { id:'d6',  name:'Sarah Nkosi — ID Document.pdf',     source:'upload',    hub:'Legal',     ws:'Sarah Nkosi — FICA Pack',  size:'892 KB', ts: Date.now()-345600000 },
+    { id:'d7',  name:'Thabo Mokoena — Employment Contract.docx', source:'signflow', hub:'HR', ws:'Employee Onboarding — Thabo M.', size:'145 KB', ts: Date.now()-86400000 },
+    { id:'d8',  name:'Thabo Mokoena — Onboarding Form.pdf', source:'formflow', hub:'HR',      ws:'Employee Onboarding — Thabo M.', size:'220 KB', ts: Date.now()-90000000 },
+    { id:'d9',  name:'Trust Account May 2025.xlsx',        source:'upload',    hub:'Finance',  ws:'Trust Account — May 2025', size:'56 KB',  ts: Date.now()-172800000 },
+    { id:'d10', name:'May 2025 Recon Report.pdf',          source:'generated', hub:'Finance',  ws:'Trust Account — May 2025', size:'128 KB', ts: Date.now()-180000000 },
+    { id:'d11', name:'Q3 Campaign Brief.pdf',              source:'upload',    hub:'Marketing',ws:'Winter Campaign Q3',        size:'210 KB', ts: Date.now()-432000000 },
+    { id:'d12', name:'Campaign Results — Aug 2025.xlsx',   source:'generated', hub:'Marketing',ws:'Winter Campaign Q3',        size:'88 KB',  ts: Date.now()-440000000 },
+    { id:'d13', name:'Greenfield Devs — Proposal v2.pdf',  source:'generated', hub:'Sales',    ws:'Greenfield Devs — Proposal', size:'312 KB', ts: Date.now()-10800000  },
+    { id:'d14', name:'Sandton Block — Site Visit Notes.pdf',source:'notetaker',hub:'Sales',    ws:'Sandton Block — Lead',     size:'64 KB',  ts: Date.now()-21600000  },
+    { id:'d15', name:'Q3 Agency Retainer — Quote.pdf',     source:'signflow',  hub:'Sales',    ws:'Q3 Agency Retainer — Quote', size:'195 KB', ts: Date.now()-86400000  },
   ];
 
   function initDocuments() {
-    try { docFiles = JSON.parse(localStorage.getItem(DOCS_KEY)) || demoDocs; } catch(e) { docFiles = demoDocs; }
-    setupDocDropzone();
-    renderDocuments();
+    try { docFiles = JSON.parse(localStorage.getItem(DOCS_KEY)) || demoDocs; }
+    catch(e) { docFiles = demoDocs; }
+    renderDocTree();
+    setDocView('all', 'All Documents', '');
+    setupDocDrop();
   }
 
-  function setupDocDropzone() {
-    const zone = document.getElementById('doc-dropzone');
-    const page = document.getElementById('view-documents');
-    if (!zone || !page || page._dropBound) return;
-    page._dropBound = true;
-
-    page.addEventListener('dragover', e => { e.preventDefault(); zone.style.display = 'block'; zone.style.borderColor = 'var(--indigo)'; zone.style.background = 'var(--indigo-light)'; });
-    page.addEventListener('dragleave', e => { if (!page.contains(e.relatedTarget)) { zone.style.display = 'none'; } });
-    page.addEventListener('drop', e => {
-      e.preventDefault();
-      zone.style.display = 'none';
-      const files = [...e.dataTransfer.files];
-      addUploadedFiles(files);
-    });
-  }
-
-  function handleDocUpload(e) {
-    const files = [...e.target.files];
-    addUploadedFiles(files);
-    e.target.value = '';
-  }
-
-  function addUploadedFiles(files) {
-    files.forEach(f => {
-      const kb = Math.round(f.size / 1024);
-      const size = kb > 1024 ? (kb/1024).toFixed(1)+' MB' : kb+' KB';
-      docFiles.unshift({
-        id: 'd'+Date.now()+Math.random(),
-        name: f.name, type: 'uploads',
-        source: 'Uploaded', ws: 'General',
-        size, date: 'Just now', icon: getDocIcon(f.name)
-      });
-    });
+  function saveDocFiles() {
     try { localStorage.setItem(DOCS_KEY, JSON.stringify(docFiles)); } catch(e) {}
-    renderDocuments();
-    showToast(`${files.length} file${files.length>1?'s':''} uploaded ✓`);
   }
 
-  function getDocIcon(name) {
-    const ext = name.split('.').pop().toLowerCase();
-    if (['pdf'].includes(ext)) return '📄';
-    if (['doc','docx'].includes(ext)) return '📝';
-    if (['xls','xlsx','csv'].includes(ext)) return '📊';
-    if (['png','jpg','jpeg','gif','webp'].includes(ext)) return '🖼';
-    return '📎';
+  function renderDocTree() {
+    const tree = document.getElementById('doc-tree');
+    if (!tree) return;
+
+    const hubs = [...new Set(docFiles.map(f => f.hub))].sort();
+    // Ensure all defined hubs appear even if empty
+    const allHubs = [...new Set([...demoHubs.map(h => h.name), ...hubs])];
+
+    let html = `
+      <div class="doc-tree-item ${docView.type==='all'?'active':''}" onclick="setDocView('all','All Documents','')">
+        <span>🗂</span> All Documents
+        <span style="margin-left:auto;font-size:10px;color:var(--ink-4)">${docFiles.length}</span>
+      </div>
+    `;
+
+    allHubs.forEach(hub => {
+      const hubFiles = docFiles.filter(f => f.hub === hub);
+      const color = HUB_COLORS[hub] || '#374151';
+      const hubDef = demoHubs.find(h => h.name === hub);
+      const icon = hubDef?.icon || '🗂';
+      const isHubActive = docView.type === 'hub' && docView.hub === hub;
+
+      html += `
+        <div style="margin-top:6px">
+          <div class="doc-tree-item ${isHubActive && !docView.ws ? 'active' : ''}"
+               onclick="setDocView('hub','${hub} Hub','${hub}')"
+               style="border-left-color:${isHubActive && !docView.ws ? color : 'transparent'}">
+            <span style="font-size:13px">${icon}</span>
+            <span style="flex:1;overflow:hidden;text-overflow:ellipsis">${hub}</span>
+            <span style="font-size:10px;color:var(--ink-4)">${hubFiles.length}</span>
+          </div>
+      `;
+
+      // Workspace subfolders
+      const wsNames = [...new Set(hubFiles.map(f => f.ws).filter(Boolean))].sort();
+      wsNames.forEach(ws => {
+        const wsFiles = hubFiles.filter(f => f.ws === ws);
+        const isWsActive = docView.type === 'ws' && docView.ws === ws;
+        const shortName = ws.length > 26 ? ws.substring(0, 24) + '…' : ws;
+        html += `
+          <div class="doc-tree-ws ${isWsActive ? 'active' : ''}"
+               onclick="setDocView('ws','${escapeHTML(ws)}','${hub}','${escapeHTML(ws)}')"
+               style="border-left-color:${isWsActive ? color : 'transparent'}" title="${escapeHTML(ws)}">
+            <span style="color:${color};font-size:10px">▸</span>
+            <span style="flex:1;overflow:hidden;text-overflow:ellipsis">${escapeHTML(shortName)}</span>
+            <span style="font-size:10px;color:var(--ink-4)">${wsFiles.length}</span>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+    });
+
+    tree.innerHTML = html;
   }
 
-  function setDocFilter(btn, filter) {
-    document.querySelectorAll('#view-documents .filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    docFilter = filter;
-    renderDocuments();
+  function setDocView(type, label, hub, ws) {
+    docView = { type, label, hub: hub||'', ws: ws||'' };
+    document.getElementById('doc-breadcrumb').innerHTML = buildBreadcrumb(type, hub, ws);
+    renderDocTree();
+    renderFileList();
   }
 
-  function renderDocuments() {
+  function buildBreadcrumb(type, hub, ws) {
+    let parts = [`<span style="cursor:pointer;color:var(--indigo)" onclick="setDocView('all','All Documents','')">All Documents</span>`];
+    if (hub) parts.push(`<span style="cursor:pointer;color:var(--indigo)" onclick="setDocView('hub','${hub} Hub','${hub}')">${hub}</span>`);
+    if (ws)  parts.push(`<span style="color:var(--ink-2)">${escapeHTML(ws)}</span>`);
+    return parts.join(' <span style="color:var(--ink-4)">›</span> ');
+  }
+
+  function renderFileList() {
+    const list  = document.getElementById('doc-list');
     const search = (document.getElementById('doc-search')?.value || '').toLowerCase();
-    let data = docFiles;
-    if (docFilter !== 'all') data = data.filter(d => d.type === docFilter);
-    if (search) data = data.filter(d => d.name.toLowerCase().includes(search) || (d.ws||'').toLowerCase().includes(search));
-
-    // stats
-    document.getElementById('doc-stat-total').textContent = docFiles.length;
-    document.getElementById('doc-stat-ff').textContent    = docFiles.filter(d=>d.type==='formflow').length;
-    document.getElementById('doc-stat-sf').textContent    = docFiles.filter(d=>d.type==='signflow').length;
-    document.getElementById('doc-stat-up').textContent    = docFiles.filter(d=>d.type==='uploads').length;
-
-    const labelMap = { all:'All documents', formflow:'FormFlow collections', signflow:'SignFlow packages', uploads:'Uploaded files' };
-    document.getElementById('doc-list-label').textContent = labelMap[docFilter] || 'All documents';
-    document.getElementById('doc-list-count').textContent = data.length + ' file' + (data.length !== 1 ? 's' : '');
-
-    const list = document.getElementById('doc-list');
     if (!list) return;
 
+    let data = docFiles;
+    if (docView.type === 'hub') data = data.filter(f => f.hub === docView.hub);
+    if (docView.type === 'ws')  data = data.filter(f => f.ws  === docView.ws);
+    if (search) data = data.filter(f => f.name.toLowerCase().includes(search) || (f.ws||'').toLowerCase().includes(search) || (f.hub||'').toLowerCase().includes(search));
+
+    // Stats (always from full set)
+    document.getElementById('dstat-total').textContent = docFiles.length;
+    document.getElementById('dstat-ff').textContent    = docFiles.filter(f=>f.source==='formflow').length;
+    document.getElementById('dstat-sf').textContent    = docFiles.filter(f=>f.source==='signflow').length;
+    document.getElementById('dstat-up').textContent    = docFiles.filter(f=>f.source==='upload').length;
+    document.getElementById('dstat-gen').textContent   = docFiles.filter(f=>f.source==='generated').length;
+
     if (data.length === 0) {
-      list.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink-4);font-size:13px">No documents found. Upload a file or check FormFlow for collections.</div>';
+      list.innerHTML = `
+        <div style="padding:60px;text-align:center;color:var(--ink-4)">
+          <div style="font-size:36px;margin-bottom:12px">📂</div>
+          <div style="font-size:14px;font-weight:600;margin-bottom:6px">No files here yet</div>
+          <div style="font-size:12px;margin-bottom:16px">Files from FormFlow, SignFlow and uploads will appear here automatically</div>
+          <label class="btn-primary" style="cursor:pointer;display:inline-block">
+            ↑ Upload a file
+            <input type="file" multiple hidden onchange="handleDocUpload(event)">
+          </label>
+        </div>`;
       return;
     }
 
-    const typeColors = { formflow:'#f0fdfa', signflow:'#f5f3ff', uploads:'var(--indigo-light)' };
-    const typeBadge  = { formflow:['FormFlow','#0d9488','#f0fdfa'], signflow:['SignFlow','#7c3aed','#f5f3ff'], uploads:['Uploaded','var(--indigo)','var(--indigo-light)'] };
+    // If at hub level with no ws filter, show workspace folder cards first
+    if (docView.type === 'hub' && !docView.ws) {
+      const wsNames = [...new Set(data.map(f => f.ws).filter(Boolean))].sort();
+      const hubColor = HUB_COLORS[docView.hub] || '#374151';
+      list.innerHTML = `
+        <div style="padding:14px 20px 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-4)">Workspaces</div>
+        ${wsNames.map(ws => {
+          const wsFiles = data.filter(f => f.ws === ws);
+          const lastFile = wsFiles.sort((a,b) => (b.ts||0)-(a.ts||0))[0];
+          return `
+            <div class="doc-folder-card" onclick="setDocView('ws','${escapeHTML(ws)}','${docView.hub}','${escapeHTML(ws)}')">
+              <div style="width:38px;height:38px;border-radius:9px;background:${hubColor}14;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📂</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHTML(ws)}</div>
+                <div style="font-size:11px;color:var(--ink-4);margin-top:2px">${wsFiles.length} file${wsFiles.length!==1?'s':''} · Last updated ${stickyTimeLabel(lastFile?.ts||0)}</div>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end">
+                ${[...new Set(wsFiles.map(f=>f.source))].map(s => {
+                  const m = SOURCE_META[s] || {};
+                  return `<span class="doc-source-badge ${m.cls||''}">${m.label||s}</span>`;
+                }).join('')}
+              </div>
+              <span style="color:var(--ink-4);font-size:16px;margin-left:8px">›</span>
+            </div>
+          `;
+        }).join('')}
+        <div style="padding:14px 20px 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-4);margin-top:8px">All files in ${escapeHTML(docView.hub)}</div>
+        ${renderFileRows(data)}
+      `;
+      return;
+    }
 
-    list.innerHTML = data.map(d => {
-      const [badgeLabel, badgeColor, badgeBg] = typeBadge[d.type] || ['File','var(--ink-4)','var(--surface-2)'];
-      const isFF = d.type === 'formflow';
-      const isSF = d.type === 'signflow';
+    // Workspace view — show subfolders then files
+    if (docView.type === 'ws') {
+      const hubColor = HUB_COLORS[docView.hub] || '#374151';
+      list.innerHTML = `
+        <div style="padding:14px 20px 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-4)">Folders</div>
+        ${WS_FOLDERS.map(folder => {
+          const folderFiles = data.filter(f => f.source === folder.key);
+          return `
+            <div class="doc-folder-card" onclick="setDocView('folder','${folder.label}','${docView.hub}','${docView.ws}','${folder.key}')">
+              <div style="width:38px;height:38px;border-radius:9px;background:${folder.color};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${folder.icon}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:600;color:var(--ink)">${folder.label}</div>
+                <div style="font-size:11px;color:var(--ink-4);margin-top:2px">${folder.desc}</div>
+              </div>
+              <span style="font-size:13px;font-weight:600;color:var(--ink-3);margin-right:4px">${folderFiles.length}</span>
+              <span style="color:var(--ink-4);font-size:16px">›</span>
+            </div>
+          `;
+        }).join('')}
+        ${data.length > 0 ? `
+          <div style="padding:14px 20px 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-4);margin-top:8px">All files</div>
+          ${renderFileRows(data)}
+        ` : ''}
+      `;
+      return;
+    }
+
+    // folder / all view — just files
+    list.innerHTML = renderFileRows(data);
+  }
+
+  function renderFileRows(data) {
+    // Group by source folder
+    const sorted = [...data].sort((a,b) => (b.ts||0)-(a.ts||0));
+    return sorted.map(f => {
+      const src = SOURCE_META[f.source] || { label: f.source, cls: 'src-upload', icon: '📄', bg: '#f1f5f9' };
+      const ext = f.name.split('.').pop().toLowerCase();
+      const fileIcon = {pdf:'📄',docx:'📝',doc:'📝',xlsx:'📊',xls:'📊',png:'🖼',jpg:'🖼',jpeg:'🖼'}[ext] || '📎';
       return `
-        <div style="display:flex;align-items:center;gap:14px;padding:12px 20px;border-bottom:0.5px solid var(--border);transition:background 0.12s" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">
-          <div style="width:36px;height:36px;border-radius:8px;background:${typeColors[d.type]||'var(--surface-2)'};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${d.icon}</div>
+        <div class="doc-file-row">
+          <div class="doc-file-icon" style="background:${src.bg}">${fileIcon}</div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHTML(d.name)}</div>
+            <div style="font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHTML(f.name)}</div>
             <div style="font-size:11px;color:var(--ink-4);margin-top:2px;display:flex;align-items:center;gap:6px">
-              <span>${escapeHTML(d.ws || 'General')}</span>
-              <span>·</span><span>${d.size}</span>
-              <span>·</span><span>${d.date}</span>
+              ${f.hub  ? `<span>${escapeHTML(f.hub)}</span><span>·</span>` : ''}
+              ${f.ws   ? `<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">${escapeHTML(f.ws)}</span><span>·</span>` : ''}
+              <span>${f.size||''}</span>
+              <span>·</span>
+              <span>${stickyTimeLabel(f.ts||0)}</span>
             </div>
           </div>
-          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:${badgeBg};color:${badgeColor};flex-shrink:0">${badgeLabel}</span>
-          <div style="display:flex;gap:6px;flex-shrink:0">
-            ${isFF ? `<button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="showView('formflow')">Open in FormFlow</button>` : ''}
-            ${isSF ? `<button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="showView('signflow')">Open in SignFlow</button>` : ''}
-            <button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="deleteDoc('${d.id}')">Remove</button>
+          <span class="doc-source-badge ${src.cls}">${src.label}</span>
+          <div style="display:flex;gap:6px;flex-shrink:0;margin-left:8px">
+            <button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="deleteDoc('${f.id}')">Remove</button>
           </div>
         </div>
       `;
     }).join('');
   }
 
-  function deleteDoc(id) {
-    docFiles = docFiles.filter(d => d.id !== id);
-    try { localStorage.setItem(DOCS_KEY, JSON.stringify(docFiles)); } catch(e) {}
-    renderDocuments();
-    showToast('Document removed');
+  function handleDocUpload(e) {
+    const files = [...e.target.files];
+    if (!files.length) return;
+    files.forEach(f => {
+      const kb = Math.round(f.size / 1024);
+      docFiles.unshift({
+        id: 'd'+Date.now()+Math.random(),
+        name: f.name,
+        source: 'upload',
+        hub:  docView.hub || 'General',
+        ws:   docView.ws  || '',
+        size: kb > 1024 ? (kb/1024).toFixed(1)+' MB' : kb+' KB',
+        ts:   Date.now()
+      });
+    });
+    saveDocFiles();
+    renderDocTree();
+    renderFileList();
+    showToast(`${files.length} file${files.length>1?'s':''} uploaded ✓`);
+    e.target.value = '';
   }
 
-  // init documents when navigating to that view
+  function deleteDoc(id) {
+    docFiles = docFiles.filter(d => d.id !== id);
+    saveDocFiles();
+    renderDocTree();
+    renderFileList();
+    showToast('File removed');
+  }
+
+  function setupDocDrop() {
+    const area = document.getElementById('doc-file-area');
+    const zone = document.getElementById('doc-dropzone');
+    if (!area || area._dropBound) return;
+    area._dropBound = true;
+    area.addEventListener('dragover', e => { e.preventDefault(); if(zone) zone.style.display = 'block'; });
+    area.addEventListener('dragleave', e => { if (!area.contains(e.relatedTarget) && zone) zone.style.display = 'none'; });
+    area.addEventListener('drop', e => {
+      e.preventDefault();
+      if(zone) zone.style.display = 'none';
+      const files = [...e.dataTransfer.files];
+      files.forEach(f => {
+        const kb = Math.round(f.size / 1024);
+        docFiles.unshift({ id:'d'+Date.now()+Math.random(), name:f.name, source:'upload', hub:docView.hub||'General', ws:docView.ws||'', size:kb>1024?(kb/1024).toFixed(1)+' MB':kb+' KB', ts:Date.now() });
+      });
+      saveDocFiles(); renderDocTree(); renderFileList();
+      showToast(`${files.length} file${files.length!==1?'s':''} dropped in ✓`);
+    });
+  }
+
+  function openCreateFileModal() {
+    const hubSel = document.getElementById('create-file-hub');
+    const wsSel  = document.getElementById('create-file-ws');
+    if (hubSel) {
+      hubSel.innerHTML = '<option value="">— Choose hub —</option>' +
+        demoHubs.map(h => `<option value="${h.name}" ${docView.hub===h.name?'selected':''}>${h.icon} ${h.name}</option>`).join('');
+    }
+    if (wsSel) {
+      const wsNames = [...new Set(docFiles.map(f=>f.ws).filter(Boolean))].sort();
+      wsSel.innerHTML = '<option value="">— General hub folder —</option>' +
+        wsNames.map(ws => `<option value="${escapeHTML(ws)}" ${docView.ws===ws?'selected':''}>${escapeHTML(ws)}</option>`).join('');
+    }
+    document.getElementById('create-file-name').value = '';
+    document.getElementById('create-file-modal').classList.add('open');
+  }
+
+  function selectCreateType(el, type) {
+    document.querySelectorAll('#create-file-type-grid .hub-type-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    createFileType = type;
+  }
+
+  function saveCreatedFile() {
+    const name = document.getElementById('create-file-name').value.trim();
+    const hub  = document.getElementById('create-file-hub').value;
+    const ws   = document.getElementById('create-file-ws').value;
+    if (!name) { showToast('Enter a file name'); return; }
+    const extMap = { pdf:'.pdf', docx:'.docx', sheet:'.xlsx', note:'.md', template:'.pdf', folder:'' };
+    const ext = extMap[createFileType] || '';
+    const fullName = name.includes('.') ? name : name + ext;
+    docFiles.unshift({
+      id: 'd'+Date.now(),
+      name: fullName,
+      source: 'generated',
+      hub:  hub  || 'General',
+      ws:   ws   || '',
+      size: '—',
+      ts:   Date.now()
+    });
+    saveDocFiles();
+    renderDocTree();
+    renderFileList();
+    closeModal('create-file-modal');
+    showToast(`"${fullName}" created ✓`);
+  }
+
+  // Wire Documents nav to init
   document.querySelectorAll('.nav-item').forEach(n => {
-    if (n.textContent.includes('Documents')) {
-      const orig = n.getAttribute('onclick');
-      n.setAttribute('onclick', (orig||'') + ';initDocuments()');
+    if (n.textContent.trim().includes('Documents') && !n._docBound) {
+      n._docBound = true;
+      const orig = n.getAttribute('onclick') || '';
+      n.setAttribute('onclick', orig + ';initDocuments()');
     }
   });
 
