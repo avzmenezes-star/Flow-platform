@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM — Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --chrome: #0f1117; --chrome-text: rgba(255,255,255,0.85);
+  --chrome-muted: rgba(255,255,255,0.35); --chrome-border: rgba(255,255,255,0.08);
+  --indigo: #4f46e5; --indigo-mid: #4338ca; --indigo-light: #eef2ff;
+  --crm: #0e7490; --crm-light: #ecfeff;
+  --surface: #ffffff; --surface-2: #f8f7f4;
+  --border: #e8e5df; --border-2: #d4d0c8;
+  --ink: #1a1a1a; --ink-2: #374151; --ink-3: #6b7280; --ink-4: #9ca3af;
+  --success: #16a34a; --danger: #dc2626; --warning: #d97706;
+  --radius: 9px; --radius-lg: 14px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06); --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 10px 40px rgba(0,0,0,0.12);
+  --sidebar-w: 228px; --header-h: 56px;
+}
+body { font-family:'Instrument Sans',sans-serif; background:var(--surface-2); color:var(--ink); font-size:14px; line-height:1.5; height:100vh; overflow:hidden; display:flex; }
+
+/* SIDEBAR */
+.sidebar { width:var(--sidebar-w); min-width:var(--sidebar-w); background:var(--chrome); display:flex; flex-direction:column; height:100vh; overflow-y:auto; scrollbar-width:none; flex-shrink:0; }
+.sidebar::-webkit-scrollbar { display:none; }
+.sidebar-header { padding:18px 16px 14px; border-bottom:1px solid var(--chrome-border); }
+.wordmark { font-family:'Instrument Serif',serif; font-size:22px; color:white; letter-spacing:-0.3px; margin-bottom:3px; }
+.wordmark span { color:#67e8f9; }
+.wordmark-sub { font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:var(--chrome-muted); }
+.back-btn { display:flex; align-items:center; gap:6px; margin-top:12px; padding:6px 10px; border-radius:8px; border:1px solid var(--chrome-border); background:transparent; color:var(--chrome-muted); font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; text-decoration:none; transition:all 0.15s; width:100%; }
+.back-btn:hover { background:rgba(255,255,255,0.06); color:white; }
+.sidebar-nav { padding:10px 8px; flex:1; }
+.nav-section-label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--chrome-muted); padding:8px 8px 4px; }
+.nav-item { display:flex; align-items:center; gap:9px; padding:7px 10px; border-radius:8px; font-size:12px; font-weight:600; color:var(--chrome-muted); cursor:pointer; transition:all 0.12s; margin-bottom:1px; border:none; background:transparent; font-family:inherit; width:100%; text-align:left; }
+.nav-item:hover { background:rgba(255,255,255,0.06); color:white; }
+.nav-item.active { background:rgba(14,116,144,0.22); color:#67e8f9; }
+.nav-icon { font-size:14px; width:18px; text-align:center; flex-shrink:0; }
+.nav-badge { margin-left:auto; background:rgba(255,255,255,0.12); color:white; font-size:10px; font-weight:700; padding:1px 6px; border-radius:10px; }
+.sidebar-footer { padding:12px; border-top:1px solid var(--chrome-border); }
+.user-tile { display:flex; align-items:center; gap:9px; padding:7px 9px; border-radius:8px; cursor:pointer; }
+.user-tile:hover { background:rgba(255,255,255,0.06); }
+.user-avatar { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,var(--indigo),#7c3aed); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:white; flex-shrink:0; }
+.user-name { font-size:12px; font-weight:600; color:var(--chrome-text); }
+.user-role { font-size:10px; color:var(--chrome-muted); }
+
+/* MAIN */
+.main-wrap { flex:1; min-width:0; display:flex; flex-direction:column; height:100vh; overflow:hidden; }
+.topbar { height:var(--header-h); background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 24px; gap:12px; flex-shrink:0; }
+.topbar-title { font-family:'Instrument Serif',serif; font-size:20px; color:var(--ink); flex:1; }
+.topbar-search { flex:1; max-width:360px; position:relative; }
+.topbar-search input { width:100%; padding:7px 12px 7px 34px; border:1.5px solid var(--border); border-radius:var(--radius); font-size:13px; font-family:inherit; background:var(--surface-2); color:var(--ink); outline:none; transition:border-color 0.15s; }
+.topbar-search input:focus { border-color:var(--crm); background:white; }
+.topbar-search-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--ink-4); font-size:14px; }
+.page-scroll { flex:1; overflow-y:auto; overflow-x:hidden; padding:24px; min-width:0; scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+
+/* VIEW SYSTEM */
+.view { display:none; width:100%; min-width:0; }
+.view.active { display:block; }
+
+/* BUTTONS */
+.btn-primary { background:var(--crm); color:white; border:none; border-radius:var(--radius); padding:8px 16px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:background 0.15s; white-space:nowrap; }
+.btn-primary:hover { background:#0c6577; }
+.btn-ghost { background:var(--surface); color:var(--ink-2); border:1px solid var(--border); border-radius:var(--radius); padding:7px 14px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:all 0.15s; white-space:nowrap; }
+.btn-ghost:hover { border-color:var(--crm); color:var(--crm); }
+.btn-danger { background:var(--danger); color:white; border:none; border-radius:var(--radius); padding:7px 14px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
+.filter-btn { background:var(--surface); color:var(--ink-3); border:1px solid var(--border); border-radius:20px; padding:4px 12px; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; transition:all 0.12s; }
+.filter-btn:hover { border-color:var(--crm); color:var(--crm); }
+.filter-btn.active { background:var(--crm); color:white; border-color:var(--crm); }
+
+/* CARDS & PANELS */
+.panel { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow); overflow:hidden; width:100%; min-width:0; }
+.section-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; width:100%; }
+.section-title { font-size:13px; font-weight:700; color:var(--ink); }
+.section-link { font-size:12px; color:var(--crm); cursor:pointer; font-weight:600; background:none; border:none; font-family:inherit; padding:0; }
+
+/* FORMS */
+.form-input { width:100%; border:1.5px solid var(--border); border-radius:var(--radius); padding:9px 12px; font-size:13px; font-family:inherit; color:var(--ink); background:var(--surface); outline:none; transition:border-color 0.15s; }
+.form-input:focus { border-color:var(--crm); }
+.form-label { font-size:11px; font-weight:700; color:var(--ink-3); text-transform:uppercase; letter-spacing:0.06em; display:block; margin-bottom:5px; }
+.form-row { margin-bottom:14px; }
+.form-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.form-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+
+/* MODALS */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); backdrop-filter:blur(3px); z-index:500; align-items:center; justify-content:center; padding:20px; }
+.modal-overlay.open { display:flex; }
+.modal { background:var(--surface); border-radius:18px; box-shadow:var(--shadow-lg); width:100%; max-width:580px; max-height:92vh; overflow-y:auto; }
+.modal-lg { max-width:720px; }
+.modal-header { padding:20px 24px 16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; background:white; z-index:1; }
+.modal-title { font-family:'Instrument Serif',serif; font-size:20px; color:var(--ink); }
+.modal-close { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--ink-4); font-size:14px; background:var(--surface-2); border:1px solid var(--border); }
+.modal-body { padding:20px 24px; }
+.modal-footer { padding:14px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:8px; position:sticky; bottom:0; background:white; }
+
+/* CONTACT LIST */
+.contact-row { display:flex; align-items:center; gap:14px; padding:12px 20px; border-bottom:0.5px solid var(--border); cursor:pointer; transition:background 0.1s; }
+.contact-row:hover { background:var(--surface-2); }
+.contact-row:last-child { border-bottom:none; }
+.contact-avatar { width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:white; flex-shrink:0; }
+.contact-info { flex:1; min-width:0; }
+.contact-name { font-size:13px; font-weight:600; color:var(--ink); }
+.contact-meta { font-size:11px; color:var(--ink-4); margin-top:2px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.role-tag { font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; background:var(--crm-light); color:var(--crm); white-space:nowrap; }
+.entity-tag { font-size:10px; font-weight:600; padding:2px 7px; border-radius:10px; background:var(--indigo-light); color:var(--indigo); white-space:nowrap; }
+.type-tag { font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; white-space:nowrap; }
+.tt-company { background:#f0fdf4; color:#166534; }
+.tt-trust { background:#fef9c3; color:#854d0e; }
+.tt-cc { background:#f5f3ff; color:#6d28d9; }
+.tt-npo { background:#fff7ed; color:#c2410c; }
+.tt-partnership { background:#f0fdfa; color:#0d9488; }
+.tt-soletrader { background:#fef2f2; color:#dc2626; }
+.tt-gov { background:#f0f9ff; color:#0369a1; }
+
+/* CONTACT RECORD */
+.record-layout { display:grid; grid-template-columns:280px 1fr; gap:20px; align-items:start; }
+@media(max-width:900px) { .record-layout { grid-template-columns:1fr; } }
+.record-sidebar { display:flex; flex-direction:column; gap:14px; }
+.record-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow); overflow:hidden; }
+.record-header { padding:20px; text-align:center; border-bottom:1px solid var(--border); }
+.record-avatar { width:64px; height:64px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700; color:white; margin:0 auto 12px; }
+.record-name { font-family:'Instrument Serif',serif; font-size:20px; color:var(--ink); margin-bottom:4px; }
+.record-roles { display:flex; flex-wrap:wrap; gap:5px; justify-content:center; margin-top:8px; }
+.record-contact-items { padding:14px 16px; display:flex; flex-direction:column; gap:8px; }
+.record-contact-item { display:flex; align-items:center; gap:9px; font-size:12px; color:var(--ink-2); }
+.record-contact-item .icon { font-size:14px; width:20px; text-align:center; flex-shrink:0; }
+
+/* RELATIONSHIP PANEL */
+.rel-item { display:flex; align-items:flex-start; gap:10px; padding:9px 16px; border-bottom:0.5px solid var(--border); cursor:pointer; transition:background 0.1s; }
+.rel-item:hover { background:var(--surface-2); }
+.rel-item:last-child { border-bottom:none; }
+.rel-icon { width:28px; height:28px; border-radius:7px; background:var(--surface-2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
+.rel-info { flex:1; min-width:0; }
+.rel-name { font-size:12px; font-weight:600; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rel-type { font-size:10px; color:var(--ink-4); margin-top:1px; }
+.rel-badge { font-size:9px; font-weight:700; padding:1px 6px; border-radius:8px; background:var(--crm-light); color:var(--crm); white-space:nowrap; flex-shrink:0; align-self:center; }
+
+/* TIMELINE */
+.timeline-filters { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+.tl-group-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-4); padding:12px 0 6px; display:flex; align-items:center; gap:8px; }
+.tl-group-line { flex:1; height:1px; background:var(--border); }
+.tl-entry { display:flex; align-items:flex-start; gap:12px; padding:10px 0; }
+.tl-dot { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; background:var(--surface-2); border:1px solid var(--border); }
+.tl-body { flex:1; min-width:0; }
+.tl-title { font-size:13px; font-weight:600; color:var(--ink); overflow-wrap:break-word; }
+.tl-subtitle { font-size:11px; color:var(--ink-4); margin-top:2px; line-height:1.5; overflow-wrap:break-word; }
+.tl-meta { display:flex; align-items:center; gap:6px; margin-top:4px; flex-wrap:wrap; }
+.tl-source { font-size:9px; font-weight:700; padding:1px 6px; border-radius:8px; text-transform:uppercase; letter-spacing:0.04em; }
+.src-manual    { background:#f0fdf4; color:#166534; }
+.src-formflow  { background:#f0fdfa; color:#0d9488; }
+.src-signflow  { background:#f5f3ff; color:#7c3aed; }
+.src-system    { background:var(--surface-2); color:var(--ink-4); }
+.src-task      { background:#fffbeb; color:#b45309; }
+.tl-time { font-size:10px; color:var(--ink-4); }
+.tl-add-note { display:flex; gap:10px; align-items:flex-start; padding:12px 0; border-top:1px solid var(--border); margin-top:8px; }
+.tl-note-input { flex:1; border:1.5px solid var(--border); border-radius:var(--radius); padding:8px 12px; font-size:13px; font-family:inherit; resize:none; outline:none; min-height:38px; transition:border-color 0.15s; }
+.tl-note-input:focus { border-color:var(--crm); }
+.tl-type-select { border:1.5px solid var(--border); border-radius:var(--radius); padding:8px 10px; font-size:12px; font-family:inherit; background:white; outline:none; }
+
+/* TABS */
+.tab-bar { display:flex; gap:2px; border-bottom:1px solid var(--border); margin-bottom:20px; }
+.tab-btn { padding:10px 16px; font-size:13px; font-weight:600; color:var(--ink-3); cursor:pointer; border:none; background:none; font-family:inherit; border-bottom:2px solid transparent; transition:all 0.15s; }
+.tab-btn:hover { color:var(--ink); }
+.tab-btn.active { color:var(--crm); border-bottom-color:var(--crm); }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+
+/* STATS ROW */
+.stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px; }
+.stat-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px 18px; box-shadow:var(--shadow); }
+.stat-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--ink-4); margin-bottom:6px; }
+.stat-value { font-size:26px; font-family:'Instrument Serif',serif; color:var(--ink); line-height:1; }
+.stat-sub { font-size:11px; color:var(--ink-4); margin-top:4px; }
+
+/* DOCUMENT ROW */
+.doc-row { display:flex; align-items:center; gap:10px; padding:9px 16px; border-bottom:0.5px solid var(--border); }
+.doc-row:last-child { border-bottom:none; }
+.doc-icon { width:30px; height:30px; border-radius:7px; background:var(--surface-2); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+.doc-info { flex:1; min-width:0; }
+.doc-name { font-size:12px; font-weight:600; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.doc-meta { font-size:10px; color:var(--ink-4); margin-top:1px; }
+
+/* WORKSPACE ROW */
+.ws-row { display:flex; align-items:center; gap:10px; padding:9px 16px; border-bottom:0.5px solid var(--border); cursor:pointer; transition:background 0.1s; }
+.ws-row:hover { background:var(--surface-2); }
+.ws-row:last-child { border-bottom:none; }
+.ws-icon { width:30px; height:30px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+.ws-info { flex:1; min-width:0; }
+.ws-name { font-size:12px; font-weight:600; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ws-meta { font-size:10px; color:var(--ink-4); margin-top:1px; }
+.ws-hub-badge { font-size:9px; font-weight:700; padding:1px 6px; border-radius:8px; }
+
+/* QUICK LOAD CHIPS */
+.quick-load-row { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+.ql-chip { font-size:11px; font-weight:600; padding:4px 11px; border-radius:20px; border:1.5px solid var(--border); background:var(--surface-2); color:var(--ink-3); cursor:pointer; transition:all 0.12s; }
+.ql-chip:hover { border-color:var(--crm); color:var(--crm); background:var(--crm-light); }
+
+/* ROLE CHIPS IN MODAL */
+.role-chips { display:flex; flex-wrap:wrap; gap:6px; padding:8px 0; }
+.role-chip { font-size:12px; font-weight:600; padding:5px 12px; border-radius:20px; border:1.5px solid var(--border); background:var(--surface); color:var(--ink-3); cursor:pointer; transition:all 0.12s; }
+.role-chip:hover { border-color:var(--crm); color:var(--crm); }
+.role-chip.selected { background:var(--crm); color:white; border-color:var(--crm); }
+
+/* TOAST */
+.toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--chrome); color:white; border-radius:10px; padding:10px 18px; font-size:13px; font-weight:600; opacity:0; pointer-events:none; transition:0.25s; z-index:999; }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* EMPTY STATE */
+.empty-state { padding:48px; text-align:center; color:var(--ink-4); }
+.empty-icon { font-size:40px; margin-bottom:12px; }
+.empty-title { font-size:15px; font-weight:600; color:var(--ink-2); margin-bottom:6px; }
+.empty-desc { font-size:13px; line-height:1.6; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="wordmark">c<span>rm</span></div>
+    <div class="wordmark-sub">contacts · entities · relationships</div>
+    <a href="./flow.html" class="back-btn">← Back to Flow</a>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Directory</div>
+    <button class="nav-item active" id="nav-people"    onclick="showView('people')">
+      <span class="nav-icon">👤</span> People
+      <span class="nav-badge" id="badge-people">0</span>
+    </button>
+    <button class="nav-item" id="nav-entities"  onclick="showView('entities')">
+      <span class="nav-icon">🏢</span> Entities
+      <span class="nav-badge" id="badge-entities">0</span>
+    </button>
+    <div class="nav-section-label" style="margin-top:10px">Views</div>
+    <button class="nav-item" id="nav-relationships" onclick="showView('relationships')">
+      <span class="nav-icon">🔗</span> Relationships
+    </button>
+    <button class="nav-item" id="nav-tags" onclick="showView('tags')">
+      <span class="nav-icon">🏷</span> Roles & Tags
+    </button>
+    <div class="nav-section-label" style="margin-top:10px">Recent</div>
+    <div id="nav-recents"></div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-tile">
+      <div class="user-avatar">DU</div>
+      <div>
+        <div class="user-name">Demo User</div>
+        <div class="user-role">Flow workspace</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main-wrap">
+  <div class="topbar">
+    <div class="topbar-title" id="topbar-title">CRM</div>
+    <div class="topbar-search">
+      <span class="topbar-search-icon">🔍</span>
+      <input id="global-search" placeholder="Search people, entities, roles…" oninput="globalSearch(this.value)">
+    </div>
+    <button class="btn-primary" id="topbar-action-btn" onclick="openAddPerson()">+ Add person</button>
+  </div>
+
+  <div class="page-scroll" id="page-scroll">
+
+    <!-- PEOPLE VIEW -->
+    <div class="view active" id="view-people">
+      <div class="stats-row" id="people-stats"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="filter-btn active" id="pf-all"        onclick="filterPeople(this,'all')">All</button>
+        <button class="filter-btn"        id="pf-noentity"   onclick="filterPeople(this,'noentity')">Personal contacts</button>
+        <div style="width:1px;height:20px;background:var(--border);margin:0 2px"></div>
+        <button class="filter-btn"        id="pf-buyer"      onclick="filterPeople(this,'Buyer')">Buyer</button>
+        <button class="filter-btn"        id="pf-seller"     onclick="filterPeople(this,'Seller')">Seller</button>
+        <button class="filter-btn"        id="pf-tenant"     onclick="filterPeople(this,'Tenant')">Tenant</button>
+        <button class="filter-btn"        id="pf-attorney"   onclick="filterPeople(this,'Attorney')">Attorney</button>
+        <button class="filter-btn"        id="pf-vendor"     onclick="filterPeople(this,'Vendor')">Vendor</button>
+      </div>
+      <div class="panel" id="people-list"></div>
+    </div>
+
+    <!-- ENTITIES VIEW -->
+    <div class="view" id="view-entities">
+      <div class="stats-row" id="entities-stats"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="filter-btn active" id="ef-all"         onclick="filterEntities(this,'all')">All</button>
+        <button class="filter-btn"        id="ef-company"     onclick="filterEntities(this,'Company')">Company</button>
+        <button class="filter-btn"        id="ef-trust"       onclick="filterEntities(this,'Trust')">Trust</button>
+        <button class="filter-btn"        id="ef-cc"          onclick="filterEntities(this,'CC')">Close Corp</button>
+        <button class="filter-btn"        id="ef-npo"         onclick="filterEntities(this,'NPO')">NPO</button>
+        <button class="filter-btn"        id="ef-partnership" onclick="filterEntities(this,'Partnership')">Partnership</button>
+        <button class="filter-btn"        id="ef-soletrader"  onclick="filterEntities(this,'Sole Trader')">Sole Trader</button>
+        <button class="filter-btn"        id="ef-gov"         onclick="filterEntities(this,'Government')">Government</button>
+      </div>
+      <div class="panel" id="entities-list"></div>
+    </div>
+
+    <!-- CONTACT RECORD -->
+    <div class="view" id="view-contact-record">
+      <div id="contact-record-body"></div>
+    </div>
+
+    <!-- ENTITY RECORD -->
+    <div class="view" id="view-entity-record">
+      <div id="entity-record-body"></div>
+    </div>
+
+    <!-- RELATIONSHIPS VIEW -->
+    <div class="view" id="view-relationships">
+      <div style="margin-bottom:20px">
+        <h2 style="font-family:'Instrument Serif',serif;font-size:22px;margin-bottom:4px">Relationship map</h2>
+        <p style="font-size:13px;color:var(--ink-3)">All connections between people, entities and workspaces.</p>
+      </div>
+      <div class="panel" id="relationships-list"></div>
+    </div>
+
+    <!-- ROLES & TAGS VIEW -->
+    <div class="view" id="view-tags">
+      <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <h2 style="font-family:'Instrument Serif',serif;font-size:22px;margin-bottom:4px">Roles & Tags</h2>
+          <p style="font-size:13px;color:var(--ink-3)">Manage the role taxonomy used across all contacts and entities.</p>
+        </div>
+        <button class="btn-primary" onclick="openAddRoleModal()">+ Add role</button>
+      </div>
+      <div id="tags-body"></div>
+    </div>
+
+  </div><!-- end page-scroll -->
+</div><!-- end main-wrap -->
+
+<!-- ADD / EDIT PERSON MODAL -->
+<div class="modal-overlay" id="person-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="person-modal-title">Add person</div>
+      <div class="modal-close" onclick="closeModal('person-modal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label class="form-label">First name</label>
+          <input class="form-input" id="pm-first" placeholder="e.g. John">
+        </div>
+        <div class="form-row">
+          <label class="form-label">Last name</label>
+          <input class="form-input" id="pm-last" placeholder="e.g. Smith">
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label class="form-label">Email</label>
+          <input class="form-input" id="pm-email" type="email" placeholder="john@example.com">
+        </div>
+        <div class="form-row">
+          <label class="form-label">Phone</label>
+          <input class="form-input" id="pm-phone" placeholder="+27 82 000 0000">
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">ID / Passport number</label>
+        <input class="form-input" id="pm-id" placeholder="e.g. 9001015001083">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Roles</label>
+        <div style="margin-bottom:8px">
+          <div style="font-size:11px;font-weight:600;color:var(--ink-4);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em">Quick load</div>
+          <div class="quick-load-row">
+            <div class="ql-chip" onclick="quickLoadRoles('property_transaction')">🏠 Property transaction</div>
+            <div class="ql-chip" onclick="quickLoadRoles('rental')">🔑 Rental</div>
+            <div class="ql-chip" onclick="quickLoadRoles('corporate')">🏢 Corporate / Legal</div>
+            <div class="ql-chip" onclick="quickLoadRoles('hr')">👔 HR</div>
+            <div class="ql-chip" onclick="quickLoadRoles('general')">📋 General business</div>
+          </div>
+        </div>
+        <div class="role-chips" id="pm-role-chips"></div>
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label">Link to entity (optional)</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select class="form-input" id="pm-entity-link" style="flex:1">
+            <option value="">— No entity —</option>
+          </select>
+          <select class="form-input" id="pm-entity-role" style="width:180px">
+            <option value="">Role in entity</option>
+            <option>Director</option><option>Shareholder</option>
+            <option>Trustee</option><option>Beneficiary</option>
+            <option>Secretary</option><option>Auditor</option>
+            <option>Member</option><option>Partner</option>
+            <option>Employee</option><option>Contractor</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('person-modal')">Cancel</button>
+      <button class="btn-primary" id="person-modal-save" onclick="savePerson()">Add person</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD / EDIT ENTITY MODAL -->
+<div class="modal-overlay" id="entity-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="entity-modal-title">Add entity</div>
+      <div class="modal-close" onclick="closeModal('entity-modal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label class="form-label">Entity name</label>
+          <input class="form-input" id="em-name" placeholder="e.g. ABC Holdings (Pty) Ltd">
+        </div>
+        <div class="form-row">
+          <label class="form-label">Entity type</label>
+          <select class="form-input" id="em-type">
+            <option value="Company">Company (Pty Ltd / Ltd)</option>
+            <option value="CC">Close Corporation (CC)</option>
+            <option value="Trust">Trust</option>
+            <option value="Partnership">Partnership</option>
+            <option value="NPO">NPO / NGO</option>
+            <option value="Sole Trader">Sole Trader</option>
+            <option value="Government">Government Body</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-grid-3">
+        <div class="form-row">
+          <label class="form-label">Registration no.</label>
+          <input class="form-input" id="em-regno" placeholder="e.g. 2015/123456/07">
+        </div>
+        <div class="form-row">
+          <label class="form-label">Tax / IT no.</label>
+          <input class="form-input" id="em-taxno" placeholder="e.g. 1234567890">
+        </div>
+        <div class="form-row">
+          <label class="form-label">VAT no.</label>
+          <input class="form-input" id="em-vatno" placeholder="e.g. 4140123456">
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label class="form-label">Industry</label>
+          <select class="form-input" id="em-industry">
+            <option>Real Estate</option><option>Legal</option>
+            <option>Finance</option><option>HR / Corporate</option>
+            <option>Construction</option><option>Retail</option>
+            <option>Technology</option><option>Healthcare</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Physical address</label>
+          <input class="form-input" id="em-address" placeholder="e.g. 1 Main Street, Sandton">
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label">Tags</label>
+        <div class="role-chips" id="em-tag-chips"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('entity-modal')">Cancel</button>
+      <button class="btn-primary" id="entity-modal-save" onclick="saveEntity()">Add entity</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD RELATIONSHIP MODAL -->
+<div class="modal-overlay" id="rel-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add relationship</div>
+      <div class="modal-close" onclick="closeModal('rel-modal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label">From</label>
+        <input class="form-input" id="rel-from" placeholder="Person or entity name" readonly style="background:var(--surface-2)">
+        <input type="hidden" id="rel-from-id"> <input type="hidden" id="rel-from-type">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Relationship type</label>
+        <select class="form-input" id="rel-type">
+          <optgroup label="Personal">
+            <option>Spouse of</option><option>Child of</option><option>Sibling of</option><option>Guardian of</option>
+          </optgroup>
+          <optgroup label="Corporate">
+            <option>Director of</option><option>Shareholder of</option><option>Trustee of</option>
+            <option>Beneficiary of</option><option>Auditor of</option><option>Employee of</option>
+            <option>Partner of</option><option>Guarantor for</option>
+          </optgroup>
+          <optgroup label="Transactional">
+            <option>Purchaser in</option><option>Seller in</option><option>Agent for</option>
+            <option>Attorney for</option><option>Linked to</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">To (person or entity)</label>
+        <select class="form-input" id="rel-to"></select>
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label">Context / notes (optional)</label>
+        <input class="form-input" id="rel-context" placeholder="e.g. 40% shareholding">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('rel-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveRelationship()">Add relationship</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD ROLE MODAL -->
+<div class="modal-overlay" id="role-modal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title">Add custom role</div>
+      <div class="modal-close" onclick="closeModal('role-modal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label">Role name</label>
+        <input class="form-input" id="role-name" placeholder="e.g. Bond Originator">
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label">Category</label>
+        <select class="form-input" id="role-category">
+          <option>Transaction</option><option>Legal</option><option>Finance</option>
+          <option>Corporate</option><option>HR</option><option>General</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('role-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveRole()">Add role</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STORAGE ──────────────────────────────────────────────────────
+const K = { people:'crm_people_v1', entities:'crm_entities_v1', relationships:'crm_relationships_v1', timeline:'crm_timeline_v1', roles:'crm_roles_v1' };
+function load(key, def) { try { return JSON.parse(localStorage.getItem(key)) || def; } catch(e) { return def; } }
+function save(key, data) { try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) {} }
+
+// ── STATE ─────────────────────────────────────────────────────────
+let people        = [];
+let entities      = [];
+let relationships = [];
+let timeline      = [];
+let roles         = [];
+let peopleFilter    = 'all';
+let entitiesFilter  = 'all';
+let currentView     = 'people';
+let editingPersonId = null;
+let editingEntityId = null;
+let selectedPersonRoles = [];
+let selectedEntityTags  = [];
+let tlFilter = 'all';
+
+// ── ROLE TAXONOMY ─────────────────────────────────────────────────
+const DEFAULT_ROLES = [
+  { id:'r1',  name:'Buyer',           category:'Transaction', color:'#0e7490', bg:'#ecfeff' },
+  { id:'r2',  name:'Seller',          category:'Transaction', color:'#0e7490', bg:'#ecfeff' },
+  { id:'r3',  name:'Tenant',          category:'Transaction', color:'#0e7490', bg:'#ecfeff' },
+  { id:'r4',  name:'Landlord',        category:'Transaction', color:'#0e7490', bg:'#ecfeff' },
+  { id:'r5',  name:'Agent',           category:'Transaction', color:'#0e7490', bg:'#ecfeff' },
+  { id:'r6',  name:'Bond Originator', category:'Finance',     color:'#b45309', bg:'#fffbeb' },
+  { id:'r7',  name:'Conveyancer',     category:'Legal',       color:'#6d28d9', bg:'#f5f3ff' },
+  { id:'r8',  name:'Attorney',        category:'Legal',       color:'#6d28d9', bg:'#f5f3ff' },
+  { id:'r9',  name:'Witness',         category:'Legal',       color:'#6d28d9', bg:'#f5f3ff' },
+  { id:'r10', name:'Director',        category:'Corporate',   color:'#1d4ed8', bg:'#eff6ff' },
+  { id:'r11', name:'Shareholder',     category:'Corporate',   color:'#1d4ed8', bg:'#eff6ff' },
+  { id:'r12', name:'Trustee',         category:'Corporate',   color:'#1d4ed8', bg:'#eff6ff' },
+  { id:'r13', name:'Beneficiary',     category:'Corporate',   color:'#1d4ed8', bg:'#eff6ff' },
+  { id:'r14', name:'Guarantor',       category:'Finance',     color:'#b45309', bg:'#fffbeb' },
+  { id:'r15', name:'Employee',        category:'HR',          color:'#166534', bg:'#f0fdf4' },
+  { id:'r16', name:'Contractor',      category:'HR',          color:'#166534', bg:'#f0fdf4' },
+  { id:'r17', name:'Vendor',          category:'General',     color:'#374151', bg:'#f9fafb' },
+  { id:'r18', name:'Supplier',        category:'General',     color:'#374151', bg:'#f9fafb' },
+  { id:'r19', name:'Lead',            category:'General',     color:'#374151', bg:'#f9fafb' },
+  { id:'r20', name:'Client',          category:'General',     color:'#374151', bg:'#f9fafb' },
+  { id:'r21', name:'Managing Agent',  category:'Transaction', color:'#0e7490', bg:'#ecfeff' },
+  { id:'r22', name:'Auditor',         category:'Corporate',   color:'#1d4ed8', bg:'#eff6ff' },
+  { id:'r23', name:'Notary',          category:'Legal',       color:'#6d28d9', bg:'#f5f3ff' },
+  { id:'r24', name:'Sponsor',         category:'Finance',     color:'#b45309', bg:'#fffbeb' },
+];
+
+const QUICK_LOADS = {
+  property_transaction: ['Buyer','Seller','Agent','Attorney','Bond Originator','Conveyancer','Witness'],
+  rental:               ['Tenant','Landlord','Agent','Managing Agent','Vendor'],
+  corporate:            ['Director','Shareholder','Trustee','Beneficiary','Auditor','Attorney','Notary'],
+  hr:                   ['Employee','Contractor','Lead','Client'],
+  general:              ['Client','Lead','Vendor','Supplier','Sponsor','Guarantor'],
+};
+
+const ENTITY_TYPE_META = {
+  'Company':     { label:'Company',      cls:'tt-company',     icon:'🏢' },
+  'CC':          { label:'Close Corp',   cls:'tt-cc',          icon:'🏛' },
+  'Trust':       { label:'Trust',        cls:'tt-trust',       icon:'🤝' },
+  'Partnership': { label:'Partnership',  cls:'tt-partnership', icon:'🤲' },
+  'NPO':         { label:'NPO/NGO',      cls:'tt-npo',         icon:'💚' },
+  'Sole Trader': { label:'Sole Trader',  cls:'tt-soletrader',  icon:'👤' },
+  'Government':  { label:'Government',   cls:'tt-gov',         icon:'🏛' },
+};
+
+const TL_TYPE_META = {
+  note:      { icon:'📝', label:'Note',     src:'src-manual' },
+  call:      { icon:'📞', label:'Call',     src:'src-manual' },
+  email:     { icon:'✉️', label:'Email',    src:'src-manual' },
+  meeting:   { icon:'🎙', label:'Meeting',  src:'src-manual' },
+  task:      { icon:'✓',  label:'Task',     src:'src-task'   },
+  document:  { icon:'📄', label:'Document', src:'src-system' },
+  formflow:  { icon:'📋', label:'FormFlow', src:'src-formflow'},
+  signflow:  { icon:'✍️', label:'SignFlow', src:'src-signflow'},
+  activity:  { icon:'⚡', label:'Activity', src:'src-system' },
+};
+
+// ── DEMO DATA ─────────────────────────────────────────────────────
+const DEMO_PEOPLE = [
+  { id:'p1', first:'John',    last:'Smith',    email:'john@example.com',  phone:'+27 82 111 2222', idno:'8001015001083', roles:['Buyer','Investor'],         entities:[{id:'e1',role:'Director'}],   tags:[], ts:Date.now()-604800000 },
+  { id:'p2', first:'Mary',    last:'Jacobs',   email:'mary@example.com',  phone:'+27 83 333 4444', idno:'9203045001084', roles:['Seller'],                    entities:[],                            tags:[], ts:Date.now()-518400000 },
+  { id:'p3', first:'Thabo',   last:'Mokoena',  email:'thabo@corp.co.za',  phone:'+27 71 555 6666', idno:'9506105001085', roles:['Employee','Director'],       entities:[{id:'e2',role:'Director'}],   tags:[], ts:Date.now()-432000000 },
+  { id:'p4', first:'Sarah',   last:'Nkosi',    email:'sarah@law.co.za',   phone:'+27 82 777 8888', idno:'7809125001086', roles:['Attorney','Conveyancer'],    entities:[{id:'e3',role:'Partner'}],    tags:[], ts:Date.now()-345600000 },
+  { id:'p5', first:'Pieter',  last:'van der Merwe', email:'pieter@absa.co.za', phone:'+27 83 999 0000', idno:'7201015001087', roles:['Bond Originator'],   entities:[{id:'e4',role:'Employee'}],   tags:[], ts:Date.now()-259200000 },
+  { id:'p6', first:'Amanda',  last:'Dlamini',  email:'amanda@trust.co.za',phone:'+27 71 111 3333', idno:'8805025001088', roles:['Trustee','Beneficiary'],    entities:[{id:'e5',role:'Trustee'}],    tags:[], ts:Date.now()-172800000 },
+  { id:'p7', first:'Mike',    last:'Du Plessis',email:'mike@vendor.co.za',phone:'+27 82 444 5555', idno:'8503035001089', roles:['Vendor','Supplier'],        entities:[],                            tags:[], ts:Date.now()-86400000  },
+  { id:'p8', first:'Karen',   last:'Botha',    email:'karen@flow.co.za',  phone:'+27 83 666 7777', idno:'9104045001090', roles:['Client','Lead'],             entities:[{id:'e1',role:'Shareholder'}],tags:[], ts:Date.now()-43200000  },
+];
+
+const DEMO_ENTITIES = [
+  { id:'e1', name:'ABC Holdings (Pty) Ltd',  type:'Company',     regno:'2015/123456/07', taxno:'1234567890', vatno:'4140123456', address:'1 Main St, Sandton', industry:'Real Estate', people:[{id:'p1',role:'Director'},{id:'p8',role:'Shareholder'}], tags:[], ts:Date.now()-700000000 },
+  { id:'e2', name:'Mokoena Corp CC',         type:'CC',          regno:'2010/034567/23', taxno:'9876543210', vatno:'',          address:'45 West Ave, Rosebank', industry:'Finance', people:[{id:'p3',role:'Director'}], tags:[], ts:Date.now()-600000000 },
+  { id:'e3', name:'Nkosi & Partners Inc',    type:'Partnership', regno:'2008/056789/21', taxno:'1122334455', vatno:'',          address:'12 Legal Lane, Cape Town', industry:'Legal', people:[{id:'p4',role:'Partner'}], tags:[], ts:Date.now()-500000000 },
+  { id:'e4', name:'ABSA Bank Ltd',           type:'Company',     regno:'1986/004794/06', taxno:'9001234567', vatno:'4530265024',address:'15 Alice Lane, Sandton', industry:'Finance', people:[{id:'p5',role:'Employee'}], tags:[], ts:Date.now()-400000000 },
+  { id:'e5', name:'Smith Family Trust',      type:'Trust',       regno:'IT1234/2018',    taxno:'',          vatno:'',          address:'1 Main St, Sandton', industry:'Real Estate', people:[{id:'p1',role:'Trustee'},{id:'p6',role:'Trustee'}], tags:[], ts:Date.now()-300000000 },
+];
+
+const DEMO_RELATIONSHIPS = [
+  { id:'rel1', fromType:'person', fromId:'p1', toType:'entity', toId:'e1',  type:'Director of',    context:'Founding director', ts:Date.now()-700000000 },
+  { id:'rel2', fromType:'person', fromId:'p1', toType:'entity', toId:'e5',  type:'Trustee of',     context:'', ts:Date.now()-600000000 },
+  { id:'rel3', fromType:'person', fromId:'p1', toType:'person', toId:'p8',  type:'Linked to',      context:'Business associate', ts:Date.now()-500000000 },
+  { id:'rel4', fromType:'person', fromId:'p6', toType:'entity', toId:'e5',  type:'Trustee of',     context:'Co-trustee', ts:Date.now()-400000000 },
+  { id:'rel5', fromType:'person', fromId:'p4', toType:'entity', toId:'e3',  type:'Partner of',     context:'Senior partner', ts:Date.now()-300000000 },
+  { id:'rel6', fromType:'person', fromId:'p3', toType:'entity', toId:'e2',  type:'Director of',    context:'Sole director', ts:Date.now()-200000000 },
+  { id:'rel7', fromType:'person', fromId:'p8', toType:'entity', toId:'e1',  type:'Shareholder of', context:'25% shareholding', ts:Date.now()-100000000 },
+];
+
+const DEMO_TIMELINE = [
+  { id:'tl1',  parentType:'person', parentId:'p1', type:'formflow', title:'FICA Pack submitted', body:'Residential OTP workflow — Buyer party', source:'formflow', ts:Date.now()-7200000 },
+  { id:'tl2',  parentType:'person', parentId:'p1', type:'call',     title:'Call logged',         body:'Discussed ABSA bond delay. Awaiting ref number. Callback scheduled for EOD.', source:'manual', ts:Date.now()-10800000 },
+  { id:'tl3',  parentType:'person', parentId:'p1', type:'document', title:'OTP v3 uploaded',     body:'Signed OTP — 12 Main Road Purchase', source:'signflow', ts:Date.now()-86400000 },
+  { id:'tl4',  parentType:'person', parentId:'p1', type:'note',     title:'Note',                body:'Client confirmed occupation date is flexible. Willing to wait 60 days post registration.', source:'manual', ts:Date.now()-172800000 },
+  { id:'tl5',  parentType:'person', parentId:'p1', type:'meeting',  title:'Meeting: Bond discussion', body:'Met with Pieter at ABSA. Bond approved in principle. Formal letter expected within 3 days.', source:'manual', ts:Date.now()-259200000 },
+  { id:'tl6',  parentType:'person', parentId:'p2', type:'call',     title:'Call logged',         body:'Confirmed seller is flexible on transfer date.', source:'manual', ts:Date.now()-50000000 },
+  { id:'tl7',  parentType:'person', parentId:'p2', type:'document', title:'FICA Pack uploaded',  body:'Seller FICA — Sandy Close Sale', source:'formflow', ts:Date.now()-100000000 },
+  { id:'tl8',  parentType:'entity', parentId:'e1', type:'activity', title:'Entity created',      body:'ABC Holdings added to CRM', source:'system', ts:Date.now()-700000000 },
+  { id:'tl9',  parentType:'entity', parentId:'e5', type:'note',     title:'Note',                body:'Trust documents need annual review before March.', source:'manual', ts:Date.now()-80000000 },
+];
+
+// ── HELPERS ───────────────────────────────────────────────────────
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function showToast(msg) {
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function timeLabel(ts) {
+  if (!ts) return ''; const diff=Date.now()-ts;
+  const m=Math.floor(diff/60000),h=Math.floor(m/60),d=Math.floor(h/24);
+  const dt=new Date(ts), t=dt.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+  if (m<2) return 'Just now'; if (h<1) return m+'m ago';
+  if (h<24) return 'Today '+t; if (d===1) return 'Yesterday';
+  return dt.toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'});
+}
+function initials(p) { return ((p.first||'')[0]+(p.last||'')[0]).toUpperCase(); }
+function avatarColor(id) {
+  const colors=['#0e7490','#4f46e5','#7c3aed','#0d9488','#1d4ed8','#166534','#b45309','#c2410c'];
+  let h=0; for(let c of id) h=(h*31+c.charCodeAt(0))%colors.length;
+  return colors[h];
+}
+function getRoleStyle(roleName) {
+  const r = roles.find(r=>r.name===roleName);
+  return r ? `color:${r.color};background:${r.bg}` : 'color:var(--crm);background:var(--crm-light)';
+}
+function getEntityName(id) { return entities.find(e=>e.id===id)?.name||''; }
+function getPersonName(id) { const p=people.find(p=>p.id===id); return p?`${p.first} ${p.last}`:''; }
+
+// ── VIEW SYSTEM ───────────────────────────────────────────────────
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v=>{v.classList.remove('active');v.style.display='none';});
+  const v=document.getElementById('view-'+id);
+  if (v) { v.classList.add('active'); v.style.display='block'; }
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const ni=document.getElementById('nav-'+id);
+  if (ni) ni.classList.add('active');
+  currentView = id;
+  const titles={people:'People',entities:'Entities','contact-record':'Contact','entity-record':'Entity',relationships:'Relationships',tags:'Roles & Tags'};
+  document.getElementById('topbar-title').textContent = titles[id]||'CRM';
+  const actionBtns = {people:'+ Add person',entities:'+ Add entity','contact-record':'','entity-record':'','relationships':'+ Add relationship',tags:'+ Add role'};
+  const actionFns  = {people:'openAddPerson()',entities:'openAddEntity()','contact-record':'','entity-record':'',relationships:'openAddRelModal()',tags:'openAddRoleModal()'};
+  const btn=document.getElementById('topbar-action-btn');
+  btn.textContent=actionBtns[id]||''; btn.onclick=new Function(actionFns[id]||'');
+  btn.style.display = actionBtns[id]?'block':'none';
+
+  if (id==='people')        renderPeopleList();
+  if (id==='entities')      renderEntitiesList();
+  if (id==='relationships') renderRelationshipsView();
+  if (id==='tags')          renderTagsView();
+  document.getElementById('page-scroll').scrollTop=0;
+}
+
+// ── PEOPLE LIST ───────────────────────────────────────────────────
+function renderPeopleList(filter) {
+  if (filter!==undefined) peopleFilter=filter;
+  let data = people;
+  if (peopleFilter==='noentity') data=data.filter(p=>!p.entities?.length);
+  else if (peopleFilter!=='all') data=data.filter(p=>p.roles?.includes(peopleFilter));
+  const search = document.getElementById('global-search')?.value?.toLowerCase()||'';
+  if (search) data=data.filter(p=>`${p.first} ${p.last} ${p.email} ${p.roles?.join(' ')}`.toLowerCase().includes(search));
+
+  // Stats
+  const totalRoles = [...new Set(people.flatMap(p=>p.roles||[]))].length;
+  document.getElementById('people-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total people</div><div class="stat-value">${people.length}</div><div class="stat-sub">in CRM</div></div>
+    <div class="stat-card"><div class="stat-label">With entities</div><div class="stat-value" style="color:var(--indigo)">${people.filter(p=>p.entities?.length).length}</div><div class="stat-sub">linked</div></div>
+    <div class="stat-card"><div class="stat-label">Personal contacts</div><div class="stat-value" style="color:var(--crm)">${people.filter(p=>!p.entities?.length).length}</div><div class="stat-sub">no entity</div></div>
+    <div class="stat-card"><div class="stat-label">Role types</div><div class="stat-value" style="color:#7c3aed">${totalRoles}</div><div class="stat-sub">in use</div></div>`;
+
+  const list=document.getElementById('people-list');
+  if (!data.length) { list.innerHTML=`<div class="empty-state"><div class="empty-icon">👤</div><div class="empty-title">No people found</div><div class="empty-desc">Add your first contact using the button above.</div></div>`; return; }
+  list.innerHTML=data.map(p=>{
+    const roleTags=(p.roles||[]).slice(0,3).map(r=>`<span class="role-tag" style="${getRoleStyle(r)}">${esc(r)}</span>`).join('');
+    const extra = (p.roles||[]).length>3 ? `<span style="font-size:10px;color:var(--ink-4)">+${p.roles.length-3} more</span>` : '';
+    const entityLinks=(p.entities||[]).slice(0,2).map(e=>`<span class="entity-tag">${esc(getEntityName(e.id))}</span>`).join('');
+    return `<div class="contact-row" onclick="openContactRecord('${p.id}')">
+      <div class="contact-avatar" style="background:${avatarColor(p.id)}">${initials(p)}</div>
+      <div class="contact-info">
+        <div class="contact-name">${esc(p.first)} ${esc(p.last)}</div>
+        <div class="contact-meta">
+          ${p.email?`<span>${esc(p.email)}</span>`:''}
+          ${p.phone?`<span>·</span><span>${esc(p.phone)}</span>`:''}
+        </div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:5px">${roleTags}${extra}${entityLinks}</div>
+      </div>
+      <div style="font-size:11px;color:var(--ink-4);flex-shrink:0">${timeLabel(p.ts)}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('badge-people').textContent=people.length;
+}
+
+function filterPeople(btn,filter) {
+  document.querySelectorAll('#view-people .filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); peopleFilter=filter; renderPeopleList();
+}
+
+// ── ENTITIES LIST ──────────────────────────────────────────────────
+function renderEntitiesList(filter) {
+  if (filter!==undefined) entitiesFilter=filter;
+  let data=entities;
+  if (entitiesFilter!=='all') data=data.filter(e=>e.type===entitiesFilter);
+  const search=document.getElementById('global-search')?.value?.toLowerCase()||'';
+  if (search) data=data.filter(e=>`${e.name} ${e.type} ${e.industry}`.toLowerCase().includes(search));
+
+  const byType=t=>entities.filter(e=>e.type===t).length;
+  document.getElementById('entities-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Total entities</div><div class="stat-value">${entities.length}</div><div class="stat-sub">registered</div></div>
+    <div class="stat-card"><div class="stat-label">Companies</div><div class="stat-value" style="color:#166534">${byType('Company')}</div></div>
+    <div class="stat-card"><div class="stat-label">Trusts</div><div class="stat-value" style="color:#854d0e">${byType('Trust')}</div></div>
+    <div class="stat-card"><div class="stat-label">Other</div><div class="stat-value" style="color:var(--crm)">${entities.filter(e=>!['Company','Trust'].includes(e.type)).length}</div></div>`;
+
+  const list=document.getElementById('entities-list');
+  if (!data.length) { list.innerHTML=`<div class="empty-state"><div class="empty-icon">🏢</div><div class="empty-title">No entities found</div><div class="empty-desc">Add a company, trust, or other legal entity.</div></div>`; return; }
+  list.innerHTML=data.map(e=>{
+    const meta=ENTITY_TYPE_META[e.type]||{label:e.type,cls:'tt-company',icon:'🏢'};
+    const peopleCount=(e.people||[]).length;
+    return `<div class="contact-row" onclick="openEntityRecord('${e.id}')">
+      <div class="contact-avatar" style="background:${avatarColor(e.id)};border-radius:10px;font-size:20px">${meta.icon}</div>
+      <div class="contact-info">
+        <div class="contact-name">${esc(e.name)}</div>
+        <div class="contact-meta">
+          <span class="type-tag ${meta.cls}">${meta.label}</span>
+          <span>·</span><span>${esc(e.industry)}</span>
+          ${e.regno?`<span>·</span><span>${esc(e.regno)}</span>`:''}
+        </div>
+        <div style="margin-top:4px;font-size:11px;color:var(--ink-4)">${peopleCount} linked person${peopleCount!==1?'s':''}</div>
+      </div>
+      <div style="font-size:11px;color:var(--ink-4);flex-shrink:0">${timeLabel(e.ts)}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('badge-entities').textContent=entities.length;
+}
+
+function filterEntities(btn,filter) {
+  document.querySelectorAll('#view-entities .filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); entitiesFilter=filter; renderEntitiesList();
+}
+
+// ── CONTACT RECORD ────────────────────────────────────────────────
+function openContactRecord(id) {
+  const p=people.find(x=>x.id===id);
+  if (!p) return;
+  addRecent({type:'person',id,name:`${p.first} ${p.last}`});
+  showView('contact-record');
+  document.getElementById('topbar-title').textContent=`${p.first} ${p.last}`;
+  renderContactRecord(p);
+}
+
+function renderContactRecord(p) {
+  const roleTags=(p.roles||[]).map(r=>`<span class="role-tag" style="${getRoleStyle(r)}">${esc(r)}</span>`).join('');
+  // Relationships
+  const rels=relationships.filter(r=>(r.fromType==='person'&&r.fromId===p.id)||(r.toType==='person'&&r.toId===p.id));
+  const relsHTML=rels.length?rels.map(r=>{
+    const isFrom=r.fromType==='person'&&r.fromId===p.id;
+    const toName=isFrom?(r.toType==='person'?getPersonName(r.toId):getEntityName(r.toId)):(r.fromType==='person'?getPersonName(r.fromId):getEntityName(r.fromId));
+    const icon=r.toType==='entity'?'🏢':r.toType==='person'?'👤':'📂';
+    const badge=isFrom?r.type:`← ${r.type}`;
+    return `<div class="rel-item" onclick="${r.toType==='person'?`openContactRecord('${isFrom?r.toId:r.fromId}')`:`openEntityRecord('${isFrom?r.toId:r.fromId}')`}">
+      <div class="rel-icon">${icon}</div>
+      <div class="rel-info"><div class="rel-name">${esc(toName)}</div><div class="rel-type">${esc(r.context||'')}</div></div>
+      <span class="rel-badge">${esc(badge)}</span>
+    </div>`;
+  }).join(''):`<div class="empty-state" style="padding:20px"><div class="empty-desc">No relationships yet.</div></div>`;
+
+  // Entity links
+  const entityLinksHTML=(p.entities||[]).map(e=>{
+    const ent=entities.find(x=>x.id===e.id);
+    if (!ent) return '';
+    const meta=ENTITY_TYPE_META[ent.type]||{icon:'🏢',cls:'tt-company',label:ent.type};
+    return `<div class="rel-item" onclick="openEntityRecord('${ent.id}')">
+      <div class="rel-icon">${meta.icon}</div>
+      <div class="rel-info"><div class="rel-name">${esc(ent.name)}</div><div class="rel-type"><span class="type-tag ${meta.cls}">${meta.label}</span></div></div>
+      <span class="rel-badge">${esc(e.role)}</span>
+    </div>`;
+  }).join('');
+
+  const body=document.getElementById('contact-record-body');
+  body.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+      <button class="btn-ghost" onclick="showView('people')">← People</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-ghost" onclick="openEditPerson('${p.id}')">✏️ Edit</button>
+        <button class="btn-ghost" onclick="openAddRelModalFor('person','${p.id}','${esc(p.first+' '+p.last)}')">+ Add relationship</button>
+        <button class="btn-danger" onclick="deletePerson('${p.id}')">Delete</button>
+      </div>
+    </div>
+    <div class="record-layout">
+      <div class="record-sidebar">
+        <!-- Profile card -->
+        <div class="record-card">
+          <div class="record-header">
+            <div class="record-avatar" style="background:${avatarColor(p.id)}">${initials(p)}</div>
+            <div class="record-name">${esc(p.first)} ${esc(p.last)}</div>
+            <div class="record-roles">${roleTags}</div>
+          </div>
+          <div class="record-contact-items">
+            ${p.email?`<div class="record-contact-item"><span class="icon">✉️</span><span>${esc(p.email)}</span></div>`:''}
+            ${p.phone?`<div class="record-contact-item"><span class="icon">📞</span><span>${esc(p.phone)}</span></div>`:''}
+            ${p.idno?`<div class="record-contact-item"><span class="icon">🪪</span><span style="font-family:monospace;font-size:12px">${esc(p.idno)}</span></div>`:''}
+          </div>
+        </div>
+
+        <!-- Entities -->
+        ${p.entities?.length?`
+        <div class="record-card">
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4)">Entities</div>
+          ${entityLinksHTML}
+        </div>`:''}
+
+        <!-- Relationships -->
+        <div class="record-card">
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4)">Relationships</span>
+            <button class="section-link" onclick="openAddRelModalFor('person','${p.id}','${esc(p.first+' '+p.last)}')">+ Add</button>
+          </div>
+          ${relsHTML}
+        </div>
+
+        <!-- Workspaces -->
+        <div class="record-card">
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4)">Workspaces</div>
+          <div class="ws-row"><div class="ws-icon" style="background:#e8f3ed">🏠</div><div class="ws-info"><div class="ws-name">12 Main Road — Purchase</div><div class="ws-meta"><span class="ws-hub-badge" style="background:#e8f3ed;color:#1a5c3a">Deals</span> · Buyer</div></div></div>
+          <div class="ws-row"><div class="ws-icon" style="background:#ecfeff">📈</div><div class="ws-info"><div class="ws-name">Sandton Block — Lead</div><div class="ws-meta"><span class="ws-hub-badge" style="background:#ecfeff;color:#0e7490">Sales</span> · Investor</div></div></div>
+        </div>
+      </div>
+
+      <!-- Main: tabs with timeline, documents -->
+      <div>
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchTab('tl','${p.id}','person',this)">Timeline</button>
+          <button class="tab-btn" onclick="switchTab('docs','${p.id}','person',this)">Documents</button>
+        </div>
+        <div class="tab-content active" id="tab-tl">
+          ${renderTimeline(p.id,'person')}
+        </div>
+        <div class="tab-content" id="tab-docs">
+          ${renderDocuments(p.id,'person')}
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── ENTITY RECORD ─────────────────────────────────────────────────
+function openEntityRecord(id) {
+  const e=entities.find(x=>x.id===id);
+  if (!e) return;
+  addRecent({type:'entity',id,name:e.name});
+  showView('entity-record');
+  document.getElementById('topbar-title').textContent=e.name;
+  renderEntityRecord(e);
+}
+
+function renderEntityRecord(e) {
+  const meta=ENTITY_TYPE_META[e.type]||{icon:'🏢',cls:'tt-company',label:e.type};
+  const peopleHTML=(e.people||[]).map(ep=>{
+    const person=people.find(p=>p.id===ep.id);
+    if (!person) return '';
+    return `<div class="contact-row" onclick="openContactRecord('${person.id}')">
+      <div class="contact-avatar" style="background:${avatarColor(person.id)}">${initials(person)}</div>
+      <div class="contact-info">
+        <div class="contact-name">${esc(person.first)} ${esc(person.last)}</div>
+        <div class="contact-meta"><span>${esc(ep.role)}</span>${person.email?`<span>·</span><span>${esc(person.email)}</span>`:''}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const rels=relationships.filter(r=>(r.fromType==='entity'&&r.fromId===e.id)||(r.toType==='entity'&&r.toId===e.id));
+  const relsHTML=rels.length?rels.map(r=>{
+    const isFrom=r.fromType==='entity'&&r.fromId===e.id;
+    const toName=isFrom?(r.toType==='person'?getPersonName(r.toId):getEntityName(r.toId)):(r.fromType==='person'?getPersonName(r.fromId):getEntityName(r.fromId));
+    const icon=r.toType==='person'?'👤':'🏢';
+    return `<div class="rel-item">
+      <div class="rel-icon">${icon}</div>
+      <div class="rel-info"><div class="rel-name">${esc(toName)}</div><div class="rel-type">${esc(r.context||'')}</div></div>
+      <span class="rel-badge">${esc(isFrom?r.type:`← ${r.type}`)}</span>
+    </div>`;
+  }).join(''):`<div class="empty-state" style="padding:16px"><div class="empty-desc">No relationships yet.</div></div>`;
+
+  document.getElementById('entity-record-body').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+      <button class="btn-ghost" onclick="showView('entities')">← Entities</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-ghost" onclick="openEditEntity('${e.id}')">✏️ Edit</button>
+        <button class="btn-ghost" onclick="openAddRelModalFor('entity','${e.id}','${esc(e.name)}')">+ Add relationship</button>
+        <button class="btn-danger" onclick="deleteEntity('${e.id}')">Delete</button>
+      </div>
+    </div>
+    <div class="record-layout">
+      <div class="record-sidebar">
+        <div class="record-card">
+          <div class="record-header">
+            <div class="record-avatar" style="background:${avatarColor(e.id)};border-radius:14px;font-size:28px">${meta.icon}</div>
+            <div class="record-name">${esc(e.name)}</div>
+            <div style="margin-top:6px"><span class="type-tag ${meta.cls}">${meta.label}</span></div>
+          </div>
+          <div class="record-contact-items">
+            ${e.industry?`<div class="record-contact-item"><span class="icon">🏭</span><span>${esc(e.industry)}</span></div>`:''}
+            ${e.address?`<div class="record-contact-item"><span class="icon">📍</span><span>${esc(e.address)}</span></div>`:''}
+            ${e.regno?`<div class="record-contact-item"><span class="icon">📋</span><span style="font-size:12px">Reg: ${esc(e.regno)}</span></div>`:''}
+            ${e.taxno?`<div class="record-contact-item"><span class="icon">🧾</span><span style="font-size:12px">Tax: ${esc(e.taxno)}</span></div>`:''}
+            ${e.vatno?`<div class="record-contact-item"><span class="icon">🧾</span><span style="font-size:12px">VAT: ${esc(e.vatno)}</span></div>`:''}
+          </div>
+        </div>
+
+        <div class="record-card">
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4)">People (${(e.people||[]).length})</span>
+            <button class="section-link" onclick="openAddPerson()">+ Add person</button>
+          </div>
+          ${peopleHTML||`<div class="empty-state" style="padding:16px"><div class="empty-desc">No people linked.</div></div>`}
+        </div>
+
+        <div class="record-card">
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4)">Relationships</span>
+            <button class="section-link" onclick="openAddRelModalFor('entity','${e.id}','${esc(e.name)}')">+ Add</button>
+          </div>
+          ${relsHTML}
+        </div>
+      </div>
+
+      <div>
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchTab('tl','${e.id}','entity',this)">Timeline</button>
+          <button class="tab-btn" onclick="switchTab('docs','${e.id}','entity',this)">Documents</button>
+        </div>
+        <div class="tab-content active" id="tab-tl">
+          ${renderTimeline(e.id,'entity')}
+        </div>
+        <div class="tab-content" id="tab-docs">
+          ${renderDocuments(e.id,'entity')}
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── TIMELINE ──────────────────────────────────────────────────────
+function renderTimeline(parentId, parentType, filter) {
+  if (filter) tlFilter=filter;
+  let entries=timeline.filter(t=>t.parentId===parentId&&t.parentType===parentType);
+  if (tlFilter!=='all') entries=entries.filter(t=>t.type===tlFilter);
+  entries.sort((a,b)=>b.ts-a.ts);
+
+  const filterBtns=['all','note','call','email','meeting','task','document','formflow','signflow'].map(f=>`
+    <button class="filter-btn ${tlFilter===f?'active':''}" onclick="tlFilter='${f}';document.getElementById('tab-tl').innerHTML=renderTimeline('${parentId}','${parentType}','${f}')">${f==='all'?'All':TL_TYPE_META[f]?.label||f}</button>`).join('');
+
+  if (!entries.length) {
+    return `<div class="timeline-filters">${filterBtns}</div>
+      <div class="empty-state"><div class="empty-icon">📅</div><div class="empty-title">No activity yet</div><div class="empty-desc">Timeline entries from calls, emails, notes, FormFlow and SignFlow will appear here automatically.</div></div>
+      ${renderTlAddNote(parentId,parentType)}`;
+  }
+
+  // Group by date
+  const groups={};
+  entries.forEach(e=>{
+    const d=new Date(e.ts); const today=new Date(); const yesterday=new Date(today); yesterday.setDate(today.getDate()-1);
+    let grp;
+    if (d.toDateString()===today.toDateString()) grp='Today';
+    else if (d.toDateString()===yesterday.toDateString()) grp='Yesterday';
+    else if (Date.now()-e.ts<7*86400000) grp='This week';
+    else if (Date.now()-e.ts<30*86400000) grp='This month';
+    else grp='Older';
+    if (!groups[grp]) groups[grp]=[]; groups[grp].push(e);
+  });
+
+  const order=['Today','Yesterday','This week','This month','Older'];
+  const entriesHTML=order.filter(g=>groups[g]).map(g=>`
+    <div class="tl-group-label"><div class="tl-group-line"></div>${g}<div class="tl-group-line"></div></div>
+    ${groups[g].map(e=>{
+      const m=TL_TYPE_META[e.type]||{icon:'⚡',label:'Activity',src:'src-system'};
+      return `<div class="tl-entry">
+        <div class="tl-dot">${m.icon}</div>
+        <div class="tl-body">
+          <div class="tl-title">${esc(e.title)}</div>
+          ${e.body?`<div class="tl-subtitle">${esc(e.body)}</div>`:''}
+          <div class="tl-meta">
+            <span class="tl-source ${m.src}">${m.label}</span>
+            <span class="tl-time">${timeLabel(e.ts)}</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}`).join('');
+
+  return `<div class="timeline-filters">${filterBtns}</div>${entriesHTML}${renderTlAddNote(parentId,parentType)}`;
+}
+
+function renderTlAddNote(parentId,parentType) {
+  return `<div class="tl-add-note">
+    <select class="tl-type-select" id="tl-type-${parentId}">
+      <option value="note">📝 Note</option>
+      <option value="call">📞 Call</option>
+      <option value="email">✉️ Email</option>
+      <option value="meeting">🎙 Meeting</option>
+      <option value="task">✓ Task</option>
+    </select>
+    <textarea class="tl-note-input" id="tl-input-${parentId}" placeholder="Add a note, log a call, record a meeting…" rows="1"
+      onfocus="this.rows=3" onblur="if(!this.value)this.rows=1"></textarea>
+    <button class="btn-primary" style="padding:8px 14px;font-size:12px" onclick="addTimelineEntry('${parentId}','${parentType}')">Add</button>
+  </div>`;
+}
+
+function addTimelineEntry(parentId,parentType) {
+  const body=document.getElementById(`tl-input-${parentId}`)?.value?.trim();
+  const type=document.getElementById(`tl-type-${parentId}`)?.value||'note';
+  if (!body) { showToast('Write something first'); return; }
+  const labels={note:'Note',call:'Call logged',email:'Email logged',meeting:'Meeting logged',task:'Task added'};
+  const entry={id:'tl'+Date.now(), parentType, parentId, type, title:labels[type]||'Note', body, source:'manual', ts:Date.now()};
+  timeline.unshift(entry);
+  save(K.timeline, timeline);
+  // Re-render timeline in place
+  const tab=document.getElementById('tab-tl');
+  if (tab) tab.innerHTML=renderTimeline(parentId,parentType);
+  showToast('Added to timeline ✓');
+}
+
+function switchTab(tab,id,type,btn) {
+  btn.closest('.tab-bar').querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  const content=document.getElementById('tab-'+tab);
+  if (content) {
+    content.classList.add('active');
+    if (tab==='tl') content.innerHTML=renderTimeline(id,type);
+    if (tab==='docs') content.innerHTML=renderDocuments(id,type);
+  }
+}
+
+// ── DOCUMENTS ─────────────────────────────────────────────────────
+function renderDocuments(parentId,parentType) {
+  // Demo documents linked to contacts
+  const demoDocs={
+    p1:[{name:'John Smith — FICA Pack.pdf',icon:'📋',source:'FormFlow',date:'Today, 09:20'},{name:'OTP v3 — Signed.pdf',icon:'✍️',source:'SignFlow',date:'Today, 09:22'},{name:'ID Document.pdf',icon:'📄',source:'Uploaded',date:'Last week'}],
+    p2:[{name:'Mary Jacobs — FICA Pack.pdf',icon:'📋',source:'FormFlow',date:'Yesterday'},{name:'Title Deed.pdf',icon:'📄',source:'Uploaded',date:'Last week'}],
+    e1:[{name:'Company Registration.pdf',icon:'📄',source:'Uploaded',date:'2 weeks ago'},{name:'MOI — ABC Holdings.pdf',icon:'📄',source:'Uploaded',date:'1 month ago'}],
+    e5:[{name:'Trust Deed.pdf',icon:'📄',source:'Uploaded',date:'3 months ago'},{name:'FICA — Trust.pdf',icon:'📋',source:'FormFlow',date:'Last week'}],
+  };
+  const docs=demoDocs[parentId]||[];
+  if (!docs.length) return `<div class="empty-state"><div class="empty-icon">📁</div><div class="empty-title">No documents yet</div><div class="empty-desc">Documents from FormFlow, SignFlow and uploads will appear here automatically.</div></div>`;
+  return `<div class="panel">${docs.map(d=>`
+    <div class="doc-row">
+      <div class="doc-icon">${d.icon}</div>
+      <div class="doc-info"><div class="doc-name">${esc(d.name)}</div><div class="doc-meta">${esc(d.source)} · ${esc(d.date)}</div></div>
+    </div>`).join('')}</div>`;
+}
+
+// ── RELATIONSHIPS VIEW ────────────────────────────────────────────
+function renderRelationshipsView() {
+  const list=document.getElementById('relationships-list');
+  if (!relationships.length) { list.innerHTML=`<div class="empty-state"><div class="empty-icon">🔗</div><div class="empty-title">No relationships yet</div><div class="empty-desc">Relationships are added from individual contact and entity records.</div></div>`; return; }
+  list.innerHTML=relationships.map(r=>{
+    const fromName=r.fromType==='person'?getPersonName(r.fromId):getEntityName(r.fromId);
+    const toName=r.toType==='person'?getPersonName(r.toId):getEntityName(r.toId);
+    const fromIcon=r.fromType==='person'?'👤':'🏢', toIcon=r.toType==='person'?'👤':'🏢';
+    return `<div class="contact-row" style="cursor:default">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;flex-wrap:wrap;min-width:0">
+        <span style="font-size:13px">${fromIcon}</span>
+        <span style="font-size:13px;font-weight:600;color:var(--ink)">${esc(fromName)}</span>
+        <span style="font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;background:var(--indigo-light);color:var(--indigo)">${esc(r.type)}</span>
+        <span style="font-size:13px">${toIcon}</span>
+        <span style="font-size:13px;font-weight:600;color:var(--ink)">${esc(toName)}</span>
+        ${r.context?`<span style="font-size:11px;color:var(--ink-4)">— ${esc(r.context)}</span>`:''}
+      </div>
+      <button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="deleteRelationship('${r.id}')">Remove</button>
+    </div>`;
+  }).join('');
+}
+
+// ── ROLES & TAGS VIEW ─────────────────────────────────────────────
+function renderTagsView() {
+  const cats=[...new Set(roles.map(r=>r.category))];
+  document.getElementById('tags-body').innerHTML=cats.map(cat=>`
+    <div style="margin-bottom:20px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-4);margin-bottom:10px">${esc(cat)}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        ${roles.filter(r=>r.category===cat).map(r=>`
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface)">
+            <span style="font-size:12px;font-weight:700;color:${r.color}">${esc(r.name)}</span>
+            <span style="font-size:10px;color:var(--ink-4)">${people.filter(p=>p.roles?.includes(r.name)).length} people</span>
+            <button onclick="deleteRole('${r.id}')" style="border:none;background:none;cursor:pointer;color:var(--ink-4);font-size:12px;padding:0;line-height:1">✕</button>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+// ── GLOBAL SEARCH ─────────────────────────────────────────────────
+function globalSearch(q) {
+  if (currentView==='people')   renderPeopleList();
+  if (currentView==='entities') renderEntitiesList();
+}
+
+// ── ADD / EDIT PERSON ─────────────────────────────────────────────
+function openAddPerson() {
+  editingPersonId=null; selectedPersonRoles=[];
+  document.getElementById('pm-first').value=''; document.getElementById('pm-last').value='';
+  document.getElementById('pm-email').value=''; document.getElementById('pm-phone').value='';
+  document.getElementById('pm-id').value='';
+  document.getElementById('person-modal-title').textContent='Add person';
+  document.getElementById('person-modal-save').textContent='Add person';
+  populateEntityDropdown('pm-entity-link');
+  renderRoleChips('pm-role-chips', selectedPersonRoles);
+  document.getElementById('person-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('pm-first').focus(),80);
+}
+
+function openEditPerson(id) {
+  const p=people.find(x=>x.id===id); if (!p) return;
+  editingPersonId=id; selectedPersonRoles=[...(p.roles||[])];
+  document.getElementById('pm-first').value=p.first||'';
+  document.getElementById('pm-last').value=p.last||'';
+  document.getElementById('pm-email').value=p.email||'';
+  document.getElementById('pm-phone').value=p.phone||'';
+  document.getElementById('pm-id').value=p.idno||'';
+  document.getElementById('person-modal-title').textContent='Edit person';
+  document.getElementById('person-modal-save').textContent='Update person';
+  populateEntityDropdown('pm-entity-link');
+  if (p.entities?.length) { document.getElementById('pm-entity-link').value=p.entities[0].id; document.getElementById('pm-entity-role').value=p.entities[0].role; }
+  renderRoleChips('pm-role-chips', selectedPersonRoles);
+  document.getElementById('person-modal').classList.add('open');
+}
+
+function savePerson() {
+  const first=document.getElementById('pm-first').value.trim();
+  const last=document.getElementById('pm-last').value.trim();
+  if (!first||!last) { showToast('First and last name are required'); return; }
+  const entityId=document.getElementById('pm-entity-link').value;
+  const entityRole=document.getElementById('pm-entity-role').value;
+  const entityLinks=entityId?[{id:entityId,role:entityRole||'Contact'}]:[];
+  if (editingPersonId) {
+    const p=people.find(x=>x.id===editingPersonId);
+    Object.assign(p,{first,last,email:document.getElementById('pm-email').value.trim(),phone:document.getElementById('pm-phone').value.trim(),idno:document.getElementById('pm-id').value.trim(),roles:selectedPersonRoles,entities:entityLinks,ts:Date.now()});
+    // Sync entity's people list
+    syncEntityPeople(p);
+    showToast('Person updated ✓');
+  } else {
+    const np={id:'p'+Date.now(),first,last,email:document.getElementById('pm-email').value.trim(),phone:document.getElementById('pm-phone').value.trim(),idno:document.getElementById('pm-id').value.trim(),roles:selectedPersonRoles,entities:entityLinks,tags:[],ts:Date.now()};
+    people.push(np);
+    syncEntityPeople(np);
+    timeline.push({id:'tl'+Date.now(),parentType:'person',parentId:np.id,type:'activity',title:'Contact created',body:'Added to CRM',source:'system',ts:Date.now()});
+    showToast('Person added ✓');
+  }
+  save(K.people,people); save(K.timeline,timeline);
+  closeModal('person-modal');
+  if (currentView==='people') renderPeopleList();
+  else if (editingPersonId) { const p=people.find(x=>x.id===editingPersonId); if(p) renderContactRecord(p); }
+}
+
+function syncEntityPeople(person) {
+  person.entities?.forEach(ep=>{
+    const ent=entities.find(e=>e.id===ep.id);
+    if (!ent) return;
+    if (!ent.people) ent.people=[];
+    if (!ent.people.find(x=>x.id===person.id)) ent.people.push({id:person.id,role:ep.role});
+  });
+  save(K.entities,entities);
+}
+
+function deletePerson(id) {
+  if (!confirm('Remove this person from the CRM?')) return;
+  people=people.filter(p=>p.id!==id);
+  relationships=relationships.filter(r=>!(r.fromType==='person'&&r.fromId===id)&&!(r.toType==='person'&&r.toId===id));
+  save(K.people,people); save(K.relationships,relationships);
+  showView('people'); showToast('Person removed');
+}
+
+// ── ADD / EDIT ENTITY ─────────────────────────────────────────────
+function openAddEntity() {
+  editingEntityId=null; selectedEntityTags=[];
+  ['em-name','em-regno','em-taxno','em-vatno','em-address'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('entity-modal-title').textContent='Add entity';
+  document.getElementById('entity-modal-save').textContent='Add entity';
+  renderRoleChips('em-tag-chips', selectedEntityTags);
+  document.getElementById('entity-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('em-name').focus(),80);
+}
+
+function openEditEntity(id) {
+  const e=entities.find(x=>x.id===id); if (!e) return;
+  editingEntityId=id; selectedEntityTags=[...(e.tags||[])];
+  document.getElementById('em-name').value=e.name||'';
+  document.getElementById('em-type').value=e.type||'Company';
+  document.getElementById('em-regno').value=e.regno||'';
+  document.getElementById('em-taxno').value=e.taxno||'';
+  document.getElementById('em-vatno').value=e.vatno||'';
+  document.getElementById('em-address').value=e.address||'';
+  document.getElementById('em-industry').value=e.industry||'Real Estate';
+  document.getElementById('entity-modal-title').textContent='Edit entity';
+  document.getElementById('entity-modal-save').textContent='Update entity';
+  renderRoleChips('em-tag-chips', selectedEntityTags);
+  document.getElementById('entity-modal').classList.add('open');
+}
+
+function saveEntity() {
+  const name=document.getElementById('em-name').value.trim();
+  if (!name) { showToast('Entity name is required'); return; }
+  const data={name,type:document.getElementById('em-type').value,regno:document.getElementById('em-regno').value.trim(),taxno:document.getElementById('em-taxno').value.trim(),vatno:document.getElementById('em-vatno').value.trim(),address:document.getElementById('em-address').value.trim(),industry:document.getElementById('em-industry').value,tags:selectedEntityTags};
+  if (editingEntityId) {
+    const e=entities.find(x=>x.id===editingEntityId);
+    Object.assign(e,data,{ts:Date.now()});
+    showToast('Entity updated ✓');
+  } else {
+    const ne={id:'e'+Date.now(),...data,people:[],ts:Date.now()};
+    entities.push(ne);
+    timeline.push({id:'tl'+Date.now(),parentType:'entity',parentId:ne.id,type:'activity',title:'Entity created',body:'Added to CRM',source:'system',ts:Date.now()});
+    showToast('Entity added ✓');
+  }
+  save(K.entities,entities); save(K.timeline,timeline);
+  closeModal('entity-modal');
+  if (currentView==='entities') renderEntitiesList();
+  else if (editingEntityId) { const e=entities.find(x=>x.id===editingEntityId); if(e) renderEntityRecord(e); }
+}
+
+function deleteEntity(id) {
+  if (!confirm('Remove this entity from the CRM?')) return;
+  entities=entities.filter(e=>e.id!==id);
+  relationships=relationships.filter(r=>!(r.fromType==='entity'&&r.fromId===id)&&!(r.toType==='entity'&&r.toId===id));
+  save(K.entities,entities); save(K.relationships,relationships);
+  showView('entities'); showToast('Entity removed');
+}
+
+// ── RELATIONSHIPS ─────────────────────────────────────────────────
+function openAddRelModalFor(fromType,fromId,fromName) {
+  document.getElementById('rel-from').value=fromName;
+  document.getElementById('rel-from-id').value=fromId;
+  document.getElementById('rel-from-type').value=fromType;
+  // Populate "to" dropdown
+  const sel=document.getElementById('rel-to');
+  sel.innerHTML=[
+    ...people.map(p=>`<option value="person:${p.id}">${esc(p.first+' '+p.last)}</option>`),
+    ...entities.map(e=>`<option value="entity:${e.id}">${esc(e.name)}</option>`),
+  ].join('');
+  document.getElementById('rel-modal').classList.add('open');
+}
+
+function openAddRelModal() { openAddRelModalFor('person', people[0]?.id||'', people[0]?`${people[0].first} ${people[0].last}`:''); }
+
+function saveRelationship() {
+  const toVal=document.getElementById('rel-to').value;
+  const [toType,toId]=toVal.split(':');
+  const fromId=document.getElementById('rel-from-id').value;
+  const fromType=document.getElementById('rel-from-type').value;
+  const type=document.getElementById('rel-type').value;
+  const context=document.getElementById('rel-context').value.trim();
+  if (!toId||!fromId) { showToast('Select both sides of the relationship'); return; }
+  relationships.push({id:'rel'+Date.now(),fromType,fromId,toType,toId,type,context,ts:Date.now()});
+  save(K.relationships,relationships);
+  closeModal('rel-modal');
+  showToast('Relationship added ✓');
+  if (currentView==='relationships') renderRelationshipsView();
+  // Re-render sidebar of current record
+  if (currentView==='contact-record') { const p=people.find(x=>x.id===fromId); if(p) renderContactRecord(p); }
+  if (currentView==='entity-record')  { const e=entities.find(x=>x.id===fromId); if(e) renderEntityRecord(e); }
+}
+
+function deleteRelationship(id) {
+  relationships=relationships.filter(r=>r.id!==id);
+  save(K.relationships,relationships);
+  renderRelationshipsView();
+  showToast('Relationship removed');
+}
+
+// ── ROLES ─────────────────────────────────────────────────────────
+function openAddRoleModal() { document.getElementById('role-name').value=''; document.getElementById('role-modal').classList.add('open'); setTimeout(()=>document.getElementById('role-name').focus(),80); }
+
+function saveRole() {
+  const name=document.getElementById('role-name').value.trim();
+  const category=document.getElementById('role-category').value;
+  if (!name) { showToast('Enter a role name'); return; }
+  if (roles.find(r=>r.name.toLowerCase()===name.toLowerCase())) { showToast('Role already exists'); return; }
+  roles.push({id:'r'+Date.now(),name,category,color:'#374151',bg:'#f9fafb'});
+  save(K.roles,roles);
+  closeModal('role-modal');
+  renderTagsView();
+  showToast(`Role "${name}" added ✓`);
+}
+
+function deleteRole(id) {
+  roles=roles.filter(r=>r.id!==id);
+  save(K.roles,roles);
+  renderTagsView();
+  showToast('Role removed');
+}
+
+// ── ROLE CHIP SYSTEM ──────────────────────────────────────────────
+function renderRoleChips(containerId, selected) {
+  const container=document.getElementById(containerId); if (!container) return;
+  container.innerHTML=roles.map(r=>`
+    <div class="role-chip ${selected.includes(r.name)?'selected':''}" onclick="toggleRoleChip(this,'${esc(r.name)}','${containerId}')">
+      ${esc(r.name)}
+    </div>`).join('');
+}
+
+function toggleRoleChip(el, roleName, containerId) {
+  el.classList.toggle('selected');
+  if (containerId==='pm-role-chips') {
+    if (el.classList.contains('selected')) selectedPersonRoles.push(roleName);
+    else selectedPersonRoles=selectedPersonRoles.filter(r=>r!==roleName);
+  } else {
+    if (el.classList.contains('selected')) selectedEntityTags.push(roleName);
+    else selectedEntityTags=selectedEntityTags.filter(r=>r!==roleName);
+  }
+}
+
+function quickLoadRoles(preset) {
+  const presetRoles=QUICK_LOADS[preset]||[];
+  presetRoles.forEach(r=>{ if (!selectedPersonRoles.includes(r)) selectedPersonRoles.push(r); });
+  renderRoleChips('pm-role-chips', selectedPersonRoles);
+}
+
+// ── ENTITY DROPDOWN HELPER ────────────────────────────────────────
+function populateEntityDropdown(elId) {
+  const sel=document.getElementById(elId); if (!sel) return;
+  sel.innerHTML='<option value="">— No entity —</option>'+entities.map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('');
+}
+
+// ── RECENTS ───────────────────────────────────────────────────────
+let recents=[];
+function addRecent(item) {
+  recents=recents.filter(r=>!(r.type===item.type&&r.id===item.id));
+  recents.unshift(item); recents=recents.slice(0,5);
+  renderRecents();
+}
+function renderRecents() {
+  const el=document.getElementById('nav-recents'); if (!el) return;
+  el.innerHTML=recents.map(r=>`
+    <button class="nav-item" onclick="${r.type==='person'?`openContactRecord('${r.id}')`:`openEntityRecord('${r.id}')`}" style="padding:6px 10px">
+      <span class="nav-icon" style="font-size:12px">${r.type==='person'?'👤':'🏢'}</span>
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.name)}</span>
+    </button>`).join('');
+}
+
+// ── MODAL BACKDROPS ───────────────────────────────────────────────
+document.querySelectorAll('.modal-overlay').forEach(o=>{
+  o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); });
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.modal-overlay.open').forEach(o=>o.classList.remove('open')); });
+
+// ── INIT ──────────────────────────────────────────────────────────
+function init() {
+  people        = load(K.people,        DEMO_PEOPLE);
+  entities      = load(K.entities,      DEMO_ENTITIES);
+  relationships = load(K.relationships, DEMO_RELATIONSHIPS);
+  timeline      = load(K.timeline,      DEMO_TIMELINE);
+  roles         = load(K.roles,         DEFAULT_ROLES);
+  showView('people');
+}
+
+init();
+</script>
+</body>
+</html>
