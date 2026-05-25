@@ -476,6 +476,58 @@
   }
   .meeting-action-check:hover { border-color: var(--indigo); }
   .meeting-action-check.done { background: var(--success); border-color: var(--success); color: white; }
+  /* ── SCRATCHPAD MODES ────────────────────────────────────── */
+  .mode-btn {
+    font-size: 12px; font-weight: 600; padding: 4px 12px;
+    border-radius: 20px; border: 1.5px solid var(--border);
+    background: var(--surface); color: var(--ink-3);
+    cursor: pointer; font-family: inherit; transition: all 0.12s;
+  }
+  .mode-btn:hover { border-color: var(--nt-teal); color: var(--nt-teal); }
+  .mode-btn.active { background: var(--nt-teal); color: white; border-color: var(--nt-teal); }
+
+  .draw-tool-btn {
+    width: 30px; height: 30px; border-radius: 7px;
+    border: 1.5px solid var(--border); background: var(--surface);
+    cursor: pointer; display: flex; align-items: center;
+    justify-content: center; font-size: 14px; transition: all 0.1s;
+  }
+  .draw-tool-btn:hover { border-color: var(--nt-teal); }
+  .draw-tool-btn.active { background: var(--nt-teal); border-color: var(--nt-teal); }
+
+  .draw-color {
+    width: 20px; height: 20px; border-radius: 50%;
+    cursor: pointer; border: 2.5px solid transparent;
+    transition: transform 0.1s;
+  }
+  .draw-color:hover { transform: scale(1.2); }
+  .draw-color.active { border-color: var(--ink); }
+
+  .draw-size-btn {
+    width: 28px; height: 28px; border-radius: 6px;
+    border: 1.5px solid var(--border); background: var(--surface);
+    cursor: pointer; display: flex; align-items: center;
+    justify-content: center; transition: all 0.1s; color: var(--ink-3);
+  }
+  .draw-size-btn:hover { border-color: var(--nt-teal); }
+  .draw-size-btn.active { background: var(--indigo-light); border-color: var(--indigo); }
+
+  .drawing-thumb {
+    position: relative; border-radius: 8px;
+    border: 1px solid var(--border); overflow: hidden;
+    cursor: pointer; transition: box-shadow 0.15s;
+  }
+  .drawing-thumb:hover { box-shadow: var(--shadow-md); }
+  .drawing-thumb img { display: block; width: 120px; height: 80px; object-fit: cover; }
+  .drawing-del {
+    position: absolute; top: 4px; right: 4px;
+    width: 18px; height: 18px; border-radius: 4px;
+    background: rgba(0,0,0,0.5); color: white;
+    border: none; cursor: pointer; font-size: 10px;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.15s;
+  }
+  .drawing-thumb:hover .drawing-del { opacity: 1; }
 </style>
 </head>
 <body>
@@ -555,28 +607,91 @@
         <div id="scratchpad-section">
           <div class="section-header">
             <div class="section-title">Scratchpad</div>
-            <span style="font-size:11px;color:var(--ink-4)">Auto-saved locally</span>
+            <div style="display:flex;align-items:center;gap:6px">
+              <button class="mode-btn active" id="mode-text" onclick="setScratchMode('text')">✏️ Text</button>
+              <button class="mode-btn" id="mode-draw" onclick="setScratchMode('draw')">🖊 Draw</button>
+            </div>
           </div>
           <div class="panel">
-            <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-                <span style="font-size:11px;font-weight:700;color:var(--ink-4);text-transform:uppercase;letter-spacing:0.06em">Context</span>
-                <select id="scratchpad-ctx" class="form-input" style="width:auto;padding:4px 10px;font-size:12px">
-                  <option value="General">General</option>
-                </select>
-              </div>
+
+            <!-- Context row — always visible -->
+            <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
+              <span style="font-size:11px;font-weight:700;color:var(--ink-4);text-transform:uppercase;letter-spacing:0.06em">Context</span>
+              <select id="scratchpad-ctx" class="form-input" style="width:auto;padding:4px 10px;font-size:12px">
+                <option value="General">General</option>
+              </select>
+              <span style="font-size:11px;color:var(--ink-4);margin-left:auto" id="scratchpad-saved-label">Auto-saved</span>
+            </div>
+
+            <!-- TEXT MODE -->
+            <div id="scratchpad-text-mode">
               <textarea id="scratchpad-body"
-                style="width:100%;border:none;background:transparent;font-size:14px;font-family:inherit;color:var(--ink);resize:none;outline:none;line-height:1.7;min-height:120px;overflow-wrap:break-word;word-break:break-word"
+                style="width:100%;border:none;background:transparent;font-size:14px;font-family:inherit;color:var(--ink);resize:none;outline:none;line-height:1.7;min-height:140px;padding:14px 16px;overflow-wrap:break-word;word-break:break-word;display:block"
                 placeholder="Start typing — capture a thought, a to-do, a follow-up…"></textarea>
-            </div>
-            <div style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-              <span style="font-size:11px;color:var(--ink-4)" id="scratchpad-saved-label">Start typing to capture a note</span>
-              <div style="display:flex;gap:7px">
-                <button class="btn-ghost" style="font-size:12px;padding:5px 12px" onclick="promoteToTask()">→ To task</button>
-                <button class="btn-ghost" style="font-size:12px;padding:5px 12px" onclick="promoteToSticky()">📌 To sticky</button>
-                <button class="btn-primary" style="font-size:12px;padding:5px 12px" onclick="saveScratchpad()">Save note</button>
+              <div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+                <div style="display:flex;gap:7px">
+                  <button class="btn-ghost" style="font-size:12px;padding:5px 10px" onclick="promoteToTask()">→ To task</button>
+                  <button class="btn-ghost" style="font-size:12px;padding:5px 10px" onclick="promoteToSticky()">📌 To sticky</button>
+                </div>
+                <button class="btn-primary" style="font-size:12px;padding:5px 14px" onclick="saveScratchpad()">Save note</button>
               </div>
             </div>
+
+            <!-- DRAW MODE -->
+            <div id="scratchpad-draw-mode" style="display:none">
+              <!-- Drawing toolbar -->
+              <div style="padding:8px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <!-- Tool -->
+                <div style="display:flex;gap:4px">
+                  <button class="draw-tool-btn active" id="tool-pen"    onclick="setDrawTool('pen')"    title="Pen">✒️</button>
+                  <button class="draw-tool-btn"        id="tool-marker" onclick="setDrawTool('marker')" title="Marker">🖊</button>
+                  <button class="draw-tool-btn"        id="tool-eraser" onclick="setDrawTool('eraser')" title="Eraser">🧹</button>
+                </div>
+                <div style="width:1px;height:24px;background:var(--border)"></div>
+                <!-- Colours -->
+                <div style="display:flex;gap:5px;align-items:center">
+                  <div class="draw-color active" style="background:#1a1a1a" data-color="#1a1a1a" onclick="setDrawColor(this)" title="Black"></div>
+                  <div class="draw-color" style="background:#4f46e5" data-color="#4f46e5" onclick="setDrawColor(this)" title="Indigo"></div>
+                  <div class="draw-color" style="background:#0d9488" data-color="#0d9488" onclick="setDrawColor(this)" title="Teal"></div>
+                  <div class="draw-color" style="background:#dc2626" data-color="#dc2626" onclick="setDrawColor(this)" title="Red"></div>
+                  <div class="draw-color" style="background:#d97706" data-color="#d97706" onclick="setDrawColor(this)" title="Amber"></div>
+                  <div class="draw-color" style="background:#7c3aed" data-color="#7c3aed" onclick="setDrawColor(this)" title="Purple"></div>
+                </div>
+                <div style="width:1px;height:24px;background:var(--border)"></div>
+                <!-- Stroke size -->
+                <div style="display:flex;gap:4px;align-items:center">
+                  <button class="draw-size-btn active" data-size="2"  onclick="setDrawSize(this,2)"  title="Fine">
+                    <div style="width:2px;height:2px;border-radius:50%;background:currentColor;margin:auto"></div>
+                  </button>
+                  <button class="draw-size-btn" data-size="5"  onclick="setDrawSize(this,5)"  title="Medium">
+                    <div style="width:5px;height:5px;border-radius:50%;background:currentColor;margin:auto"></div>
+                  </button>
+                  <button class="draw-size-btn" data-size="10" onclick="setDrawSize(this,10)" title="Thick">
+                    <div style="width:10px;height:10px;border-radius:50%;background:currentColor;margin:auto"></div>
+                  </button>
+                </div>
+                <div style="width:1px;height:24px;background:var(--border)"></div>
+                <!-- Actions -->
+                <button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="undoDraw()" title="Undo">↩ Undo</button>
+                <button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="clearCanvas()" title="Clear">🗑 Clear</button>
+                <button class="btn-primary" style="font-size:11px;padding:4px 10px;margin-left:auto" onclick="saveDrawing()">💾 Save drawing</button>
+              </div>
+              <!-- Canvas -->
+              <div style="position:relative;background:#fafafa;border-bottom:1px solid var(--border)">
+                <canvas id="draw-canvas"
+                  style="display:block;width:100%;height:260px;cursor:crosshair;touch-action:none">
+                </canvas>
+                <div id="draw-hint" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
+                  <span style="font-size:13px;color:var(--ink-4)">Draw with mouse, trackpad or touch ✍️</span>
+                </div>
+              </div>
+              <!-- Saved drawings -->
+              <div id="saved-drawings" style="display:none;padding:10px 14px;border-top:1px solid var(--border)">
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-4);margin-bottom:8px">Saved drawings</div>
+                <div id="drawings-list" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -1212,6 +1327,236 @@
       focusSection('scratchpad-section');
     }
   });
+
+  // ── SCRATCHPAD MODE TOGGLE ────────────────────────────────────
+  let scratchMode = 'text';
+
+  function setScratchMode(mode) {
+    scratchMode = mode;
+    document.getElementById('scratchpad-text-mode').style.display = mode === 'text' ? 'block' : 'none';
+    document.getElementById('scratchpad-draw-mode').style.display = mode === 'draw' ? 'block' : 'none';
+    document.getElementById('mode-text').classList.toggle('active', mode === 'text');
+    document.getElementById('mode-draw').classList.toggle('active', mode === 'draw');
+    if (mode === 'draw') {
+      initCanvas();
+      renderDrawingsList();
+    }
+  }
+
+  // ── CANVAS DRAWING ────────────────────────────────────────────
+  const DRAWINGS_KEY = 'flow_drawings_v1';
+  let drawings       = [];
+  let drawTool       = 'pen';
+  let drawColor      = '#1a1a1a';
+  let drawSize       = 2;
+  let isDrawing      = false;
+  let lastX          = 0;
+  let lastY          = 0;
+  let undoStack      = [];
+  let canvasInited   = false;
+
+  function initCanvas() {
+    if (canvasInited) return;
+    canvasInited = true;
+
+    const canvas = document.getElementById('draw-canvas');
+    const hint   = document.getElementById('draw-hint');
+
+    // Set physical pixel size (retina-aware)
+    function resizeCanvas() {
+      const rect  = canvas.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width  = rect.width  * ratio;
+      canvas.height = rect.height * ratio;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(ratio, ratio);
+    }
+    resizeCanvas();
+    window.addEventListener('resize', () => { saveSnapshot(); resizeCanvas(); restoreSnapshot(); });
+
+    const ctx = canvas.getContext('2d');
+    ctx.lineCap    = 'round';
+    ctx.lineJoin   = 'round';
+
+    function getPos(e) {
+      const rect  = canvas.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+      const src   = e.touches ? e.touches[0] : e;
+      return {
+        x: (src.clientX - rect.left),
+        y: (src.clientY - rect.top)
+      };
+    }
+
+    function startDraw(e) {
+      e.preventDefault();
+      isDrawing = true;
+      const pos = getPos(e);
+      lastX = pos.x; lastY = pos.y;
+      saveSnapshot();
+      if (hint) hint.style.display = 'none';
+      // Start a new path for dots
+      ctx.beginPath();
+      ctx.arc(lastX, lastY, (drawTool === 'eraser' ? drawSize * 3 : drawSize) / 2, 0, Math.PI * 2);
+      ctx.fillStyle = drawTool === 'eraser' ? '#fafafa' : drawColor;
+      ctx.fill();
+    }
+
+    function draw(e) {
+      if (!isDrawing) return;
+      e.preventDefault();
+      const pos = getPos(e);
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(pos.x, pos.y);
+
+      if (drawTool === 'eraser') {
+        ctx.strokeStyle = '#fafafa';
+        ctx.lineWidth   = drawSize * 6;
+        ctx.globalAlpha = 1;
+      } else if (drawTool === 'marker') {
+        ctx.strokeStyle = drawColor;
+        ctx.lineWidth   = drawSize * 3;
+        ctx.globalAlpha = 0.45;
+      } else {
+        ctx.strokeStyle = drawColor;
+        ctx.lineWidth   = drawSize;
+        ctx.globalAlpha = 1;
+      }
+
+      ctx.lineCap  = 'round';
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      lastX = pos.x; lastY = pos.y;
+    }
+
+    function stopDraw() { isDrawing = false; }
+
+    // Mouse events
+    canvas.addEventListener('mousedown',  startDraw);
+    canvas.addEventListener('mousemove',  draw);
+    canvas.addEventListener('mouseup',    stopDraw);
+    canvas.addEventListener('mouseleave', stopDraw);
+
+    // Touch events
+    canvas.addEventListener('touchstart', startDraw, { passive: false });
+    canvas.addEventListener('touchmove',  draw,      { passive: false });
+    canvas.addEventListener('touchend',   stopDraw);
+  }
+
+  function saveSnapshot() {
+    const canvas = document.getElementById('draw-canvas');
+    if (!canvas) return;
+    undoStack.push(canvas.toDataURL());
+    if (undoStack.length > 30) undoStack.shift();
+  }
+
+  function restoreSnapshot() {
+    // redraw last saved state after resize
+    if (!undoStack.length) return;
+    const canvas = document.getElementById('draw-canvas');
+    const ctx    = canvas.getContext('2d');
+    const img    = new Image();
+    img.onload   = () => ctx.drawImage(img, 0, 0, canvas.getBoundingClientRect().width, canvas.getBoundingClientRect().height);
+    img.src      = undoStack[undoStack.length - 1];
+  }
+
+  function undoDraw() {
+    if (undoStack.length < 2) { clearCanvas(); return; }
+    undoStack.pop();
+    const canvas = document.getElementById('draw-canvas');
+    const ctx    = canvas.getContext('2d');
+    const rect   = canvas.getBoundingClientRect();
+    const img    = new Image();
+    img.onload   = () => { ctx.clearRect(0, 0, rect.width, rect.height); ctx.drawImage(img, 0, 0, rect.width, rect.height); };
+    img.src      = undoStack[undoStack.length - 1];
+  }
+
+  function clearCanvas() {
+    const canvas = document.getElementById('draw-canvas');
+    const ctx    = canvas.getContext('2d');
+    const rect   = canvas.getBoundingClientRect();
+    saveSnapshot();
+    ctx.clearRect(0, 0, rect.width, rect.height);
+    document.getElementById('draw-hint').style.display = 'flex';
+  }
+
+  function setDrawTool(tool) {
+    drawTool = tool;
+    document.querySelectorAll('.draw-tool-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tool-' + tool)?.classList.add('active');
+    const canvas = document.getElementById('draw-canvas');
+    if (canvas) canvas.style.cursor = tool === 'eraser' ? 'cell' : 'crosshair';
+  }
+
+  function setDrawColor(el) {
+    drawColor = el.dataset.color;
+    document.querySelectorAll('.draw-color').forEach(d => d.classList.remove('active'));
+    el.classList.add('active');
+    if (drawTool === 'eraser') setDrawTool('pen');
+  }
+
+  function setDrawSize(el, size) {
+    drawSize = size;
+    document.querySelectorAll('.draw-size-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function saveDrawing() {
+    const canvas = document.getElementById('draw-canvas');
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL('image/png');
+    // Check if canvas is blank
+    const blank = document.createElement('canvas');
+    blank.width = canvas.width; blank.height = canvas.height;
+    if (dataUrl === blank.toDataURL()) { showToast('Nothing drawn yet!'); return; }
+
+    try { drawings = JSON.parse(localStorage.getItem(DRAWINGS_KEY)) || []; } catch(e) { drawings = []; }
+    const ctx    = document.getElementById('scratchpad-ctx').value || 'General';
+    drawings.unshift({ id:'d'+Date.now(), dataUrl, ctx, ts: Date.now() });
+    if (drawings.length > 20) drawings = drawings.slice(0, 20);
+    try { localStorage.setItem(DRAWINGS_KEY, JSON.stringify(drawings)); } catch(e) {}
+
+    clearCanvas();
+    renderDrawingsList();
+    showToast('Drawing saved ✓');
+  }
+
+  function renderDrawingsList() {
+    try { drawings = JSON.parse(localStorage.getItem(DRAWINGS_KEY)) || []; } catch(e) { drawings = []; }
+    const wrap = document.getElementById('saved-drawings');
+    const list = document.getElementById('drawings-list');
+    if (!wrap || !list) return;
+    wrap.style.display = drawings.length ? 'block' : 'none';
+    list.innerHTML = drawings.map(d => `
+      <div class="drawing-thumb" title="${esc(d.ctx)} · ${timeLabel(d.ts)}">
+        <img src="${d.dataUrl}" alt="Drawing" onclick="expandDrawing('${d.id}')">
+        <div style="padding:4px 6px;font-size:9px;color:var(--ink-4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(d.ctx)}</div>
+        <button class="drawing-del" onclick="deleteDrawing('${d.id}')">✕</button>
+      </div>`).join('');
+  }
+
+  function deleteDrawing(id) {
+    drawings = drawings.filter(d => d.id !== id);
+    try { localStorage.setItem(DRAWINGS_KEY, JSON.stringify(drawings)); } catch(e) {}
+    renderDrawingsList();
+    showToast('Drawing removed');
+  }
+
+  function expandDrawing(id) {
+    const d = drawings.find(d => d.id === id);
+    if (!d) return;
+    // Open in a simple lightbox
+    const lb = document.createElement('div');
+    lb.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:900;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;cursor:pointer';
+    lb.innerHTML = `<div style="color:rgba(255,255,255,0.6);font-size:13px">${esc(d.ctx)} · ${timeLabel(d.ts)}</div>
+      <img src="${d.dataUrl}" style="max-width:90vw;max-height:80vh;border-radius:8px;object-fit:contain;background:white;padding:8px">
+      <div style="color:rgba(255,255,255,0.5);font-size:12px">Click anywhere to close · <a href="${d.dataUrl}" download="drawing-${d.id}.png" style="color:#5eead4" onclick="event.stopPropagation()">Download</a></div>`;
+    lb.onclick = () => document.body.removeChild(lb);
+    document.body.appendChild(lb);
+  }
 
   // ── START ─────────────────────────────────────────────────────
   init();
