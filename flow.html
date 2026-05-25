@@ -2394,7 +2394,7 @@
 
       <!-- ── FORMFLOW STUB ───────────────────────────────────────── -->
       <!-- ── FORMFLOW ───────────────────────────────────────────── -->
-      <div class="view" id="view-formflow" style="padding:0;margin:0;height:calc(100vh - 56px);display:none">
+      <div class="view" id="view-formflow" style="padding:0;margin:0;height:calc(100vh - 56px)">
         <iframe
           id="formflow-frame"
           src="./formflow.html"
@@ -2404,19 +2404,17 @@
       </div>
 
       <!-- ── SIGNFLOW ───────────────────────────────────────────── -->
-      <div class="view" id="view-signflow" style="padding:0;margin:0;height:calc(100vh - 56px);display:none">
+      <div class="view" id="view-signflow" style="padding:0;margin:0;height:calc(100vh - 56px);position:relative">
         <iframe
           id="signflow-frame"
           src="./signflow.html"
           style="width:100%;height:100%;border:none;display:block"
           title="SignFlow"
-          onerror="document.getElementById('signflow-fallback').style.display='flex'"
         ></iframe>
-        <!-- fallback shown if signflow.html doesn't exist yet -->
         <div id="signflow-fallback" style="display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);gap:16px">
           <div style="font-size:48px">✍️</div>
           <h2 style="font-family:'Instrument Serif',serif;font-size:28px">SignFlow</h2>
-          <p style="font-size:14px;color:var(--ink-3);max-width:400px;text-align:center;line-height:1.6">SignFlow hasn't been added to the repo yet. Once <code>signflow.html</code> is committed alongside <code>flow.html</code>, it will load here automatically.</p>
+          <p style="font-size:14px;color:var(--ink-3);max-width:400px;text-align:center;line-height:1.6">Once <code>signflow.html</code> is committed to the repo alongside <code>flow.html</code>, it will load here automatically.</p>
           <div style="display:inline-block;padding:8px 20px;background:var(--indigo-light);color:var(--indigo);border-radius:20px;font-size:13px;font-weight:600">In development</div>
         </div>
       </div>
@@ -3256,6 +3254,7 @@
 
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app').classList.add('visible');
+    showView('dashboard');
   }
 
   // ── LIVE DATA ───────────────────────────────────────────────
@@ -3598,23 +3597,30 @@
   const IFRAME_VIEWS = new Set(['formflow', 'signflow']);
 
   function showView(id) {
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    // Hide every view explicitly — overrides any inline style
+    document.querySelectorAll('.view').forEach(v => {
+      v.classList.remove('active');
+      v.style.display = 'none';
+    });
+
     const targetView = document.getElementById('view-' + id);
     if (!targetView) { showToast('View not found: ' + id); return; }
-    targetView.classList.add('active');
 
-    // iframe views need full-height treatment — remove page-scroll padding
+    targetView.classList.add('active');
+    targetView.style.display = 'block';
+
+    // Iframe views: strip page-scroll padding so iframe fills full height
     const pageScroll = document.querySelector('.page-scroll');
     if (IFRAME_VIEWS.has(id)) {
       pageScroll.style.padding = '0';
       pageScroll.style.overflow = 'hidden';
-      targetView.style.display = 'block';
-      // Show SignFlow fallback if the file doesn't exist
+      // SignFlow: detect missing file and show fallback
       if (id === 'signflow') {
         const frame = document.getElementById('signflow-frame');
+        const fallback = document.getElementById('signflow-fallback');
         frame.onerror = () => {
           frame.style.display = 'none';
-          document.getElementById('signflow-fallback').style.display = 'flex';
+          fallback.style.display = 'flex';
         };
       }
     } else {
@@ -3622,12 +3628,12 @@
       pageScroll.style.overflow = '';
     }
 
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    // Nav active state
     const titles = { dashboard:'Dashboard', hubs:'Hubs', workspaces:'Workspaces', tasks:'Tasks', activity:'Recent Activity', documents:'Documents', formflow:'FormFlow', signflow:'SignFlow', contacts:'Contacts', flowmail:'FlowMail', reports:'Reports', settings:'Settings', plugins:'Apps & Plugins', notetaker:'Notetaker' };
     document.getElementById('topbar-title').textContent = titles[id] || id;
 
-    // Match nav item by text
     document.querySelectorAll('.nav-item').forEach(n => {
+      n.classList.remove('active');
       const label = titles[id];
       if (label && n.textContent.trim().includes(label)) n.classList.add('active');
     });
